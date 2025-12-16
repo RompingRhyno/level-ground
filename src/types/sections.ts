@@ -3,6 +3,8 @@ export type HeroSection = {
   type: "hero";
   heading: string;
   subheading?: string;
+  buttonText: string;
+  buttonHref: string;
   image: string;
 };
 
@@ -24,8 +26,29 @@ export type CTASection = {
   buttonText: string;
 };
 
-export type Section =
+export type ServicesSection = {
+  type: "services";
+  heading: string;
+  services: {
+    title: string;
+    image: string;
+    href: string;
+  }[];
+  bodyText?: string;
+};
+
+export type BannerSection = {
+  type: "banner";
+  heading: string;
+  subheading?: string;
+  image?: string;
+  overlayOpacity?: number; // e.g. 0.25 for 25%
+};
+
+export type PageSection =
   | HeroSection
+  | ServicesSection
+  | BannerSection
   | TwoColumnSection
   | GallerySection
   | CTASection;

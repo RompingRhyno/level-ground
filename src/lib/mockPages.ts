@@ -1,34 +1,37 @@
-// lib/mockPages.ts
-import { Section } from "@/types/sections";
+import { PageSection } from "@/types/sections";
 
-export const pages: Record<string, { sections: Section[] }> = {
-  about: {
-    sections: [
+export const homePageSections: PageSection[] = [
+  {
+    type: "hero",
+    heading: "Your <strong>residential landscaping</strong> experts",
+    subheading: "Custom outdoor spaces built to last.",
+    buttonText: "Get a Quote",
+    buttonHref: "/contact",
+    image: "/hero-placeholder.jpg",
+  },
+  {
+    type: "services",
+    heading: "Our <strong>Services</strong>",
+    services: [
       {
-        type: "hero",
-        heading: "About Our Company",
-        subheading: "Built on trust and craftsmanship",
-        image: "/images/hero.jpg",
+        title: "Design & Installation",
+        image: "/services-installation.jpg",
+        href: "/services/installation",
       },
       {
-        type: "twoColumn",
-        title: "What We Do",
-        body: "We specialize in residential landscaping...",
-        image: "/images/work.jpg",
-      },
-      {
-        type: "gallery",
-        images: [
-          "/images/g1.jpg",
-          "/images/g2.jpg",
-          "/images/g3.jpg",
-        ],
-      },
-      {
-        type: "cta",
-        text: "Ready to start your project?",
-        buttonText: "Contact Us",
+        title: "Maintenance",
+        image: "/services-maintenance.jpg",
+        href: "/services/maintenance",
       },
     ],
+    bodyText:
+      "From initial concept to long-term care, we provide full-service landscaping solutions tailored to your property.",
   },
-};
+  {
+    type: "banner",
+    heading: "Level Ground uses <strong>environmentally friendly</strong> products and techniques.",
+    subheading: "",
+    image: "/rain-barrel.jpeg",
+    overlayOpacity: 0.45,
+  }
+];

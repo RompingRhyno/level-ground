@@ -1,11 +1,6 @@
-// app/about/page.tsx
-import { pages } from "@/lib/mockPages";
-import { RenderSections } from "@/components/RenderSections";
+import RenderSections from "@/components/RenderSections";
+import { homePageSections } from "@/lib/mockPages";
 
-export const dynamic = "force-static";
-
-export default function AboutPage() {
-  const page = pages["about"];
-
-  return <RenderSections sections={page.sections} />;
+export default function HomePage() {
+  return <RenderSections sections={homePageSections} />;
 }
