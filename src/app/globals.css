@@ -74,6 +74,8 @@ h1, h2, h3, h4, h5 {
 .heading {
   font-family: var(--font-heading);
   line-height: var(--line-heading);
+  color: var(--heading-color, var(--color-text-heading));
+  font-weight: 300;
 }
 
 .heading strong {

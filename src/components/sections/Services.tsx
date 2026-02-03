@@ -22,7 +22,7 @@ export default function Services({
         <section className="px-8">
             {/* Heading */}
             <h2
-                className="heading text-2xl sm:text-3xl md:text-4xl font-normal leading-tight mb-12"
+                className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-12"
                 dangerouslySetInnerHTML={{ __html: heading }}
             />
 
