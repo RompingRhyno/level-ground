@@ -1,4 +1,9 @@
 // types/sections.ts
+export type PageConfig = {
+  slug: string;
+  sections: PageSection[];
+};
+
 export type HeroSection = {
   type: "hero";
   heading: string;

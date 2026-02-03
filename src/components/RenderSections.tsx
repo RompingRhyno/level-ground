@@ -7,11 +7,11 @@ import CTA from "./sections/CTA";
 import Services from "./sections/Services";
 import Banner from "./sections/Banner";
 
-export default function RenderSections({
-  sections,
-}: {
+type Props = {
   sections: PageSection[];
-}) {
+};
+
+export default function RenderSections({ sections }: Props) {
   return (
     <>
       {sections.map((section, index) => {
@@ -34,7 +34,6 @@ export default function RenderSections({
 
           case "banner":
             return <Banner key={index} {...section} />;
-            break;
 
           case "gallery":
             content = <Gallery images={section.images} />;
@@ -46,9 +45,7 @@ export default function RenderSections({
 
         return (
           <section key={index} className={backgroundClass}>
-            <div className="mx-auto max-w-7xl px-6 py-20">
-              {content}
-            </div>
+            <div className="mx-auto max-w-7xl px-6 py-20">{content}</div>
           </section>
         );
       })}
