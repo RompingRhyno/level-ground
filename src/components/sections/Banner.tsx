@@ -31,12 +31,15 @@ export default function Banner({
 
       {/* Text content */}
       <div
-        className={`relative max-w-4xl mx-auto text-center ${
-          hasImage ? "text-(--color-text-inverse)" : "text-(--color-text-heading)"
-        }`}
+        className="relative max-w-4xl mx-auto text-center"
+        style={{
+          "--heading-color": hasImage
+            ? "var(--color-text-inverse)"
+            : "var(--color-text-heading)",
+        } as React.CSSProperties}
       >
         <h2 className="heading text-3xl md:text-5xl font-light leading-tight mb-4"
-            dangerouslySetInnerHTML={{ __html: heading }}
+          dangerouslySetInnerHTML={{ __html: heading }}
         />
         {subheading && (
           <p className="text-lg md:text-2xl font-medium">{subheading}</p>
