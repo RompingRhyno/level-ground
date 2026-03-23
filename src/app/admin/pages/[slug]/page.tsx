@@ -1,5 +1,8 @@
+"use client";
+
 import { notFound } from "next/navigation";
-import { pages } from "@/lib/mockPages";
+import { getPageBySlug } from "@/lib/pages";
+import AdminPageEditor from "@/components/admin/AdminPageEditor";
 
 type Props = {
   params: {
@@ -7,8 +10,8 @@ type Props = {
   };
 };
 
-export default function AdminPageDetail({ params }: Props) {
-  const page = pages.find((p) => p.slug === params.slug);
+export default async function AdminPageDetail({ params }: Props) {
+  const page = await getPageBySlug(params.slug as string);
 
   if (!page) {
     notFound();
@@ -21,22 +24,7 @@ export default function AdminPageDetail({ params }: Props) {
         <p className="text-gray-600">/{page.slug}</p>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="font-semibold">Sections</h3>
-
-        <ul className="space-y-2">
-          {page.sections.map((section, index) => (
-            <li
-              key={index}
-              className="rounded border bg-white px-4 py-3"
-            >
-              <strong className="uppercase text-sm text-gray-500">
-                {section.type}
-              </strong>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <AdminPageEditor initialPage={page} />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { pages } from "@/lib/mockPages";
+import { getPages } from "@/lib/pages";
 
-export default function AdminPagesList() {
+export default async function AdminPagesList() {
+  const pages = await getPages();
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold">Pages</h2>
@@ -21,10 +23,7 @@ export default function AdminPagesList() {
               <td className="px-4 py-2 font-medium">{page.label}</td>
               <td className="px-4 py-2 text-gray-600">{page.slug}</td>
               <td className="px-4 py-2 text-right">
-                <Link
-                  href={`/admin/pages/${page.slug}`}
-                  className="text-blue-600 underline"
-                >
+                <Link href={`/admin/pages/${page.slug}`} className="text-blue-600 underline">
                   View
                 </Link>
               </td>

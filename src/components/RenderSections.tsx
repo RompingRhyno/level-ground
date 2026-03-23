@@ -36,7 +36,15 @@ export default function RenderSections({ sections }: Props) {
             return <Banner key={index} {...section} />;
 
           case "gallery":
-            content = <Gallery images={section.images} />;
+            content = <Gallery {...section} />;
+            break;
+
+          case "twoColumn":
+            content = <TwoColumn {...section} />;
+            break;
+
+          case "cta":
+            content = <CTA {...section} />;
             break;
 
           default:
