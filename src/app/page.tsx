@@ -1,6 +1,9 @@
 import RenderSections from "@/components/RenderSections";
-import { homePage } from "@/lib/mockPages";
+import { getPageBySlug } from "@/lib/pages";
+import { notFound } from "next/navigation";
 
-export default function HomePage() {
-  return <RenderSections sections={homePage.sections} />;
+export default async function HomePage() {
+  const page = await getPageBySlug("home");
+  if (!page) return notFound();
+  return <RenderSections sections={page.sections} />;
 }

@@ -1,5 +1,3 @@
-"use client";
-
 import { notFound } from "next/navigation";
 import { getPageBySlug } from "@/lib/pages";
 import AdminPageEditor from "@/components/admin/AdminPageEditor";
@@ -11,11 +9,10 @@ type Props = {
 };
 
 export default async function AdminPageDetail({ params }: Props) {
-  const page = await getPageBySlug(params.slug as string);
+  const { slug } = await params;
+  const page = await getPageBySlug(slug as string);
 
-  if (!page) {
-    notFound();
-  }
+  if (!page) notFound();
 
   return (
     <div className="space-y-6">
