@@ -1,0 +1,42 @@
+// Prisma schema for Vercel Postgres
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Page {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  label     String
+  sections  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Asset {
+  id         String   @id @default(uuid())
+  storageKey String
+  provider   String
+  publicUrl  String?
+  filename   String?
+  mime       String?
+  width      Int?
+  height     Int?
+  alt        String?
+  meta       Json?
+  migrated   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([provider])
+}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// (Prisma 7+) connection URL moved to `prisma.config.ts`

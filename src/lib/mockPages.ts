@@ -14,7 +14,7 @@ export const homePage: PageConfig = {
   sections: [
     {
       type: "hero",
-      heading: "Your <strong>residential landscaping</strong> experts",
+      heading: "Your old <strong>residential landscaping</strong> experts",
       subheading: "Custom outdoor spaces built to last.",
       buttonText: "Get a Quote",
       buttonHref: "/contact",

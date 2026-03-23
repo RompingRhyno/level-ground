@@ -1,6 +1,7 @@
 // types/sections.ts
 export type PageConfig = {
   slug: string;
+  label: string;
   sections: PageSection[];
 };
 
