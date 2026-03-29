@@ -20,6 +20,9 @@ model Asset {
   id         String   @id @default(uuid())
   storageKey String
   provider   String
+  folder     String?
+  tags       String[]
+  size       Int?
   publicUrl  String?
   filename   String?
   mime       String?
