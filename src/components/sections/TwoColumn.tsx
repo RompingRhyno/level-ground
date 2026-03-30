@@ -12,7 +12,14 @@ export default function TwoColumn({ title, body, image }: TwoColumnSection) {
 
         <div>
           <div className="relative h-64 w-full rounded-lg overflow-hidden shadow">
-            <Image src={image} alt={title} fill className="object-cover" />
+            <Image
+              src={image}
+              alt={title}
+              fill
+              sizes="(min-width:1024px) 50vw, 100vw"
+              className="object-cover"
+              loading="lazy"
+            />
           </div>
         </div>
       </div>

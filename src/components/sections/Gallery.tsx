@@ -8,7 +8,7 @@ export default function Gallery({ images }: GallerySection) {
       <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {images.map((src, index) => (
           <div key={index} className="relative h-64 w-full rounded overflow-hidden">
-            <Image src={src} alt="" fill className="object-cover" />
+            <Image src={src} alt="" fill sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw" className="object-cover" loading="lazy" />
           </div>
         ))}
       </div>
