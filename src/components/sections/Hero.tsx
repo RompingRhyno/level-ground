@@ -40,6 +40,7 @@ export default function Hero({
               alt=""
               fill
               priority
+              sizes="(min-width:1024px) 40vw, 80vw"
               className="rounded-full object-cover"
             />
           </div>
