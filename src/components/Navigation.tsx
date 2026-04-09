@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { pages } from "@/lib/mockPages";
@@ -9,6 +10,7 @@ export default function Navigation() {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const navPages = pages.filter((p) => p.slug !== "home");
 
   useEffect(() => {
@@ -38,15 +40,67 @@ export default function Navigation() {
     };
   }, [open]);
 
+  const pathname = usePathname();
+
   useEffect(() => {
     if (open) {
-      const first = menuRef.current?.querySelector("a") as HTMLElement | null;
-      first?.focus();
+      // focus the menu container for accessibility without highlighting the first item
+      if (menuRef.current) {
+        menuRef.current.focus();
+      }
     }
+  }, [open]);
+  
+  // scroll-driven open/close behavior (accumulated)
+  useEffect(() => {
+    let lastY = typeof window !== "undefined" ? window.scrollY : 0;
+    let accDown = 0;
+    let accUp = 0;
+    const closeThreshold = 80; // px accumulated downward to force-close
+    const openOnTopThreshold = 20; // px from top to consider "at top"
+    const openAccumThreshold = 8; // accumulated upward px to open when near top
+
+    function onScroll() {
+      const y = window.scrollY;
+      const delta = y - lastY;
+
+      if (delta > 0) {
+        accDown += delta;
+        accUp = 0;
+      } else if (delta < 0) {
+        accUp += -delta;
+        accDown = 0;
+      }
+
+      // Close when enough downward scroll accumulated
+      if (accDown > closeThreshold && open) {
+        setOpen(false);
+        accDown = 0;
+      }
+
+      // If near the top and user has scrolled up a bit, open
+      if (y <= openOnTopThreshold && accUp > openAccumThreshold && !open) {
+        setOpen(true);
+        accUp = 0;
+      }
+
+      lastY = y;
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, [open]);
 
   return (
-    <nav className="relative flex items-center justify-between px-6 py-4">
+    <nav
+      ref={navRef}
+      className="sticky top-0 left-0 right-0 w-full z-50 flex items-center justify-between px-6 py-4"
+        style={{
+          backgroundColor: "var(--color-bg-primary)",
+          WebkitBackdropFilter: "blur(4px)",
+          backdropFilter: "blur(4px)",
+        }}
+    >
       {/* Logo on the left */}
       <div className="shrink-0">
         <Link href="/">
@@ -61,11 +115,19 @@ export default function Navigation() {
 
       {/* Desktop links */}
       <div className="hidden md:flex gap-8 items-center">
-        {navPages.map((page) => (
-          <Link key={page.slug} href={`/${page.slug}`} className="font-medium uppercase">
-            {page.label}
-          </Link>
-        ))}
+        {navPages.map((page) => {
+          const href = `/${page.slug}`;
+          const isActive = pathname === href;
+          return (
+            <Link
+              key={page.slug}
+              href={href}
+              className={`font-medium uppercase ${isActive ? "underline" : ""}`}
+            >
+              {page.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Mobile hamburger */}
@@ -94,19 +156,33 @@ export default function Navigation() {
             ref={menuRef}
             role="menu"
             aria-labelledby="mobile-menu-button"
-            className="absolute right-6 top-full mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+            className="fixed left-0 right-0 z-40 w-full bg-transparent"
+            style={{ top: navRef.current ? `${navRef.current.offsetHeight}px` : undefined }}
           >
-            <div className="py-2">
-              {navPages.map((page) => (
-                <Link
-                  key={page.slug}
-                  href={`/${page.slug}`}
-                  onClick={() => setOpen(false)}
-                  className="block px-4 py-2 text-sm font-medium hover:bg-gray-50"
-                >
-                  {page.label}
-                </Link>
-              ))}
+            <div
+              className="max-w-7xl mx-auto px-6"
+              style={{ backgroundColor: "var(--color-bg-primary)", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.08)" }}
+            >
+              <div className="py-2">
+                {navPages.map((page) => {
+                  const href = `/${page.slug}`;
+                  const isActive = pathname === href;
+                  return (
+                    <Link
+                      key={page.slug}
+                      href={href}
+                      onClick={() => setOpen(false)}
+                      className={
+                        `block px-4 py-3 text-base font-medium hover:bg-gray-50 hover:rounded-md focus:bg-gray-50 focus:rounded-md text-left ${
+                          isActive ? "bg-gray-100 rounded-md" : ""
+                        }`
+                      }
+                    >
+                      {page.label}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

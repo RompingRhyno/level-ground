@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="antialiased">
-        <header className="bg-(--color-bg-primary) px-6 py-4">
+        <header className="sticky top-0 z-50">
           <Navigation />
         </header>
         <main>{children}</main>
