@@ -36,6 +36,17 @@ model Asset {
 
   @@index([provider])
 }
+
+model Folder {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  parentId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([slug])
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 

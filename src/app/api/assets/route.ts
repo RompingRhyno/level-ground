@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
-  const rows = await prisma.asset.findMany({ orderBy: { createdAt: "desc" }, take: 200 });
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const folder = url.searchParams.get("folder");
+  const where: any = {};
+  if (folder) where.folder = folder;
+
+  const rows = await prisma.asset.findMany({ where, orderBy: { createdAt: "desc" }, take: 200 });
   return NextResponse.json(rows);
 }
 

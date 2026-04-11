@@ -44,7 +44,6 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
     return new Promise<Response>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
-      xhr.setRequestHeader("Content-Type", contentType || "application/octet-stream");
       xhr.upload.onprogress = (ev) => {
         if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
       };
@@ -59,6 +58,26 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
       };
       xhr.onerror = () => reject(new Error("Network error during upload"));
       xhr.send(file);
+    });
+  }
+
+  function uploadFormWithProgress(actionUrl: string, fields: Record<string, string>, file: File, onProgress: (p: number) => void) {
+    return new Promise<Response>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", actionUrl, true);
+      const form = new FormData();
+      Object.entries(fields || {}).forEach(([k, v]) => form.append(k, v));
+      form.append("file", file);
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
+      };
+      xhr.onload = () => {
+        const ok = xhr.status >= 200 && xhr.status < 300;
+        if (ok) resolve(new Response(xhr.responseText, { status: xhr.status }));
+        else reject(new Error(`Upload failed: ${xhr.status}`));
+      };
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(form);
     });
   }
 
@@ -92,18 +111,63 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
   async function startAll() {
     if (!items.length) return;
     setRunning(true);
+
+    // prepare queue and request batch presign for all idle items
     const queue = items.filter((it) => it.status === "idle");
-    const workers: Promise<void>[] = [];
-    let idx = 0;
-    const runNext = async () => {
-      while (idx < queue.length) {
-        const current = queue[idx++];
-        await uploadItem(current);
-      }
-    };
-    for (let i = 0; i < Math.min(concurrency, queue.length); i++) workers.push(runNext());
-    await Promise.all(workers);
-    setRunning(false);
+    if (queue.length === 0) {
+      setRunning(false);
+      return;
+    }
+
+    try {
+      const filesPayload = queue.map((it) => ({ filename: it.file.name }));
+      const presignRes = await fetch(`/api/assets/presign/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files: filesPayload, folder }),
+      });
+      if (!presignRes.ok) throw new Error("Batch presign failed");
+      const { results } = await presignRes.json();
+
+      // results order matches filesPayload order; upload each with concurrency
+      let idx = 0;
+      const runNext = async () => {
+        while (idx < results.length) {
+          const i = idx++;
+          const presigned = results[i];
+          const item = queue[i];
+          if (!presigned || !item) continue;
+
+          updateItem(item.id, { status: "uploading", progress: 1 });
+          try {
+            // upload via presigned POST (form)
+            await uploadFormWithProgress(presigned.url, presigned.fields, item.file, (p) => updateItem(item.id, { progress: p }));
+
+            // register in DB
+            const registerRes = await fetch(`/api/assets`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ key: presigned.key, filename: item.file.name, mime: item.file.type, size: item.file.size, folder, publicUrl: presigned.publicUrl }),
+            });
+            if (!registerRes.ok) throw new Error("Register failed");
+            const registered = await registerRes.json();
+
+            updateItem(item.id, { status: "done", progress: 100, key: presigned.key, publicUrl: registered.publicUrl || presigned.publicUrl });
+          } catch (err: any) {
+            updateItem(item.id, { status: "error", error: err.message || String(err) });
+          }
+        }
+      };
+
+      const workers: Promise<void>[] = [];
+      for (let i = 0; i < Math.min(concurrency, results.length); i++) workers.push(runNext());
+      await Promise.all(workers);
+    } catch (err: any) {
+      // mark all as error if batch presign failed
+      queue.forEach((it) => updateItem(it.id, { status: "error", error: err.message || String(err) }));
+    } finally {
+      setRunning(false);
+    }
   }
 
   function removeItem(id: string) {
