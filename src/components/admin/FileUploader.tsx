@@ -200,7 +200,7 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
           type="button"
           disabled={!items.some((i) => i.status === "idle") || running}
           onClick={startAll}
-          className={`rounded px-3 py-1 text-white ${!items.some((i) => i.status === "idle") || running ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600"}`}
+          className={`rounded px-3 py-1 text-sm text-white ${!items.some((i) => i.status === "idle") || running ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600"}`}
         >
           {running ? "Uploading..." : "Upload all"}
         </button>
