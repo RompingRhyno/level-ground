@@ -18,6 +18,11 @@
   --color-brand-accent: #597772;         /* accents, highlights */
   --color-brand-dark: #304C50;           /* reused for headings if needed */
 
+  /* Admin button colors (shared) */
+  --admin-btn-bg: lab(99.27% -3.87 3.48);
+  --admin-btn-text: #0F766E;
+  --admin-btn-hover-bg: lab(95.36% -12.18 11.01);
+
   /* Typography */
   --font-heading: "Jost", sans-serif;
   --font-body: "Open Sans", sans-serif;
@@ -69,6 +74,17 @@ h1, h2, h3, h4, h5 {
 
 .btn-primary:hover {
   background-color: var(--color-brand-primary-hover);
+}
+
+/* Utility class for admin buttons that uses the shared variables above */
+.admin-btn {
+  background-color: var(--admin-btn-bg);
+  color: var(--admin-btn-text);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-btn:hover {
+  background-color: var(--admin-btn-hover-bg);
 }
 
 .heading {

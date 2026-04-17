@@ -159,7 +159,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
       <div className="flex items-center">
         <div className="text-lg font-semibold">Folders</div>
         <div className="ml-auto">
-          <button title="Create folder" onClick={()=>setShowCreate(s=>!s)} className="p-1 rounded hover:bg-gray-100">
+          <button title="Create folder" onClick={()=>setShowCreate(s=>!s)} className="p-1 rounded hover:bg-gray-200">
             {showCreate ? <CloseIcon size={20} /> : <FolderAddIcon size={22} />}
           </button>
         </div>
@@ -199,7 +199,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
               </div>
 
               <div className="ml-2">
-                <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setMenuOpen(menuOpen===f.id ? null : f.id); }} className="p-1 rounded hover:bg-gray-100">
+                <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setMenuOpen(menuOpen===f.id ? null : f.id); }} className="p-1 rounded hover:bg-gray-200">
                   <DotsVertical />
                 </button>
                 {menuOpen===f.id && (
