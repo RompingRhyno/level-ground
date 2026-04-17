@@ -1,11 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-type Params = { params: { id: string } };
-
-export async function DELETE(request: Request, { params }: Params) {
+export async function DELETE(request: NextRequest, context: any) {
   try {
-    let p: any = params as any;
+    let p: any = context?.params as any;
     if (p && typeof p.then === "function") p = await p;
     const id = p?.id;
 
@@ -48,10 +46,10 @@ export async function DELETE(request: Request, { params }: Params) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Params) {
+export async function PATCH(request: NextRequest, context: any) {
   try {
     // unwrap params if framework provides a promise
-    let p: any = params as any;
+    let p: any = context?.params as any;
     if (p && typeof p.then === "function") p = await p;
     const id = p?.id;
 
