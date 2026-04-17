@@ -8,24 +8,25 @@ export default function AdminFilesPage() {
   // Render client components that will fetch data themselves
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Files</h1>
-        <p className="text-sm text-gray-600">Upload and manage media stored in Cloudflare R2.</p>
+      <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+        <div className="mx-auto px-6">
+          <h1 className="text-2xl font-semibold">Files</h1>
+          <p className="text-sm text-gray-600">Upload and manage media stored in Cloudflare R2.</p>
+        </div>
       </div>
 
-      <div>
-        <div>
+      <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', backgroundColor: 'var(--color-bg-secondary)', padding: '1rem 0' }}>
+        <div className="max-w-5xl mx-auto px-4">
           <h2 className="text-lg font-medium">Upload</h2>
           <div className="mt-2">
             <FileUploader />
           </div>
         </div>
+      </div>
 
-        <div className="mt-6">
-          <h2 className="text-lg font-medium">Files</h2>
-          <div className="mt-2">
-            <AdminFilesApp />
-          </div>
+      <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+        <div className="max-w-5xl mx-auto px-4">
+          <AdminFilesApp />
         </div>
       </div>
     </div>

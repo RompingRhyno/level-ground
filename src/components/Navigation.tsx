@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import AdminBreadcrumbs from "@/components/admin/AdminBreadcrumbs";
 import { pages } from "@/lib/mockPages";
 
 export default function Navigation() {
@@ -101,7 +102,7 @@ export default function Navigation() {
           backdropFilter: "blur(4px)",
         }}
     >
-      {/* Logo on the left */}
+      {/* Logo on the left (with mobile breadcrumb underneath) */}
       <div className="shrink-0">
         <Link href="/">
           <Image
@@ -111,7 +112,19 @@ export default function Navigation() {
             height={36}
           />
         </Link>
+        {pathname?.startsWith("/admin") && (
+          <div className="md:hidden mt-2">
+            <AdminBreadcrumbs />
+          </div>
+        )}
       </div>
+
+      {/* Admin breadcrumbs shown in the global nav when on admin pages */}
+      {pathname?.startsWith("/admin") && (
+        <div className="hidden md:flex flex-1 justify-center">
+          <AdminBreadcrumbs />
+        </div>
+      )}
 
       {/* Desktop links */}
       <div className="hidden md:flex gap-8 items-center">

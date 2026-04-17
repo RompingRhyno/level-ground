@@ -27,10 +27,22 @@ const CloseIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: (ids: string[], folder: string) => Promise<void>; onRefreshFolders?: () => Promise<void> }) {
+export default function AdminFilesView({
+  initialFolder,
+  folders: initialFolders,
+  onMove,
+  onDelete,
+  onRefreshFolders,
+}: {
+  initialFolder?: string | null;
+  folders?: any[];
+  onMove?: (ids: string[], folder: string) => Promise<void>;
+  onDelete?: (ids: string[]) => Promise<void>;
+  onRefreshFolders?: () => Promise<void>;
+}) {
   const [assets, setAssets] = useState<any[]>([]);
   const [assetsBackup, setAssetsBackup] = useState<any[] | null>(null);
-  const [folders, setFolders] = useState<any[]>([]);
+  const [folders, setFolders] = useState<any[]>(initialFolders || []);
   const [tags, setTags] = useState<string[]>([]);
   const [manageFolders, setManageFolders] = useState(false);
   const [manageTags, setManageTags] = useState(false);
@@ -43,9 +55,10 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
   const [showCreateTag, setShowCreateTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [folder, setFolder] = useState<string | null>(null);
+  const [folder, setFolder] = useState<string | null>(initialFolder ?? null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
+  const [targetFolder, setTargetFolder] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
@@ -138,7 +151,11 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
     const ids = getSelectedIds();
     if (!ids.length) return alert('No files selected');
     if (!confirm(`Delete ${ids.length} files?`)) return;
-    await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'DELETE' })));
+    if (onDelete) {
+      await onDelete(ids);
+    } else {
+      await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'DELETE' })));
+    }
     setSelected({});
     await load();
     if (onRefreshFolders) await onRefreshFolders();
@@ -254,13 +271,30 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
           <div className="mb-2 text-sm text-gray-700">Selected {getSelectedIds().length} — click any tag to tag the selection</div>
         ) : null}
 
-        <div className="flex items-center gap-2">
-  
-          <div className="flex flex-col gap-3">
-            <div>
-              <div className="text-sm font-semibold mb-1">Folders</div>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 flex flex-wrap gap-2">
+        <div className="flex items-center gap-2 w-full">
+
+          <div className="flex flex-col gap-3 w-full">
+            {/* Folders — inherit page primary (no explicit background) */}
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+              <div className="max-w-5xl mx-auto px-4">
+                <div className="flex items-center justify-between mb-1 w-full">
+                  <div className="text-lg font-medium">Folders</div>
+                  <div className="flex items-center gap-2">
+                    {showCreateFolder ? (
+                      <div className="flex items-center gap-2">
+                        <input value={newFolderName} onChange={(e)=>setNewFolderName(e.target.value)} placeholder="New folder" className="px-2 py-1 border rounded text-sm" />
+                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) return alert('Create failed'); setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
+                        <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <button title="Create folder" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create folder</button>
+                        <button title="Manage folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageFolders ? 'Done' : 'Manage'}</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setFolder(null); setActiveTag(null); setAssets(assetsBackup || []); }} className={`px-2 py-1 rounded text-sm ${folder===null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>All</button>
                   {folders.map((f:any)=> (
                     <div key={f.id} data-folder-button={f.id} className="inline-flex items-center">
@@ -308,28 +342,35 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
                         </div>
                       )}
                     </div>
-                ))}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {showCreateFolder ? (
-                    <div className="flex items-center gap-2">
-                      <input value={newFolderName} onChange={(e)=>setNewFolderName(e.target.value)} placeholder="New folder" className="px-2 py-1 border rounded text-sm" />
-                      <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) return alert('Create failed'); setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
-                      <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded bg-gray-100">Cancel</button>
-                    </div>
-                  ) : (
-                    <>
-                      <button title="Create folder" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create folder</button>
-                      <button title="Manage folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageFolders ? 'Done' : 'Manage'}</button>
-                    </>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
-            <div>
-              <div className="text-sm font-semibold mb-1">Tags</div>
-              <div className="flex items-center gap-2">
+
+            {/* Tags — full-bleed secondary */}
+            <div style={{ backgroundColor: 'var(--color-bg-secondary)', width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+              <div className="max-w-5xl mx-auto px-4">
+                <div className="flex items-center justify-between mb-1 w-full">
+                  <div className="text-lg font-medium">Tags</div>
+                  <div className="flex items-center gap-2">
+                    {activeTag && (
+                      <button onClick={()=>{ setActiveTag(null); setAssets(assetsBackup || []); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Clear filters</button>
+                    )}
+
+                    {showCreateTag ? (
+                      <div className="flex items-center gap-2">
+                        <input value={newTagName} onChange={(e)=>setNewTagName(e.target.value)} placeholder="New tag" className="px-2 py-1 border rounded text-sm" />
+                        <button onClick={()=>createTag(newTagName)} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
+                        <button onClick={()=>{ setShowCreateTag(false); setNewTagName(''); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <button title="Create tag" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create tag</button>
+                        <button title="Manage tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageTags ? 'Done' : 'Manage'}</button>
+                      </>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {tags.map((t)=> (
                     <div key={t} className="inline-flex items-center">
@@ -360,25 +401,6 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
                     </div>
                   ))}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  {activeTag && (
-                    <button onClick={()=>{ setActiveTag(null); setAssets(assetsBackup || []); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Clear filters</button>
-                  )}
-
-                  {showCreateTag ? (
-                    <div className="flex items-center gap-2">
-                      <input value={newTagName} onChange={(e)=>setNewTagName(e.target.value)} placeholder="New tag" className="px-2 py-1 border rounded text-sm" />
-                      <button onClick={()=>createTag(newTagName)} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
-                      <button onClick={()=>{ setShowCreateTag(false); setNewTagName(''); }} className="px-2 py-1 rounded bg-gray-100">Cancel</button>
-                    </div>
-                  ) : (
-                    <>
-                      <button title="Create tag" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create tag</button>
-                      <button title="Manage tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageTags ? 'Done' : 'Manage'}</button>
-                    </>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -387,79 +409,93 @@ export default function AdminFilesView({ onMove, onRefreshFolders }: { onMove?: 
 
       {loading ? <div>Loading...</div> : (
         <>
-          <div className="mb-3 flex items-center gap-2">
-            <button onClick={bulkDelete} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Delete selected</button>
+          {/* Delete selected — inherit page primary (no explicit background) */}
+          <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+            <div className="max-w-5xl mx-auto px-4 mb-3 flex items-center gap-2">
+              <button onClick={bulkDelete} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Delete selected</button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            {assets.map((a: any) => (
-              <div key={a.id} draggable onDragStart={(e)=>{
-                  const ids = getSelectedIds();
-                  const dragging = ids.length ? ids : [a.id];
-                  e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
-                }} className="border rounded p-2">
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={!!selected[a.id]} onChange={()=>toggleSelect(a.id)} />
-                    <div className="text-sm font-medium flex items-center gap-2">
-                      {editingId === a.id ? (
-                        <input
-                          ref={editInputRef}
-                          className="px-1 py-0.5 border rounded text-sm"
-                          value={editingName}
-                          onChange={(e)=>setEditingName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') saveRename(a.id);
-                            if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
-                          }}
-                        />
-                      ) : (
-                        <span>
-                          {filenameParts(a).base || a.filename || a.storageKey}
-                        </span>
-                      )}
-                      {/* rename / save button */}
-                      <div className="flex items-center gap-1 ml-1">
-                        <button
-                          title={editingId === a.id ? 'Save' : 'Rename'}
-                          onClick={(e)=>{
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (editingId === a.id) saveRename(a.id);
-                            else {
-                              const parts = filenameParts(a);
-                              setEditingName(parts.base);
-                              setEditingId(a.id);
-                            }
-                          }}
-                          className="text-gray-600 hover:text-gray-900"
-                          aria-label={editingId === a.id ? 'Save' : 'Rename'}
-                        >
-                          {editingId === a.id ? <SaveIcon size={18} /> : <RenameIcon size={18} />}
-                        </button>
-                        {editingId === a.id && (
-                          <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setEditingId(null); setEditingName(''); }} className="text-gray-500 hover:text-gray-700" title="Cancel">
-                            <CloseIcon />
-                          </button>
-                        )}
+          {/* File previews — inherit page primary (no explicit background) */}
+          <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+            <div className="max-w-5xl mx-auto px-4">
+              <div className="grid grid-cols-3 gap-4">
+                {assets.map((a: any) => (
+                  <div key={a.id} draggable onDragStart={(e)=>{
+                      const ids = getSelectedIds();
+                      const dragging = ids.length ? ids : [a.id];
+                      e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
+                    }} className="border rounded overflow-hidden">
+                    <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="overflow-hidden">
+                      {a.publicUrl ? (
+                        <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                      ) : null}
+
+                      {/* gradient overlay: darker top/bottom, more transparent center */}
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0.72) 100%)' }}
+                      />
+
+                      {/* UI overlay (checkbox, title, actions) */}
+                      <div className="absolute inset-0 flex flex-col justify-between p-3 text-white">
+                        <div className="flex items-start justify-between">
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" checked={!!selected[a.id]} onChange={()=>toggleSelect(a.id)} className="accent-white" />
+                            <div className="text-sm font-medium flex items-center gap-2">
+                              {editingId === a.id ? (
+                                <input
+                                  ref={editInputRef}
+                                  className="px-1 py-0.5 border rounded text-sm text-black"
+                                  value={editingName}
+                                  onChange={(e)=>setEditingName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveRename(a.id);
+                                    if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
+                                  }}
+                                />
+                              ) : (
+                                <span className="truncate max-w-48">{filenameParts(a).base || a.filename || a.storageKey}</span>
+                              )}
+                            </div>
+                          </label>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              title={editingId === a.id ? 'Save' : 'Rename'}
+                              onClick={(e)=>{
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (editingId === a.id) saveRename(a.id);
+                                else {
+                                  const parts = filenameParts(a);
+                                  setEditingName(parts.base);
+                                  setEditingId(a.id);
+                                }
+                              }}
+                              className="text-white opacity-90 hover:opacity-100"
+                              aria-label={editingId === a.id ? 'Save' : 'Rename'}
+                            >
+                              {editingId === a.id ? <SaveIcon size={18} /> : <RenameIcon size={18} />}
+                            </button>
+                            {editingId === a.id && (
+                              <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setEditingId(null); setEditingName(''); }} className="text-white opacity-80 hover:opacity-100" title="Cancel">
+                                <CloseIcon />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs">{a.mime}</div>
+                          <button aria-label={a.filename || 'Open image'} onClick={() => setOpenImage(a)} className="text-white text-sm underline">View</button>
+                        </div>
                       </div>
                     </div>
-                  </label>
-                  <div className="text-xs text-gray-500">{a.mime}</div>
-                </div>
-                <div className="mt-2">
-                  {a.publicUrl ? (
-                    <button aria-label={a.filename || 'Open image'} onClick={() => setOpenImage(a)} className="w-full block focus:outline-none">
-                      <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="overflow-hidden rounded">
-                        <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
-                      </div>
-                    </button>
-                  ) : (
-                    <div className="h-0" style={{ paddingTop: '56.25%' }} />
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </>
       )}
