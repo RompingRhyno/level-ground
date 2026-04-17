@@ -265,19 +265,13 @@ export default function AdminFilesView({
   }, [close]);
 
   return (
-    <div>
-      <div className="mb-3">
-        {getSelectedIds().length ? (
-          <div className="mb-2 text-sm text-gray-700">Selected {getSelectedIds().length} — click any tag to tag the selection</div>
-        ) : null}
-
+      <div>
         <div className="flex items-center gap-2 w-full">
-
           <div className="flex flex-col gap-3 w-full">
             {/* Folders — inherit page primary (no explicit background) */}
-            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '1rem' }}>
               <div className="max-w-5xl mx-auto px-4">
-                <div className="flex items-center justify-between mb-1 w-full">
+                <div className="flex items-center justify-between w-full">
                   <div className="text-lg font-medium">Folders</div>
                   <div className="flex items-center gap-2">
                     {showCreateFolder ? (
@@ -405,14 +399,23 @@ export default function AdminFilesView({
             </div>
           </div>
         </div>
-      </div>
 
       {loading ? <div>Loading...</div> : (
         <>
           {/* Delete selected — inherit page primary (no explicit background) */}
-          <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
-            <div className="max-w-5xl mx-auto px-4 mb-3 flex items-center gap-2">
-              <button onClick={bulkDelete} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Delete selected</button>
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+            <div className="max-w-5xl mx-auto px-4 mb-3">
+              <div className="flex items-center gap-4">
+                {selectedCount ? (
+                  <div className="text-sm text-gray-700">Selected {selectedCount} — click a tag to add it to selected files, or click a folder to move them.</div>
+                ) : (
+                  <div className="text-sm text-gray-700">&nbsp;</div>
+                )}
+
+                <div className="ml-auto">
+                  <button onClick={bulkDelete} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Delete selected</button>
+                </div>
+              </div>
             </div>
           </div>
 
