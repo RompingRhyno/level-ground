@@ -61,7 +61,7 @@ export default function Services({
 
             {/* Body text */}
             {bodyText && (
-                <p className="mt-10 max-w-3xl mx-auto text-center text-[var(--color-text-primary)]">
+                <p className="mt-10 max-w-3xl mx-auto text-center text-(--color-text-primary)">
                     {bodyText}
                 </p>
             )}

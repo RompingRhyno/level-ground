@@ -54,7 +54,7 @@ export default function AdminFilesView({
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateTag, setShowCreateTag] = useState(false);
   const [newTagName, setNewTagName] = useState('');
-  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeTags, setActiveTags] = useState<string[]>([]);
   const [folder, setFolder] = useState<string | null>(initialFolder ?? null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -159,6 +159,18 @@ export default function AdminFilesView({
     setSelected({});
     await load();
     if (onRefreshFolders) await onRefreshFolders();
+  }
+
+  function selectAll() {
+    const all = (assets || []).reduce((acc: Record<string, boolean>, a: any) => {
+      acc[a.id] = true;
+      return acc;
+    }, {} as Record<string, boolean>);
+    setSelected(all);
+  }
+
+  function clearSelection() {
+    setSelected({});
   }
 
   async function bulkMove(targetFolder: string) {
@@ -277,19 +289,19 @@ export default function AdminFilesView({
                     {showCreateFolder ? (
                       <div className="flex items-center gap-2">
                         <input value={newFolderName} onChange={(e)=>setNewFolderName(e.target.value)} placeholder="New folder" className="px-2 py-1 border rounded text-sm" />
-                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) return alert('Create failed'); setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
-                        <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Cancel</button>
+                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) return alert('Create failed'); setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 bg-sky-600 text-white rounded text-sm">Create</button>
+                        <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded text-sm admin-btn">Cancel</button>
                       </div>
                     ) : (
                       <>
-                        <button title="Create folder" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create folder</button>
-                        <button title="Manage folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageFolders ? 'Done' : 'Manage'}</button>
+                        <button title="Create folder" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded text-sm admin-btn">Create folder</button>
+                        <button title="Manage folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'bg-red-50 text-red-600' : 'admin-btn'}`}>{manageFolders ? 'Done' : 'Manage'}</button>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setFolder(null); setActiveTag(null); setAssets(assetsBackup || []); }} className={`px-2 py-1 rounded text-sm ${folder===null ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}>All</button>
+                  <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setFolder(null); setActiveTags([]); setAssets(assetsBackup || []); }} className={`px-2 py-1 rounded text-sm ${folder===null ? 'bg-sky-600 text-white' : 'admin-btn'}`}>All</button>
                   {folders.map((f:any)=> (
                     <div key={f.id} data-folder-button={f.id} className="inline-flex items-center">
                       <button
@@ -312,10 +324,10 @@ export default function AdminFilesView({
                             setAssets(assetsBackup || []);
                           } else {
                             setFolder(f.slug);
-                            setActiveTag(null);
+                            setActiveTags([]);
                           }
                         }}
-                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${folder===f.slug ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
+                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${folder===f.slug ? 'bg-sky-600 text-white' : 'admin-btn'}`}
                       >
                         {renamingFolderId === f.id ? (
                           <input ref={renameInputRef} value={renamingFolderName} onChange={(e)=>setRenamingFolderName(e.target.value)} className="px-2 py-1 text-sm border rounded" />
@@ -347,20 +359,20 @@ export default function AdminFilesView({
                 <div className="flex items-center justify-between mb-1 w-full">
                   <div className="text-lg font-medium">Tags</div>
                   <div className="flex items-center gap-2">
-                    {activeTag && (
-                      <button onClick={()=>{ setActiveTag(null); setAssets(assetsBackup || []); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Clear filters</button>
+                    {activeTags.length > 0 && (
+                      <button onClick={()=>{ setActiveTags([]); setAssets(assetsBackup || []); }} className="px-2 py-1 rounded text-sm admin-btn">Clear filters</button>
                     )}
 
                     {showCreateTag ? (
                       <div className="flex items-center gap-2">
                         <input value={newTagName} onChange={(e)=>setNewTagName(e.target.value)} placeholder="New tag" className="px-2 py-1 border rounded text-sm" />
-                        <button onClick={()=>createTag(newTagName)} className="px-2 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
-                        <button onClick={()=>{ setShowCreateTag(false); setNewTagName(''); }} className="px-2 py-1 rounded bg-gray-100 text-sm">Cancel</button>
+                        <button onClick={()=>createTag(newTagName)} className="px-2 py-1 bg-sky-600 text-white rounded text-sm">Create</button>
+                        <button onClick={()=>{ setShowCreateTag(false); setNewTagName(''); }} className="px-2 py-1 rounded text-sm admin-btn">Cancel</button>
                       </div>
                     ) : (
                       <>
-                        <button title="Create tag" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded bg-gray-100 text-sm">Create tag</button>
-                        <button title="Manage tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'bg-red-50 text-red-600' : 'bg-gray-100'}`}>{manageTags ? 'Done' : 'Manage'}</button>
+                        <button title="Create tag" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded text-sm admin-btn">Create tag</button>
+                        <button title="Manage tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'bg-red-50 text-red-600' : 'admin-btn'}`}>{manageTags ? 'Done' : 'Manage'}</button>
                       </>
                     )}
                   </div>
@@ -376,16 +388,19 @@ export default function AdminFilesView({
                             await applyTagToSelected(t);
                             return;
                           }
-                          // toggle active tag filter client-side
-                          if (activeTag === t) {
-                            setActiveTag(null);
-                            setAssets(assetsBackup || []);
-                          } else {
-                            setActiveTag(t);
-                            setAssets((assetsBackup || []).filter((a:any)=>Array.isArray(a.tags) && a.tags.includes(t)));
-                          }
+                          // toggle tag in activeTags (multi-select, AND semantics)
+                          setActiveTags((prev)=>{
+                            const exists = prev.includes(t);
+                            const next = exists ? prev.filter(x=>x!==t) : [...prev, t];
+                            if (!next.length) {
+                              setAssets(assetsBackup || []);
+                            } else {
+                              setAssets((assetsBackup || []).filter((a:any)=>Array.isArray(a.tags) && next.every((nt:string)=>a.tags.includes(nt))));
+                            }
+                            return next;
+                          });
                         }}
-                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${activeTag===t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'}`}
+                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${activeTags.includes(t) ? 'bg-sky-600 text-white' : 'admin-btn'}`}
                       >
                         <span className="pr-2">{t}</span>
                         {manageTags && (
@@ -406,15 +421,21 @@ export default function AdminFilesView({
             <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
             <div className="max-w-5xl mx-auto px-4 mb-3">
               <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <button onClick={selectAll} className="px-2 py-1 text-sm rounded admin-btn">Select all</button>
+                  <button onClick={clearSelection} className="px-2 py-1 text-sm rounded admin-btn">Clear selection</button>
+                </div>
+
+                <div className="ml-auto">
+                  <button onClick={bulkDelete} disabled={!selectedCount} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-500 cursor-not-allowed text-white'}`}>Delete selected</button>
+                </div>
+              </div>
+              <div className="mt-2">
                 {selectedCount ? (
                   <div className="text-sm text-gray-700">Selected {selectedCount} — click a tag to add it to selected files, or click a folder to move them.</div>
                 ) : (
                   <div className="text-sm text-gray-700">&nbsp;</div>
                 )}
-
-                <div className="ml-auto">
-                  <button onClick={bulkDelete} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Delete selected</button>
-                </div>
               </div>
             </div>
           </div>
@@ -429,9 +450,14 @@ export default function AdminFilesView({
                       const dragging = ids.length ? ids : [a.id];
                       e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
                     }} className="border rounded overflow-hidden">
-                    <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="overflow-hidden">
-                      {a.publicUrl ? (
+                    <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="overflow-hidden bg-gray-800">
+                      {a.publicUrl && /^image\/(jpeg|jpg|png|gif|webp|avif|svg\+xml)$/i.test(a.mime || '') ? (
                         <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                      ) : a.publicUrl ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          <span className="mt-1 text-xs uppercase tracking-wide">{(a.mime || '').split('/')[1] || filenameParts(a).ext.replace('.','')}</span>
+                        </div>
                       ) : null}
 
                       {/* gradient overlay: darker top/bottom, more transparent center */}

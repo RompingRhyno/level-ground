@@ -8,8 +8,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing files array" }, { status: 400 });
   }
 
-  const { S3Client } = await import("@aws-sdk/client-s3");
-  const { createPresignedPost } = await import("@aws-sdk/s3-presigned-post");
+  const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
 
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
@@ -35,24 +35,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "R2_BASE_URL not configured" }, { status: 500 });
   }
 
-  const results: Array<{ filename: string; key: string; url: string; fields: Record<string, string>; publicUrl: string }> = [];
+  const results: Array<{ filename: string; key: string; url: string; publicUrl: string }> = [];
 
   for (const f of files) {
-    const { filename } = f as { filename: string };
+    const { filename, contentType } = f as { filename: string; contentType?: string };
     if (!filename) continue;
     const key = `${folder ? folder.replace(/\/$/, "") + "/" : ""}${Date.now()}-${filename}`;
 
-    // generate presigned POST
-    const presigned = await createPresignedPost(s3 as any, {
+    const cmd = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      // no Content-Type condition so provider can infer and avoid preflight
-      Conditions: [],
-      Fields: {},
-      Expires: 3600,
-    } as any);
+      ContentType: contentType || "application/octet-stream",
+    });
 
-    results.push({ filename, key, url: presigned.url, fields: presigned.fields, publicUrl: `${base.replace(/\/$/, "")}/${key}` });
+    const uploadUrl = await getSignedUrl(s3 as any, cmd as any, { expiresIn: 3600 });
+
+    results.push({ filename, key, url: uploadUrl, publicUrl: `${base.replace(/\/$/, "")}/${key}` });
   }
 
   return NextResponse.json({ results });
