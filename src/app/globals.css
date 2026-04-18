@@ -28,20 +28,20 @@
   --btn-select-text: #0f172a;
 
   /* Tag badge colors (count background + text) */
-  --tag-badge-bg: lab(34.2% 10.84 -44.13); /* emerald-600 */
-  --tag-badge-text: #ffffff;
+  --tag-badge-bg: lab(90% -0.52 -4.6); /* emerald-600 */
+  --tag-badge-text: #393d47;
 
   /* Thumbnail selection highlight color (used for inset ring/shadow) */
-  --thumbnail-select-color: #059669;
+  --thumbnail-select-color: lab(67.38% 42.13 -5.37);
 
   /* Positive action button (select/upload/create) */
   --btn-positive-bg: #059669; /* emerald-600 */
   --btn-positive-text: #ffffff;
-  --btn-positive-hover-bg: #047857; /* emerald-700 */
+  --btn-positive-hover-bg: #07cc94; /* emerald-700 */
   /* Negative action button (delete/remove/confirm) */
-  --btn-negative-bg: #ef4444; /* red-500 */
+  --btn-negative-bg: #cf6161; /* red-500 */
   --btn-negative-text: #ffffff;
-  --btn-negative-hover-bg: #dc2626; /* red-600 */
+  --btn-negative-hover-bg: #f84040; /* red-600 */
 
   /* Typography */
   --font-heading: "Jost", sans-serif;
