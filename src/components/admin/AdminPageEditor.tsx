@@ -20,10 +20,10 @@ function SectionEditor({ section, index, onChange, onRemove, onMoveUp, onMoveDow
     <div className="border rounded p-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="font-medium">{type} section</div>
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
           <button onClick={() => onMoveUp(index)} className="text-sm">↑</button>
           <button onClick={() => onMoveDown(index)} className="text-sm">↓</button>
-          <button onClick={() => onRemove(index)} className="text-sm text-red-600">Remove</button>
+          <button onClick={() => onRemove(index)} className="text-sm btn-negative px-2 py-1 rounded">Remove</button>
         </div>
       </div>
 
@@ -91,7 +91,7 @@ function SectionEditor({ section, index, onChange, onRemove, onMoveUp, onMoveDow
                   const services = [...(section as any).services];
                   services.splice(si, 1);
                   update("services", services);
-                }} className="text-red-600">Remove</button>
+                }} className="text-sm btn-negative px-2 py-1 rounded">Remove</button>
               </div>
             ))}
             <button onClick={() => {

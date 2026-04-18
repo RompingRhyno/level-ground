@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import AlertDialog from "../ui/AlertDialog";
 
 const FolderAddIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,6 +39,28 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState<string>("");
   const editRef = useRef<HTMLInputElement | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirmResolveRef = useRef<((v: boolean) => void) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmDescription, setConfirmDescription] = useState('');
+  const [confirmVariant, setConfirmVariant] = useState<'primary' | 'danger'>('danger');
+  const [confirmLabel, setConfirmLabel] = useState<string|undefined>(undefined);
+
+  function showConfirm(title: string, description?: string, variant: 'primary' | 'danger' = 'danger', confirmBtnLabel?: string) {
+    setConfirmTitle(title);
+    setConfirmDescription(description || '');
+    setConfirmVariant(variant);
+    setConfirmLabel(confirmBtnLabel);
+    setConfirmOpen(true);
+    return new Promise<boolean>((res) => { confirmResolveRef.current = res; });
+  }
+
+  function handleDialogClose(result: boolean) {
+    setConfirmOpen(false);
+    const r = confirmResolveRef.current;
+    confirmResolveRef.current = null;
+    if (r) r(result);
+  }
 
   async function load() {
     try {
@@ -79,7 +102,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
     // verify folder is empty before deleting
     const f = folders.find((x) => x.id === id);
     const slug = f?.slug;
-    if (!slug) return alert('Folder slug missing');
+    if (!slug) { await showConfirm('Folder slug missing'); return; }
     try {
       const res = await fetch(`/api/assets?folder=${encodeURIComponent(slug)}`);
       if (!res.ok) {
@@ -88,16 +111,18 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
       }
       const data = await res.json().catch(() => []);
       if (Array.isArray(data) && data.length > 0) {
-        return alert('Folder is not empty. Please delete or move files out of the folder before deleting it.');
+        const go = await showConfirm('Folder not empty', 'Please delete or move files out of the folder before deleting it.', 'primary', 'Go to folder');
+        if (go) onSelect?.(slug);
+        return;
       }
-      if (!confirm('Delete this folder?')) return;
+      if (!(await showConfirm('Delete this folder?', undefined, 'danger', 'Delete'))) return;
       const del = await fetch(`/api/folders/${id}`, { method: 'DELETE' });
       if (!del.ok) throw new Error('delete failed');
       await load();
       onChange?.();
     } catch (err) {
       console.error(err);
-      alert('Failed to delete folder');
+      await showConfirm('Failed to delete folder');
     }
   }
 
@@ -130,7 +155,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
       onChange?.();
     } catch (err) {
       console.error(err);
-      alert('Rename failed');
+      await showConfirm('Rename failed');
     }
   }
 
@@ -156,6 +181,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
 
   return (
     <div className="p-3 border rounded bg-white">
+      <AlertDialog open={confirmOpen} title={confirmTitle} description={confirmDescription} confirmVariant={confirmVariant} confirmLabel={confirmLabel} onConfirm={() => handleDialogClose(true)} onCancel={() => handleDialogClose(false)} />
       <div className="flex items-center">
         <div className="text-lg font-semibold">Folders</div>
         <div className="ml-auto">
@@ -168,7 +194,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
       {showCreate && (
         <div className="mt-3 flex gap-2">
           <input value={name} onChange={(e)=>setName(e.target.value)} placeholder="New folder" className="flex-1 border rounded px-2 py-1 text-sm" />
-          <button onClick={createFolder} disabled={loading} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">Create</button>
+          <button onClick={createFolder} disabled={loading} className="px-3 py-1 rounded text-sm btn-positive">Create</button>
         </div>
       )}
 
@@ -205,7 +231,7 @@ export default function FolderManager({ onSelect, onDrop, onChange }: { onSelect
                 {menuOpen===f.id && (
                   <div className="absolute right-0 top-8 bg-white border rounded shadow-md z-40">
                     <button className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onClick={() => rename(f.id)}>Rename</button>
-                    <button className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-50" onClick={() => remove(f.id)}>Delete</button>
+                    <button className="block w-full text-left px-3 py-2 text-sm btn-negative" onClick={() => remove(f.id)}>Delete</button>
                   </div>
                 )}
               </div>

@@ -227,7 +227,7 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <label className="inline-flex items-center gap-2 rounded px-3 py-1 text-sm text-white bg-teal-700 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-300 cursor-pointer">
+        <label className="inline-flex items-center gap-2 rounded px-3 py-1 text-sm btn-positive focus:outline-none cursor-pointer">
           <span className="text-sm text-white">Select files…</span>
           <input
             type="file"
@@ -247,10 +247,10 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
           type="button"
           disabled={!items.some((i) => i.status === "idle") || running || items.some((i) => i.status === "converting")}
           onClick={startAll}
-          className={`rounded px-3 py-1 text-sm text-white ${
+          className={`rounded px-3 py-1 text-sm ${
             !items.some((i) => i.status === "idle") || running || items.some((i) => i.status === "converting")
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-teal-700 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
+              ? "bg-gray-500 cursor-not-allowed text-white"
+              : "btn-positive"
           }`}
         >
           {items.some((i) => i.status === "converting") ? "Converting..." : running ? "Uploading..." : "Upload all"}
@@ -327,7 +327,7 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
               <button
                 type="button"
                 onClick={() => removeItem(it.id)}
-                className="ml-2 rounded px-2 py-1 text-sm bg-red-500 text-white hover:bg-red-600"
+                className="ml-2 rounded px-2 py-1 text-sm btn-negative"
               >
                 Remove
               </button>
