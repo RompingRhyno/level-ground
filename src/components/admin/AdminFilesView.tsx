@@ -112,7 +112,34 @@ export default function AdminFilesView({
   const editInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
 
-  
+  const folderSectionRef = useRef<HTMLDivElement | null>(null);
+  const tagSectionRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const node = e.target as Node | null;
+      if (manageFolders && folderSectionRef.current && node && !folderSectionRef.current.contains(node)) {
+        setManageFolders(false);
+      }
+      if (manageTags && tagSectionRef.current && node && !tagSectionRef.current.contains(node)) {
+        setManageTags(false);
+      }
+      if (editingId) {
+        try {
+          const selector = `[data-asset-id="${editingId}"]`;
+          const assetEl = document.querySelector(selector);
+          if (assetEl && node && !assetEl.contains(node)) {
+            setEditingId(null);
+            setEditingName('');
+          }
+        } catch (err) {
+          // ignore query errors
+        }
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [manageFolders, manageTags, editingId]);
 
   function toggleSelect(id: string) {
     setSelected((s) => {
@@ -332,7 +359,7 @@ export default function AdminFilesView({
         <div className="flex items-center gap-2 w-full">
           <div className="flex flex-col gap-3 w-full">
             {/* Folders — inherit page primary (no explicit background) */}
-            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '1rem' }}>
+            <div ref={folderSectionRef} style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '1rem' }}>
               <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between w-full">
                   <div className="text-lg font-medium pb-4">Folders</div>
@@ -400,7 +427,7 @@ export default function AdminFilesView({
             </div>
 
             {/* Tags — full-bleed secondary */}
-            <div style={{ backgroundColor: 'var(--color-bg-secondary)', width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+            <div ref={tagSectionRef} style={{ backgroundColor: 'var(--color-bg-secondary)', width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
               <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between mb-1 w-full">
                   <div className="text-lg font-medium pb-4">Tags</div>
@@ -511,7 +538,7 @@ export default function AdminFilesView({
             <div className="max-w-7xl mx-auto px-4">
               <div className="grid grid-cols-3 gap-4">
                 {assets.map((a: any) => (
-                  <div key={a.id} draggable onDragStart={(e)=>{
+                  <div key={a.id} data-asset-id={a.id} draggable onDragStart={(e)=>{
                     const ids = getSelectedIds();
                     const dragging = ids.length ? ids : [a.id];
                     e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
