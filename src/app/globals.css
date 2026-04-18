@@ -19,9 +19,29 @@
   --color-brand-dark: #304C50;           /* reused for headings if needed */
 
   /* Admin button colors (shared) */
-  --admin-btn-bg: lab(99.27% -3.87 3.48);
-  --admin-btn-text: #0F766E;
-  --admin-btn-hover-bg: lab(95.36% -12.18 11.01);
+  --btn-primary-bg: lab(34.2% 10.84 -44.13);
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover-bg: lab(52.71% 24.22 -68.6);
+
+  /* Selected state shorthand (controls selected tags/folders) */
+  --btn-select: #F6C84C; /* fallback yellow */
+  --btn-select-text: #0f172a;
+
+  /* Tag badge colors (count background + text) */
+  --tag-badge-bg: lab(34.2% 10.84 -44.13); /* emerald-600 */
+  --tag-badge-text: #ffffff;
+
+  /* Thumbnail selection highlight color (used for inset ring/shadow) */
+  --thumbnail-select-color: #059669;
+
+  /* Positive action button (select/upload/create) */
+  --btn-positive-bg: #059669; /* emerald-600 */
+  --btn-positive-text: #ffffff;
+  --btn-positive-hover-bg: #047857; /* emerald-700 */
+  /* Negative action button (delete/remove/confirm) */
+  --btn-negative-bg: #ef4444; /* red-500 */
+  --btn-negative-text: #ffffff;
+  --btn-negative-hover-bg: #dc2626; /* red-600 */
 
   /* Typography */
   --font-heading: "Jost", sans-serif;
@@ -78,13 +98,51 @@ h1, h2, h3, h4, h5 {
 
 /* Utility class for admin buttons that uses the shared variables above */
 .admin-btn {
-  background-color: var(--admin-btn-bg);
-  color: var(--admin-btn-text);
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .admin-btn:hover {
-  background-color: var(--admin-btn-hover-bg);
+  background-color: var(--btn-primary-hover-bg);
+}
+
+/* Positive action button utility */
+.btn-positive {
+  background-color: var(--btn-positive-bg);
+  color: var(--btn-positive-text);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-positive:hover {
+  background-color: var(--btn-positive-hover-bg);
+}
+
+.btn-negative {
+  background-color: var(--btn-negative-bg);
+  color: var(--btn-negative-text);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-negative:hover {
+  background-color: var(--btn-negative-hover-bg);
+}
+
+/* Utility for selected buttons (folders/tags) */
+.btn-selected {
+  background-color: var(--btn-select);
+  color: var(--btn-select-text);
+}
+
+/* Tag badge utility (count bubble) */
+.tag-badge {
+  background-color: var(--tag-badge-bg);
+  color: var(--tag-badge-text);
+}
+
+/* Thumbnail selected utility: inset ring/shadow using the thumbnail select color */
+.thumbnail-selected {
+  box-shadow: inset 0 0 0 8px var(--thumbnail-select-color);
 }
 
 .heading {

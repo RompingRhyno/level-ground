@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
+import AlertDialog from "../ui/AlertDialog";
 
 const DotsVertical = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -46,10 +47,6 @@ export default function AdminFilesView({
   const [tags, setTags] = useState<string[]>([]);
   const [manageFolders, setManageFolders] = useState(false);
   const [manageTags, setManageTags] = useState(false);
-  const [menuOpenFolder, setMenuOpenFolder] = useState<string | null>(null);
-  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
-  const [renamingFolderName, setRenamingFolderName] = useState('');
-  const renameInputRef = useRef<HTMLInputElement | null>(null);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showCreateTag, setShowCreateTag] = useState(false);
@@ -57,62 +54,65 @@ export default function AdminFilesView({
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [folder, setFolder] = useState<string | null>(initialFolder ?? null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const SELECTED_KEY = 'level-ground.admin.selected.v1';
   const [loading, setLoading] = useState(false);
+  const [hoveredTag, setHoveredTag] = useState<string | null>(null);
+  const [hoverNewCount, setHoverNewCount] = useState<number | null>(null);
   const [targetFolder, setTargetFolder] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirmResolveRef = useRef<((v: boolean) => void) | null>(null);
+  const [confirmTitle, setConfirmTitle] = useState('');
+  const [confirmDescription, setConfirmDescription] = useState('');
+  const [confirmVariant, setConfirmVariant] = useState<'primary' | 'danger'>('primary');
+  const [confirmLabel, setConfirmLabel] = useState<string|undefined>(undefined);
+
+  function showConfirm(title: string, description?: string, variant: 'primary' | 'danger' = 'primary', confirmBtnLabel?: string) {
+    setConfirmTitle(title);
+    setConfirmDescription(description || '');
+    setConfirmVariant(variant);
+    setConfirmLabel(confirmBtnLabel);
+    setConfirmOpen(true);
+    return new Promise<boolean>((res) => { confirmResolveRef.current = res; });
+  }
+
+  function handleDialogClose(result: boolean) {
+    setConfirmOpen(false);
+    const r = confirmResolveRef.current;
+    confirmResolveRef.current = null;
+    if (r) r(result);
+  }
 
   const getSelectedIds = () => Object.keys(selected).filter((k) => selected[k]);
 
+  // persist selection whenever it changes
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') sessionStorage.setItem(SELECTED_KEY, JSON.stringify(selected));
+    } catch (e) {
+      // ignore
+    }
+  }, [selected]);
+
+  // compute how many of the selected assets are missing a given tag
+  function computeMissingForTag(tag: string) {
+    const ids = getSelectedIds();
+    if (!ids.length) return 0;
+    let missing = 0;
+    ids.forEach((id) => {
+      const asset = (assets || []).find((a) => a.id === id) || (assetsBackup || []).find((a) => a.id === id);
+      if (!asset) return;
+      const has = Array.isArray(asset.tags) && asset.tags.includes(tag);
+      if (!has) missing += 1;
+    });
+    return missing;
+  }
+
   const editInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
-  useEffect(() => { if (renamingFolderId && renameInputRef.current) renameInputRef.current.focus(); }, [renamingFolderId]);
 
-  // click outside to cancel folder rename
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (!renamingFolderId) return;
-      const el = renameInputRef.current;
-      if (!el) return;
-      if (e.target instanceof Node && !el.contains(e.target as Node)) {
-        setRenamingFolderId(null);
-        setRenamingFolderName('');
-      }
-    }
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [renamingFolderId]);
-
-  // click outside to close folder menu
-  useEffect(() => {
-    if (!menuOpenFolder) return;
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as Node | null;
-      if (!target) return setMenuOpenFolder(null);
-      const insideMenu = (target as Element).closest('[data-folder-menu]');
-      const insideButton = (target as Element).closest('[data-folder-button]');
-      if (insideMenu) return; // click inside menu
-      if (insideButton) return; // click on the button that toggles menu
-      setMenuOpenFolder(null);
-    }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [menuOpenFolder]);
-
-  async function saveFolderRename(id: string) {
-    const name = (renamingFolderName || '').trim();
-    if (!name) return alert('Name required');
-    try {
-      const res = await fetch(`/api/folders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-      if (!res.ok) throw new Error('Rename failed');
-      setRenamingFolderId(null);
-      setRenamingFolderName('');
-      if (onRefreshFolders) await onRefreshFolders();
-      await load();
-    } catch (err) {
-      alert('Rename failed');
-    }
-  }
+  
 
   function toggleSelect(id: string) {
     setSelected((s) => {
@@ -130,12 +130,34 @@ export default function AdminFilesView({
       const data = await res.json().catch(() => []);
       setAssets(data || []);
       setAssetsBackup(data || []);
+      // restore persisted selection (only keep ids present in the freshly loaded assets)
+      try {
+        const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SELECTED_KEY) : null;
+        const persisted: Record<string, boolean> = raw ? JSON.parse(raw) : {};
+        if (persisted && Object.keys(persisted).length) {
+          const ids = new Set((data || []).map((a: any) => a.id));
+          const restored: Record<string, boolean> = {};
+          Object.keys(persisted).forEach((k) => { if (ids.has(k) && persisted[k]) restored[k] = true; });
+          setSelected((s) => ({ ...s, ...restored }));
+        }
+      } catch (err) {
+        // ignore sessionStorage errors
+      }
       const fRes = await fetch('/api/folders');
       const fData = await fRes.json().catch(() => []);
       setFolders(fData || []);
-      const ts = new Set<string>();
-      (data || []).forEach((a: any) => (a.tags || []).forEach((t: string) => ts.add(t)));
-      setTags(Array.from(ts));
+      // derive tags from all assets (global) so tag list shows every existing tag
+      try {
+        const allRes = await fetch('/api/assets');
+        const allData = await allRes.json().catch(() => []);
+        const ts = new Set<string>();
+        (allData || []).forEach((a: any) => (a.tags || []).forEach((t: string) => ts.add(t)));
+        setTags(Array.from(ts));
+      } catch (err) {
+        const ts = new Set<string>();
+        (data || []).forEach((a: any) => (a.tags || []).forEach((t: string) => ts.add(t)));
+        setTags(Array.from(ts));
+      }
     } catch (err) {
       console.error('load failed', err);
     } finally {
@@ -149,8 +171,8 @@ export default function AdminFilesView({
 
   async function bulkDelete() {
     const ids = getSelectedIds();
-    if (!ids.length) return alert('No files selected');
-    if (!confirm(`Delete ${ids.length} files?`)) return;
+    if (!ids.length) { await showConfirm('No files selected'); return; }
+    if (!(await showConfirm(`Delete ${ids.length} files?`, "This action cannot be undone. This will permanently delete these files from the servers.", 'danger', 'Delete'))) return;
     if (onDelete) {
       await onDelete(ids);
     } else {
@@ -167,25 +189,41 @@ export default function AdminFilesView({
       return acc;
     }, {} as Record<string, boolean>);
     setSelected(all);
+    try { if (typeof window !== 'undefined') sessionStorage.setItem(SELECTED_KEY, JSON.stringify(all)); } catch (e) {}
   }
 
   function clearSelection() {
     setSelected({});
+    try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
   }
 
   async function bulkMove(targetFolder: string) {
     const ids = getSelectedIds();
     if (!ids.length) return;
+      if (!(await showConfirm(
+        `Move ${ids.length} file(s) to folder '${targetFolder}'?`,
+        "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
+        'primary'
+      ))) return;
     if (onMove) await onMove(ids, targetFolder);
     else await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: targetFolder }) })));
+    // clear selection for folder move and navigate into destination
     setSelected({});
+    try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
+    setFolder(targetFolder);
+    setActiveTags([]);
     await load();
     if (onRefreshFolders) await onRefreshFolders();
   }
 
   async function applyTagToSelected(tag: string) {
     const ids = getSelectedIds();
-    if (!ids.length) return alert('No files selected');
+    if (!ids.length) { await showConfirm('No files selected'); return; }
+      if (!(await showConfirm(
+        `Add tag '${tag}' to ${ids.length} selected file(s)?`,
+        "Click 'Clear selection' before selecting a tag if you meant to filter by this tag instead",
+        'primary'
+      ))) return;
     try {
       await Promise.all(ids.map((id)=>{
         const asset = assets.find((x)=>x.id===id) || (assetsBackup || []).find((x)=>x.id===id);
@@ -193,16 +231,16 @@ export default function AdminFilesView({
         const updated = Array.from(new Set([...current, tag]));
         return fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ tags: updated }) });
       }));
-      setSelected({});
+      // keep selection after tagging so users can continue multi-step actions
       await load();
     } catch (err) {
       console.error('applyTag error', err);
-      alert('Failed to apply tag');
+      await showConfirm('Failed to apply tag');
     }
   }
 
   async function removeTagGlobally(tag: string) {
-    if (!confirm(`Remove tag '${tag}' from all assets?`)) return;
+    if (!(await showConfirm(`Remove tag '${tag}' from all assets?`, undefined, 'danger', 'Delete'))) return;
     try {
       const res = await fetch(`/api/assets`);
       const all = await res.json().catch(()=>[]);
@@ -214,18 +252,30 @@ export default function AdminFilesView({
       await load();
     } catch (err) {
       console.error('removeTagGlobally', err);
-      alert('Failed to remove tag');
+      await showConfirm('Failed to remove tag');
+    }
+  }
+
+  async function removeTagFromAsset(assetId: string, tag: string) {
+    try {
+      const asset = assets.find((x) => x.id === assetId) || (assetsBackup || []).find((x) => x.id === assetId);
+      if (!asset) return;
+      const updated = (asset.tags || []).filter((t: string) => t !== tag);
+      const res = await fetch(`/api/assets/${assetId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: updated }) });
+      if (!res.ok) throw new Error('Failed');
+      await load();
+    } catch (err) {
+      console.error('removeTagFromAsset', err);
+      await showConfirm('Failed to remove tag');
     }
   }
 
   async function createTag(name: string) {
     const tag = (name || '').trim();
     if (!tag) return;
-    // if there are selected assets, apply tag to them; otherwise just refresh tags after creation (no persistent tag storage)
     const ids = getSelectedIds();
     if (ids.length) await applyTagToSelected(tag);
     else {
-      // add locally so UI shows it until reload
       setTags((t)=>Array.from(new Set([...t, tag])));
     }
     setNewTagName('');
@@ -242,7 +292,7 @@ export default function AdminFilesView({
   async function saveRename(id: string) {
     if (!editingId) return;
     const asset = assets.find((x) => x.id === id);
-    if (!asset) return alert('Asset not found');
+    if (!asset) { await showConfirm('Asset not found'); return; }
     const { ext } = filenameParts(asset);
     const newFilename = `${editingName}${ext}`;
     try {
@@ -256,7 +306,7 @@ export default function AdminFilesView({
       await load();
     } catch (err: any) {
       console.error('Rename failed', err);
-      alert('Rename failed: ' + (err?.message || String(err)));
+      await showConfirm('Rename failed', err?.message || String(err));
     }
   }
 
@@ -278,47 +328,57 @@ export default function AdminFilesView({
 
   return (
       <div>
+        <AlertDialog open={confirmOpen} title={confirmTitle} description={confirmDescription} confirmVariant={confirmVariant} confirmLabel={confirmLabel} onConfirm={() => handleDialogClose(true)} onCancel={() => handleDialogClose(false)} />
         <div className="flex items-center gap-2 w-full">
           <div className="flex flex-col gap-3 w-full">
             {/* Folders — inherit page primary (no explicit background) */}
             <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '1rem' }}>
-              <div className="max-w-5xl mx-auto px-4">
+              <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between w-full">
-                  <div className="text-lg font-medium">Folders</div>
+                  <div className="text-lg font-medium pb-4">Folders</div>
                   <div className="flex items-center gap-2">
                     {showCreateFolder ? (
                       <div className="flex items-center gap-2">
                         <input value={newFolderName} onChange={(e)=>setNewFolderName(e.target.value)} placeholder="New folder" className="px-2 py-1 border rounded text-sm" />
-                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) return alert('Create failed'); setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 bg-sky-600 text-white rounded text-sm">Create</button>
+                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) { await showConfirm('Create failed'); return; } setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
                         <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded text-sm admin-btn">Cancel</button>
                       </div>
                     ) : (
                       <>
-                        <button title="Create folder" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded text-sm admin-btn">Create folder</button>
-                        <button title="Manage folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'bg-red-50 text-red-600' : 'admin-btn'}`}>{manageFolders ? 'Done' : 'Manage'}</button>
+                        <button title="Create" onClick={()=>setShowCreateFolder(true)} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
+                        <button title="Delete folders" onClick={()=>setManageFolders(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageFolders ? 'admin-btn' : 'btn-negative'}`}>{manageFolders ? 'Done' : 'Delete'}</button>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setFolder(null); setActiveTags([]); setAssets(assetsBackup || []); }} className={`px-2 py-1 rounded text-sm ${folder===null ? 'bg-sky-600 text-white' : 'admin-btn'}`}>All</button>
+                  <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setFolder(null); setActiveTags([]); setAssets(assetsBackup || []); }} className={`px-2 py-1 rounded text-sm ${folder===null ? 'btn-selected' : 'admin-btn'}`}>All</button>
                   {folders.map((f:any)=> (
                     <div key={f.id} data-folder-button={f.id} className="inline-flex items-center">
                       <button
                         onClick={async (e)=>{
                           e.preventDefault();
                           e.stopPropagation();
+                          if (manageFolders) {
+                            const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`); const data = await res.json().catch(()=>[]); if (Array.isArray(data) && data.length>0) { const go = await showConfirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder'); if (go) { setFolder(f.slug); setActiveTags([]); await load(); } return; } if (!(await showConfirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return; await fetch(`/api/folders/${f.id}`, { method: 'DELETE' }); if (onRefreshFolders) await onRefreshFolders(); await load(); return;
+                          }
                           const ids = getSelectedIds();
                           if (ids.length) {
-                            // move selected
-                            if (onMove) await onMove(ids, f.slug);
-                            else await Promise.all(ids.map((id)=>fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ folder: f.slug }) })));
-                            setSelected({});
-                            await load();
-                            if (onRefreshFolders) await onRefreshFolders();
-                            return;
+                                              if (!(await showConfirm(
+                                                `Move ${ids.length} file(s) to folder '${f.name}'?`,
+                                                "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
+                                                'primary'
+                                              ))) return;
+                                              if (onMove) await onMove(ids, f.slug);
+                                              else await Promise.all(ids.map((id)=>fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ folder: f.slug }) })));
+                                              setSelected({});
+                                              try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
+                                              setFolder(f.slug);
+                                              setActiveTags([]);
+                                              await load();
+                                              if (onRefreshFolders) await onRefreshFolders();
+                                              return;
                           }
-                          // toggle folder filter
                           if (folder === f.slug) {
                             setFolder(null);
                             setAssets(assetsBackup || []);
@@ -327,26 +387,12 @@ export default function AdminFilesView({
                             setActiveTags([]);
                           }
                         }}
-                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${folder===f.slug ? 'bg-sky-600 text-white' : 'admin-btn'}`}
+                        className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageFolders ? 'btn-negative' : folder===f.slug ? 'btn-selected' : 'admin-btn'}`}
                       >
-                        {renamingFolderId === f.id ? (
-                          <input ref={renameInputRef} value={renamingFolderName} onChange={(e)=>setRenamingFolderName(e.target.value)} className="px-2 py-1 text-sm border rounded" />
-                        ) : (
-                          <span className="pr-2">{f.name}</span>
-                        )}
-
-                        {manageFolders && (
-                          <span onClick={(ev)=>{ ev.stopPropagation(); ev.preventDefault(); if (renamingFolderId === f.id) { saveFolderRename(f.id); } else { setMenuOpenFolder(menuOpenFolder===f.id ? null : f.id); } }} className="ml-1 text-gray-700">
-                            {renamingFolderId === f.id ? <SaveIcon size={16} /> : <DotsVertical />}
-                          </span>
-                        )}
+                        <span>{f.name}</span>
+                        {manageFolders && <span className="text-xs opacity-80">✕</span>}
                       </button>
-                      {menuOpenFolder===f.id && !renamingFolderId && (
-                        <div data-folder-menu={f.id} className="absolute bg-white border rounded shadow-md z-40">
-                          <button className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50" onClick={async ()=>{ setMenuOpenFolder(null); setRenamingFolderId(f.id); setRenamingFolderName(f.name || ''); }}>Rename</button>
-                          <button className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-50" onClick={async ()=>{ const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`); const data = await res.json().catch(()=>[]); if (Array.isArray(data) && data.length>0) return alert('Folder not empty. Remove files first.'); if (!confirm('Delete this folder?')) return; await fetch(`/api/folders/${f.id}`, { method: 'DELETE' }); setMenuOpenFolder(null); if (onRefreshFolders) await onRefreshFolders(); await load(); }}>Delete</button>
-                        </div>
-                      )}
+                      
                     </div>
                   ))}
                 </div>
@@ -355,9 +401,9 @@ export default function AdminFilesView({
 
             {/* Tags — full-bleed secondary */}
             <div style={{ backgroundColor: 'var(--color-bg-secondary)', width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
-              <div className="max-w-5xl mx-auto px-4">
+              <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between mb-1 w-full">
-                  <div className="text-lg font-medium">Tags</div>
+                  <div className="text-lg font-medium pb-4">Tags</div>
                   <div className="flex items-center gap-2">
                     {activeTags.length > 0 && (
                       <button onClick={()=>{ setActiveTags([]); setAssets(assetsBackup || []); }} className="px-2 py-1 rounded text-sm admin-btn">Clear filters</button>
@@ -366,49 +412,69 @@ export default function AdminFilesView({
                     {showCreateTag ? (
                       <div className="flex items-center gap-2">
                         <input value={newTagName} onChange={(e)=>setNewTagName(e.target.value)} placeholder="New tag" className="px-2 py-1 border rounded text-sm" />
-                        <button onClick={()=>createTag(newTagName)} className="px-2 py-1 bg-sky-600 text-white rounded text-sm">Create</button>
+                        <button onClick={()=>createTag(newTagName)} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
                         <button onClick={()=>{ setShowCreateTag(false); setNewTagName(''); }} className="px-2 py-1 rounded text-sm admin-btn">Cancel</button>
                       </div>
                     ) : (
                       <>
-                        <button title="Create tag" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded text-sm admin-btn">Create tag</button>
-                        <button title="Manage tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'bg-red-50 text-red-600' : 'admin-btn'}`}>{manageTags ? 'Done' : 'Manage'}</button>
+                        <button title="Create" onClick={()=>setShowCreateTag(true)} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
+                        <button title="Delete tags" onClick={()=>setManageTags(m=>!m)} className={`px-2 py-1 rounded text-sm ${manageTags ? 'admin-btn' : 'btn-negative'}`}>{manageTags ? 'Done' : 'Delete'}</button>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {tags.map((t)=> (
-                    <div key={t} className="inline-flex items-center">
-                      <button
-                        onClick={async (e)=>{
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (getSelectedIds().length) {
-                            await applyTagToSelected(t);
-                            return;
-                          }
-                          // toggle tag in activeTags (multi-select, AND semantics)
-                          setActiveTags((prev)=>{
-                            const exists = prev.includes(t);
-                            const next = exists ? prev.filter(x=>x!==t) : [...prev, t];
-                            if (!next.length) {
-                              setAssets(assetsBackup || []);
-                            } else {
-                              setAssets((assetsBackup || []).filter((a:any)=>Array.isArray(a.tags) && next.every((nt:string)=>a.tags.includes(nt))));
+                  {tags.map((t)=> {
+                    const count = (assets || []).filter((a:any)=>Array.isArray(a.tags) && a.tags.includes(t)).length;
+                    return (
+                      <div key={t} className="inline-flex items-center">
+                        <button
+                          onMouseEnter={()=>{
+                            if (manageTags) return;
+                            const missing = computeMissingForTag(t);
+                            if (missing > 0) setHoverNewCount(count + missing);
+                            else setHoverNewCount(null);
+                            setHoveredTag(t);
+                          }}
+                          onMouseLeave={()=>{ setHoveredTag(null); setHoverNewCount(null); }}
+                          onClick={async (e)=>{
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (manageTags) { await removeTagGlobally(t); return; }
+                            if (getSelectedIds().length) {
+                              await applyTagToSelected(t);
+                              return;
                             }
-                            return next;
-                          });
-                        }}
-                        className={`relative inline-flex items-center px-2 py-1 rounded text-sm ${activeTags.includes(t) ? 'bg-sky-600 text-white' : 'admin-btn'}`}
-                      >
-                        <span className="pr-2">{t}</span>
-                        {manageTags && (
-                          <span onClick={(ev)=>{ ev.stopPropagation(); ev.preventDefault(); removeTagGlobally(t); }} className="ml-1 text-red-600 text-sm">✕</span>
-                        )}
-                      </button>
-                    </div>
-                  ))}
+                            setActiveTags((prev)=>{
+                              const exists = prev.includes(t);
+                              const next = exists ? prev.filter(x=>x!==t) : [...prev, t];
+                              if (!next.length) {
+                                setAssets(assetsBackup || []);
+                              } else {
+                                setAssets((assetsBackup || []).filter((a:any)=>Array.isArray(a.tags) && next.every((nt:string)=>a.tags.includes(nt))));
+                              }
+                              return next;
+                            });
+                          }}
+                          className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageTags ? 'btn-negative' : activeTags.includes(t) ? 'btn-selected' : 'admin-btn'}`}
+                          >
+                            <span>{t}</span>
+                            {manageTags ? (
+                              <span className="text-xs opacity-80">✕</span>
+                            ) : (
+                              <span className="ml-1 inline-flex items-center justify-center tag-badge text-xs font-medium px-1 py-0.5 rounded-sm">
+                                <span style={{ display: 'inline-block', overflow: 'hidden', height: 18 }}>
+                                  <div style={{ transform: hoveredTag === t && hoverNewCount != null && hoverNewCount !== count ? 'translateY(0)' : 'translateY(-50%)', transition: 'transform 260ms ease' }}>
+                                    <div style={{ height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{hoverNewCount ?? count}</div>
+                                    <div style={{ height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count}</div>
+                                  </div>
+                                </span>
+                              </span>
+                            )}
+                          </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -419,15 +485,15 @@ export default function AdminFilesView({
         <>
           {/* Delete selected — inherit page primary (no explicit background) */}
             <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
-            <div className="max-w-5xl mx-auto px-4 mb-3">
+            <div className="max-w-7xl mx-auto px-4 mb-3">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <button onClick={selectAll} className="px-2 py-1 text-sm rounded admin-btn">Select all</button>
+                  <button onClick={selectAll} className="px-2 py-1 text-sm rounded btn-positive">Select all</button>
                   <button onClick={clearSelection} className="px-2 py-1 text-sm rounded admin-btn">Clear selection</button>
                 </div>
 
                 <div className="ml-auto">
-                  <button onClick={bulkDelete} disabled={!selectedCount} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-500 cursor-not-allowed text-white'}`}>Delete selected</button>
+                  <button onClick={bulkDelete} disabled={!selectedCount} className={`px-2 py-1 text-sm rounded ${selectedCount ? 'btn-negative' : 'bg-gray-500 cursor-not-allowed text-white'}`}>Delete selected</button>
                 </div>
               </div>
               <div className="mt-2">
@@ -442,15 +508,15 @@ export default function AdminFilesView({
 
           {/* File previews — inherit page primary (no explicit background) */}
           <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
-            <div className="max-w-5xl mx-auto px-4">
+            <div className="max-w-7xl mx-auto px-4">
               <div className="grid grid-cols-3 gap-4">
                 {assets.map((a: any) => (
                   <div key={a.id} draggable onDragStart={(e)=>{
-                      const ids = getSelectedIds();
-                      const dragging = ids.length ? ids : [a.id];
-                      e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
-                    }} className="border rounded overflow-hidden">
-                    <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="overflow-hidden bg-gray-800">
+                    const ids = getSelectedIds();
+                    const dragging = ids.length ? ids : [a.id];
+                    e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
+                  }} className={`group rounded-xl overflow-hidden bg-gray-800 isolate ${selected[a.id] ? 'border border-transparent' : 'border border-gray-700'}`}>
+                    <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="bg-gray-800">
                       {a.publicUrl && /^image\/(jpeg|jpg|png|gif|webp|avif|svg\+xml)$/i.test(a.mime || '') ? (
                         <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
                       ) : a.publicUrl ? (
@@ -459,35 +525,32 @@ export default function AdminFilesView({
                           <span className="mt-1 text-xs uppercase tracking-wide">{(a.mime || '').split('/')[1] || filenameParts(a).ext.replace('.','')}</span>
                         </div>
                       ) : null}
-
-                      {/* gradient overlay: darker top/bottom, more transparent center */}
                       <div
-                        className="absolute inset-0"
+                        className="absolute inset-0 opacity-0 transition-opacity duration-150 pointer-events-none group-hover:opacity-100"
                         style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.14) 50%, rgba(0,0,0,0.72) 100%)' }}
                       />
+                      <div className={`absolute inset-0 pointer-events-none ${selected[a.id] ? 'thumbnail-selected' : ''}`} />
 
-                      {/* UI overlay (checkbox, title, actions) */}
-                      <div className="absolute inset-0 flex flex-col justify-between p-3 text-white">
+                      {/* UI overlay: click area toggles selection; action buttons stop propagation */}
+                      <div className="absolute inset-0 flex flex-col justify-between p-3 text-white" onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); toggleSelect(a.id); }}>
                         <div className="flex items-start justify-between">
-                          <label className="flex items-center gap-2">
-                            <input type="checkbox" checked={!!selected[a.id]} onChange={()=>toggleSelect(a.id)} className="accent-white" />
-                            <div className="text-sm font-medium flex items-center gap-2">
-                              {editingId === a.id ? (
-                                <input
-                                  ref={editInputRef}
-                                  className="px-1 py-0.5 border rounded text-sm text-black"
-                                  value={editingName}
-                                  onChange={(e)=>setEditingName(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') saveRename(a.id);
-                                    if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
-                                  }}
-                                />
-                              ) : (
-                                <span className="truncate max-w-48">{filenameParts(a).base || a.filename || a.storageKey}</span>
-                              )}
-                            </div>
-                          </label>
+                          <div className="text-sm font-medium flex items-center gap-2">
+                            {editingId === a.id ? (
+                              <input
+                                ref={editInputRef}
+                                className="px-1 py-0.5 border rounded text-sm text-white bg-transparent placeholder-gray-400"
+                                value={editingName}
+                                onClick={(e)=>e.stopPropagation()}
+                                onChange={(e)=>setEditingName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveRename(a.id);
+                                  if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
+                                }}
+                              />
+                            ) : (
+                              <span className="truncate max-w-48">{filenameParts(a).base || a.filename || a.storageKey}</span>
+                            )}
+                          </div>
 
                           <div className="flex items-center gap-2">
                             <button
@@ -502,13 +565,13 @@ export default function AdminFilesView({
                                   setEditingId(a.id);
                                 }
                               }}
-                              className="text-white opacity-90 hover:opacity-100"
+                              className="px-2 py-1 text-white rounded hover:bg-white/10"
                               aria-label={editingId === a.id ? 'Save' : 'Rename'}
                             >
                               {editingId === a.id ? <SaveIcon size={18} /> : <RenameIcon size={18} />}
                             </button>
                             {editingId === a.id && (
-                              <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setEditingId(null); setEditingName(''); }} className="text-white opacity-80 hover:opacity-100" title="Cancel">
+                              <button onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setEditingId(null); setEditingName(''); }} className="px-2 py-1 text-white rounded hover:bg-white/10" title="Cancel">
                                 <CloseIcon />
                               </button>
                             )}
@@ -516,8 +579,27 @@ export default function AdminFilesView({
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <div className="text-xs">{a.mime}</div>
-                          <button aria-label={a.filename || 'Open image'} onClick={() => setOpenImage(a)} className="text-white text-sm underline">View</button>
+                          <div className="flex items-center gap-2 max-w-[70%] overflow-hidden">
+                            {(a.tags || []).map((tag: string) => (
+                              editingId === a.id ? (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); if (!(await showConfirm(`Remove tag '${tag}' from this file?`, undefined, 'danger', 'Delete'))) return; await removeTagFromAsset(a.id, tag); }}
+                                  className="inline-flex items-center justify-between gap-0 text-sm text-white bg-black/60 px-0.5 py-0.5 rounded truncate hover:bg-white/10"
+                                  aria-label={`Remove tag ${tag}`}
+                                >
+                                  <span className="truncate mr-0.5">{tag}</span>
+                                  <span className="text-xs bg-white/10 px-0.5 rounded">✕</span>
+                                </button>
+                              ) : (
+                                <span key={tag} className="inline-flex items-center gap-2 text-sm text-white bg-black/60 px-1 py-0.5 rounded truncate">
+                                  <span className="truncate">{tag}</span>
+                                </span>
+                              )
+                            ))}
+                          </div>
+                          <button aria-label={a.filename || 'Open image'} onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); setOpenImage(a); }} className="text-white text-sm underline px-2 py-1 rounded hover:bg-white/10">View</button>
                         </div>
                       </div>
                     </div>
@@ -528,6 +610,8 @@ export default function AdminFilesView({
           </div>
         </>
       )}
+
+      
 
       {openImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={handleOverlayClick} role="dialog" aria-modal="true">
