@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
 export async function DELETE(request: NextRequest, context: any) {
   try {
@@ -13,6 +15,12 @@ export async function DELETE(request: NextRequest, context: any) {
     if (!asset) return NextResponse.json({ error: "not found" }, { status: 404 });
 
     console.info(`/api/assets/${id} DELETE asset:`, { id, provider: asset.provider, storageKey: asset.storageKey });
+
+    // Collect static dependents before deletion
+    const staticUsage = (await prisma.mediaUsage.findMany({
+      where: { assetId: id },
+      select: { pageSlug: true },
+    })) as { pageSlug: string }[];
 
     // Attempt to delete from R2 if provider is r2
     if (asset.provider === "r2" && asset.storageKey) {
@@ -38,7 +46,22 @@ export async function DELETE(request: NextRequest, context: any) {
       }
     }
 
-    await prisma.asset.delete({ where: { id } });
+    // Delete MediaUsage rows then the asset
+    await prisma.$transaction([
+      prisma.mediaUsage.deleteMany({ where: { assetId: id } }),
+      prisma.asset.delete({ where: { id } }),
+    ]);
+
+    // Resolve dynamic pages and merge with static set for invalidation
+    const dynamicSlugs = await resolveDynamicAffectedPages();
+    const allSlugs = new Set([
+      ...staticUsage.map((u) => u.pageSlug),
+      ...dynamicSlugs,
+    ]);
+    for (const slug of allSlugs) {
+      revalidateTag(`page:${slug}`, {});
+    }
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error(`/api/assets/[id] DELETE error:`, err);
@@ -70,9 +93,19 @@ export async function PATCH(request: NextRequest, context: any) {
     if (typeof tags !== "undefined") data.tags = tags;
 
     const updated = await prisma.asset.update({ where: { id }, data });
+
+    // Tags or folder changes affect dynamic gallery queries — revalidate those pages
+    if (typeof tags !== "undefined" || typeof folder !== "undefined") {
+      const dynamicSlugs = await resolveDynamicAffectedPages();
+      for (const slug of dynamicSlugs) {
+        revalidateTag(`page:${slug}`, {});
+      }
+    }
+
     return NextResponse.json(updated);
   } catch (err: any) {
     console.error(`/api/assets/[id] PATCH error:`, err);
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
   }
 }
+

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getPages, upsertPage } from "@/lib/pages";
+import { reconcileMediaUsage } from "@/lib/gallery-utils";
 
 export async function GET() {
   const pages = await getPages();
@@ -15,6 +17,9 @@ export async function POST(request: Request) {
     }
 
     const saved = await upsertPage(body);
+    await reconcileMediaUsage(saved.slug, saved.sections);
+    revalidateTag(`page:${saved.slug}`, {});
+    revalidateTag("global:nav", {});
 
     return NextResponse.json(saved);
   } catch (err: any) {

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { getPageBySlug, upsertPage } from "@/lib/pages";
+import { reconcileMediaUsage } from "@/lib/gallery-utils";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -19,6 +22,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
     if (!body.slug) body.slug = slug;
 
     const saved = await upsertPage(body);
+    await reconcileMediaUsage(saved.slug, saved.sections);
+
+    // Revalidate old slug if it changed
+    if (slug !== saved.slug) {
+      revalidateTag(`page:${slug}`, {});
+    }
+    revalidateTag(`page:${saved.slug}`, {});
+
+    // Label or slug changes affect nav
+    if (slug !== saved.slug || body.label !== undefined) {
+      revalidateTag("global:nav", {});
+    }
+
     return NextResponse.json(saved);
   } catch (err: any) {
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
@@ -29,3 +45,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // alias to PUT for convenience
   return PUT(request, { params });
 }
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  try {
+    const { slug } = await params;
+
+    await prisma.$transaction([
+      prisma.mediaUsage.deleteMany({ where: { pageSlug: slug } }),
+      prisma.page.delete({ where: { slug } }),
+    ]);
+
+    revalidateTag(`page:${slug}`, {});
+    revalidateTag("global:nav", {});
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
+  }
+}
+

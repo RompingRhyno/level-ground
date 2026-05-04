@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,8 +20,16 @@ export async function POST(request: Request) {
     if (!key) return NextResponse.json({ error: "missing key" }, { status: 400 });
 
     const created = await prisma.asset.create({ data: { storageKey: key, provider: "r2", filename, mime, size, folder, publicUrl, alt, meta: { uploadedAt: new Date().toISOString() }, tags } });
+
+    // New upload may appear in dynamic galleries — revalidate those pages
+    const dynamicSlugs = await resolveDynamicAffectedPages();
+    for (const slug of dynamicSlugs) {
+      revalidateTag(`page:${slug}`, {});
+    }
+
     return NextResponse.json(created);
   } catch (err: any) {
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
   }
 }
+
