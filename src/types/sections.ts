@@ -21,10 +21,24 @@ export type TwoColumnSection = {
   image: string;
 };
 
+export type GalleryLayout = "grid" | "masonry";
+
+export type GalleryFilters = {
+  tags?: string[];
+  folder?: string;
+};
+
 export type GallerySection = {
   type: "gallery";
-  images: string[];
-};
+  mode: "static" | "dynamic";
+  layout?: GalleryLayout;
+  lightbox?: boolean;
+  heading?: string;
+  body?: string;
+} & (
+  | { mode: "static"; assetIds: string[] }
+  | { mode: "dynamic"; filters: GalleryFilters }
+);
 
 export type CTASection = {
   type: "cta";
