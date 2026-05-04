@@ -113,6 +113,15 @@ export default function GalleryLightbox({
     fn();
   };
 
+  // Close on Escape (desktop)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   if (open === null) return null;
 
   return (
