@@ -1,4 +1,5 @@
 import type { PageConfig } from "@/types/sections";
+import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
 import { pages as mockPages } from "./mockPages";
 
@@ -24,10 +25,33 @@ export async function getPages(): Promise<PageConfig[]> {
   return dbPages.map(mapDbPageToConfig);
 }
 
-export async function getPageBySlug(slug: string): Promise<PageConfig | null> {
-  const dbPage = await prisma.page.findUnique({ where: { slug } });
-  if (!dbPage) return null;
-  return mapDbPageToConfig(dbPage);
+export function getNavPages(): Promise<Pick<PageConfig, "slug" | "label">[]> {
+  return unstable_cache(
+    async () => {
+      const dbPages = await prisma.page.findMany({
+        orderBy: { id: "asc" },
+        select: { slug: true, label: true },
+      });
+      if (!dbPages || dbPages.length === 0) {
+        return mockPages.map(({ slug, label }) => ({ slug, label }));
+      }
+      return dbPages as Pick<PageConfig, "slug" | "label">[];
+    },
+    ["nav-pages"],
+    { tags: ["global:nav"] }
+  )();
+}
+
+export function getPageBySlug(slug: string): Promise<PageConfig | null> {
+  return unstable_cache(
+    async () => {
+      const dbPage = await prisma.page.findUnique({ where: { slug } });
+      if (!dbPage) return null;
+      return mapDbPageToConfig(dbPage);
+    },
+    [`page-${slug}`],
+    { tags: [`page:${slug}`] }
+  )();
 }
 
 export async function upsertPage(page: PageConfig) {

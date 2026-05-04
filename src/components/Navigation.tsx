@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import AdminBreadcrumbs from "@/components/admin/AdminBreadcrumbs";
-import { pages } from "@/lib/mockPages";
 
-export default function Navigation() {
+type NavPage = { slug: string; label: string };
+
+export default function Navigation({ navPages }: { navPages: NavPage[] }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
-  const navPages = pages.filter((p) => p.slug !== "home");
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
