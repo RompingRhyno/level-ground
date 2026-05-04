@@ -144,7 +144,8 @@ function SectionEditor({ section, index, onChange, onRemove, onMoveUp, onMoveDow
               onChange={(e) => update("layout", e.target.value)}
               className="rounded border px-2 py-1"
             >
-              <option value="grid">Grid</option>
+              <option value="bento">Bento (visual blocks)</option>
+              <option value="grid">Grid (uniform rows)</option>
               <option value="masonry">Masonry</option>
             </select>
 

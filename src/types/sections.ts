@@ -21,7 +21,7 @@ export type TwoColumnSection = {
   image: string;
 };
 
-export type GalleryLayout = "grid" | "masonry";
+export type GalleryLayout = "grid" | "bento" | "masonry";
 
 export type GalleryFilters = {
   tags?: string[];
