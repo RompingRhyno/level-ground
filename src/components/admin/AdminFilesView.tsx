@@ -4,12 +4,6 @@ import Image from "next/image";
 import AlertDialog from "../ui/AlertDialog";
 import { useConfirm } from "./useConfirm";
 
-const DotsVertical = ({ size = 18 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 6a1.5 1.5 0 1 0 0 0.001M12 12a1.5 1.5 0 1 0 0 0.001M12 18a1.5 1.5 0 1 0 0 0.001" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const SaveIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -59,7 +53,6 @@ export default function AdminFilesView({
   const [loading, setLoading] = useState(false);
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
   const [hoverNewCount, setHoverNewCount] = useState<number | null>(null);
-  const [targetFolder, setTargetFolder] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const { confirm, dialogProps } = useConfirm();
@@ -204,23 +197,60 @@ export default function AdminFilesView({
     try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
   }
 
-  async function bulkMove(targetFolder: string) {
+  async function handleFolderClick(f: any) {
+    if (manageFolders) {
+      const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`);
+      const data = await res.json().catch(() => []);
+      if (Array.isArray(data) && data.length > 0) {
+        const go = await confirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder');
+        if (go) { setFolder(f.slug); setActiveTags([]); await load(); }
+        return;
+      }
+      if (!(await confirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return;
+      await fetch(`/api/folders/${f.id}`, { method: 'DELETE' });
+      if (onRefreshFolders) await onRefreshFolders();
+      await load();
+      return;
+    }
     const ids = getSelectedIds();
-    if (!ids.length) return;
+    if (ids.length) {
       if (!(await confirm(
-        `Move ${ids.length} file(s) to folder '${targetFolder}'?`,
+        `Move ${ids.length} file(s) to folder '${f.name}'?`,
         "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
         'primary'
       ))) return;
-    if (onMove) await onMove(ids, targetFolder);
-    else await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: targetFolder }) })));
-    // clear selection for folder move and navigate into destination
-    setSelected({});
-    try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
-    setFolder(targetFolder);
-    setActiveTags([]);
-    await load();
-    if (onRefreshFolders) await onRefreshFolders();
+      if (onMove) await onMove(ids, f.slug);
+      else await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: f.slug }) })));
+      setSelected({});
+      try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
+      setFolder(f.slug);
+      setActiveTags([]);
+      await load();
+      if (onRefreshFolders) await onRefreshFolders();
+      return;
+    }
+    if (folder === f.slug) {
+      setFolder(null);
+      setAssets(assetsBackup || []);
+    } else {
+      setFolder(f.slug);
+      setActiveTags([]);
+    }
+  }
+
+  async function handleTagClick(t: string) {
+    if (manageTags) { await removeTagGlobally(t); return; }
+    if (getSelectedIds().length) { await applyTagToSelected(t); return; }
+    setActiveTags((prev) => {
+      const exists = prev.includes(t);
+      const next = exists ? prev.filter((x) => x !== t) : [...prev, t];
+      if (!next.length) {
+        setAssets(assetsBackup || []);
+      } else {
+        setAssets((assetsBackup || []).filter((a: any) => Array.isArray(a.tags) && next.every((nt: string) => a.tags.includes(nt))));
+      }
+      return next;
+    });
   }
 
   async function applyTagToSelected(tag: string) {
@@ -363,37 +393,7 @@ export default function AdminFilesView({
                   {folders.map((f:any)=> (
                     <div key={f.id} data-folder-button={f.id} className="inline-flex items-center">
                       <button
-                        onClick={async (e)=>{
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (manageFolders) {
-                            const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`); const data = await res.json().catch(()=>[]); if (Array.isArray(data) && data.length>0) { const go = await confirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder'); if (go) { setFolder(f.slug); setActiveTags([]); await load(); } return; } if (!(await confirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return; await fetch(`/api/folders/${f.id}`, { method: 'DELETE' }); if (onRefreshFolders) await onRefreshFolders(); await load(); return;
-                          }
-                          const ids = getSelectedIds();
-                          if (ids.length) {
-                                              if (!(await confirm(
-                                                `Move ${ids.length} file(s) to folder '${f.name}'?`,
-                                                "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
-                                                'primary'
-                                              ))) return;
-                                              if (onMove) await onMove(ids, f.slug);
-                                              else await Promise.all(ids.map((id)=>fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ folder: f.slug }) })));
-                                              setSelected({});
-                                              try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
-                                              setFolder(f.slug);
-                                              setActiveTags([]);
-                                              await load();
-                                              if (onRefreshFolders) await onRefreshFolders();
-                                              return;
-                          }
-                          if (folder === f.slug) {
-                            setFolder(null);
-                            setAssets(assetsBackup || []);
-                          } else {
-                            setFolder(f.slug);
-                            setActiveTags([]);
-                          }
-                        }}
+                        onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await handleFolderClick(f); }}
                         className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageFolders ? 'btn-negative' : folder===f.slug ? 'btn-selected' : 'admin-btn'}`}
                       >
                         <span>{f.name}</span>
@@ -444,25 +444,7 @@ export default function AdminFilesView({
                             setHoveredTag(t);
                           }}
                           onMouseLeave={()=>{ setHoveredTag(null); setHoverNewCount(null); }}
-                          onClick={async (e)=>{
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (manageTags) { await removeTagGlobally(t); return; }
-                            if (getSelectedIds().length) {
-                              await applyTagToSelected(t);
-                              return;
-                            }
-                            setActiveTags((prev)=>{
-                              const exists = prev.includes(t);
-                              const next = exists ? prev.filter(x=>x!==t) : [...prev, t];
-                              if (!next.length) {
-                                setAssets(assetsBackup || []);
-                              } else {
-                                setAssets((assetsBackup || []).filter((a:any)=>Array.isArray(a.tags) && next.every((nt:string)=>a.tags.includes(nt))));
-                              }
-                              return next;
-                            });
-                          }}
+                          onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await handleTagClick(t); }}
                           className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageTags ? 'btn-negative' : activeTags.includes(t) ? 'btn-selected' : 'admin-btn'}`}
                           >
                             <span>{t}</span>
