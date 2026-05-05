@@ -44,3 +44,4 @@ next-env.d.ts
 .env*.local
 
 /src/generated/prisma
+temp/gallery-implementation-notes-2026-04-24.md

@@ -145,6 +145,22 @@ h1, h2, h3, h4, h5 {
   box-shadow: inset 0 0 0 8px var(--thumbnail-select-color);
 }
 
+/* Admin preview iframe — hides site nav/footer when page is rendered as a bare preview */
+body.preview-bare > header,
+body.preview-bare > footer {
+  display: none !important;
+}
+body.preview-bare > main {
+  padding: 0 !important;
+}
+
+/* Section editor fields — primary background for contrast on secondary section body */
+.section-fields input,
+.section-fields textarea,
+.section-fields select {
+  background-color: var(--color-bg-primary);
+}
+
 .heading {
   font-family: var(--font-heading);
   line-height: var(--line-heading);
