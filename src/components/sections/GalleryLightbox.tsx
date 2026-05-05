@@ -182,9 +182,7 @@ export default function GalleryLightbox({
                 <div className="absolute inset-0">
                   <Image src={a.publicUrl} alt={a.alt ?? ""} fill className="object-cover" loading="lazy" />
                 </div>
-                {open === idx && (
-                  <span className="absolute inset-0 pointer-events-none rounded" style={{ border: "4px solid var(--thumbnail-select-color)", zIndex: 10 }} />
-                )}
+                <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? 'thumbnail-selected' : ''}`} />
               </button>
             ))}
           </div>
@@ -206,9 +204,7 @@ export default function GalleryLightbox({
                   <div className="absolute inset-0">
                     <Image src={a.publicUrl} alt={a.alt ?? ""} fill className="object-cover" loading="lazy" />
                   </div>
-                  {open === idx && (
-                    <span className="absolute inset-0 pointer-events-none rounded" style={{ border: "4px solid var(--thumbnail-select-color)", zIndex: 10 }} />
-                  )}
+                  <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? 'thumbnail-selected' : ''}`} />
                 </button>
               ))}
             </div>
