@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getPageBySlug } from "@/lib/pages";
-import AdminPageEditor from "@/components/admin/AdminPageEditor";
+import AdminPageEditor from "@/components/admin/pageEditor";
 
 type Props = {
   params: {
