@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import AlertDialog from "../ui/AlertDialog";
+import { useConfirm } from "./useConfirm";
 
 const DotsVertical = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -61,28 +62,7 @@ export default function AdminFilesView({
   const [targetFolder, setTargetFolder] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const confirmResolveRef = useRef<((v: boolean) => void) | null>(null);
-  const [confirmTitle, setConfirmTitle] = useState('');
-  const [confirmDescription, setConfirmDescription] = useState('');
-  const [confirmVariant, setConfirmVariant] = useState<'primary' | 'danger'>('primary');
-  const [confirmLabel, setConfirmLabel] = useState<string|undefined>(undefined);
-
-  function showConfirm(title: string, description?: string, variant: 'primary' | 'danger' = 'primary', confirmBtnLabel?: string) {
-    setConfirmTitle(title);
-    setConfirmDescription(description || '');
-    setConfirmVariant(variant);
-    setConfirmLabel(confirmBtnLabel);
-    setConfirmOpen(true);
-    return new Promise<boolean>((res) => { confirmResolveRef.current = res; });
-  }
-
-  function handleDialogClose(result: boolean) {
-    setConfirmOpen(false);
-    const r = confirmResolveRef.current;
-    confirmResolveRef.current = null;
-    if (r) r(result);
-  }
+  const { confirm, dialogProps } = useConfirm();
 
   const getSelectedIds = () => Object.keys(selected).filter((k) => selected[k]);
 
@@ -198,8 +178,8 @@ export default function AdminFilesView({
 
   async function bulkDelete() {
     const ids = getSelectedIds();
-    if (!ids.length) { await showConfirm('No files selected'); return; }
-    if (!(await showConfirm(`Delete ${ids.length} files?`, "This action cannot be undone. This will permanently delete these files from the servers.", 'danger', 'Delete'))) return;
+    if (!ids.length) { await confirm('No files selected'); return; }
+    if (!(await confirm(`Delete ${ids.length} files?`, "This action cannot be undone. This will permanently delete these files from the servers.", 'danger', 'Delete'))) return;
     if (onDelete) {
       await onDelete(ids);
     } else {
@@ -227,7 +207,7 @@ export default function AdminFilesView({
   async function bulkMove(targetFolder: string) {
     const ids = getSelectedIds();
     if (!ids.length) return;
-      if (!(await showConfirm(
+      if (!(await confirm(
         `Move ${ids.length} file(s) to folder '${targetFolder}'?`,
         "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
         'primary'
@@ -245,8 +225,8 @@ export default function AdminFilesView({
 
   async function applyTagToSelected(tag: string) {
     const ids = getSelectedIds();
-    if (!ids.length) { await showConfirm('No files selected'); return; }
-      if (!(await showConfirm(
+    if (!ids.length) { await confirm('No files selected'); return; }
+      if (!(await confirm(
         `Add tag '${tag}' to ${ids.length} selected file(s)?`,
         "Click 'Clear selection' before selecting a tag if you meant to filter by this tag instead",
         'primary'
@@ -262,12 +242,12 @@ export default function AdminFilesView({
       await load();
     } catch (err) {
       console.error('applyTag error', err);
-      await showConfirm('Failed to apply tag');
+      await confirm('Failed to apply tag');
     }
   }
 
   async function removeTagGlobally(tag: string) {
-    if (!(await showConfirm(`Remove tag '${tag}' from all assets?`, undefined, 'danger', 'Delete'))) return;
+    if (!(await confirm(`Remove tag '${tag}' from all assets?`, undefined, 'danger', 'Delete'))) return;
     try {
       const res = await fetch(`/api/assets`);
       const all = await res.json().catch(()=>[]);
@@ -279,7 +259,7 @@ export default function AdminFilesView({
       await load();
     } catch (err) {
       console.error('removeTagGlobally', err);
-      await showConfirm('Failed to remove tag');
+      await confirm('Failed to remove tag');
     }
   }
 
@@ -293,7 +273,7 @@ export default function AdminFilesView({
       await load();
     } catch (err) {
       console.error('removeTagFromAsset', err);
-      await showConfirm('Failed to remove tag');
+      await confirm('Failed to remove tag');
     }
   }
 
@@ -319,7 +299,7 @@ export default function AdminFilesView({
   async function saveRename(id: string) {
     if (!editingId) return;
     const asset = assets.find((x) => x.id === id);
-    if (!asset) { await showConfirm('Asset not found'); return; }
+    if (!asset) { await confirm('Asset not found'); return; }
     const { ext } = filenameParts(asset);
     const newFilename = `${editingName}${ext}`;
     try {
@@ -333,7 +313,7 @@ export default function AdminFilesView({
       await load();
     } catch (err: any) {
       console.error('Rename failed', err);
-      await showConfirm('Rename failed', err?.message || String(err));
+      await confirm('Rename failed', err?.message || String(err));
     }
   }
 
@@ -355,7 +335,7 @@ export default function AdminFilesView({
 
   return (
       <div>
-        <AlertDialog open={confirmOpen} title={confirmTitle} description={confirmDescription} confirmVariant={confirmVariant} confirmLabel={confirmLabel} onConfirm={() => handleDialogClose(true)} onCancel={() => handleDialogClose(false)} />
+        <AlertDialog {...dialogProps} />
         <div className="flex items-center gap-2 w-full">
           <div className="flex flex-col gap-3 w-full">
             {/* Folders — inherit page primary (no explicit background) */}
@@ -367,7 +347,7 @@ export default function AdminFilesView({
                     {showCreateFolder ? (
                       <div className="flex items-center gap-2">
                         <input value={newFolderName} onChange={(e)=>setNewFolderName(e.target.value)} placeholder="New folder" className="px-2 py-1 border rounded text-sm" />
-                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) { await showConfirm('Create failed'); return; } setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
+                        <button onClick={async ()=>{ const name = newFolderName.trim(); if (!name) return; const res = await fetch('/api/folders', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) }); if (!res.ok) { await confirm('Create failed'); return; } setNewFolderName(''); setShowCreateFolder(false); if (onRefreshFolders) await onRefreshFolders(); await load(); }} className="px-2 py-1 rounded text-sm btn-positive">Create</button>
                         <button onClick={()=>{ setShowCreateFolder(false); setNewFolderName(''); }} className="px-2 py-1 rounded text-sm admin-btn">Cancel</button>
                       </div>
                     ) : (
@@ -387,11 +367,11 @@ export default function AdminFilesView({
                           e.preventDefault();
                           e.stopPropagation();
                           if (manageFolders) {
-                            const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`); const data = await res.json().catch(()=>[]); if (Array.isArray(data) && data.length>0) { const go = await showConfirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder'); if (go) { setFolder(f.slug); setActiveTags([]); await load(); } return; } if (!(await showConfirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return; await fetch(`/api/folders/${f.id}`, { method: 'DELETE' }); if (onRefreshFolders) await onRefreshFolders(); await load(); return;
+                            const res = await fetch(`/api/assets?folder=${encodeURIComponent(f.slug)}`); const data = await res.json().catch(()=>[]); if (Array.isArray(data) && data.length>0) { const go = await confirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder'); if (go) { setFolder(f.slug); setActiveTags([]); await load(); } return; } if (!(await confirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return; await fetch(`/api/folders/${f.id}`, { method: 'DELETE' }); if (onRefreshFolders) await onRefreshFolders(); await load(); return;
                           }
                           const ids = getSelectedIds();
                           if (ids.length) {
-                                              if (!(await showConfirm(
+                                              if (!(await confirm(
                                                 `Move ${ids.length} file(s) to folder '${f.name}'?`,
                                                 "Click 'Clear selection' before clicking a folder if you meant to navigate to this folder instead.",
                                                 'primary'
@@ -612,7 +592,7 @@ export default function AdminFilesView({
                                 <button
                                   key={tag}
                                   type="button"
-                                  onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); if (!(await showConfirm(`Remove tag '${tag}' from this file?`, undefined, 'danger', 'Delete'))) return; await removeTagFromAsset(a.id, tag); }}
+                                  onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); if (!(await confirm(`Remove tag '${tag}' from this file?`, undefined, 'danger', 'Delete'))) return; await removeTagFromAsset(a.id, tag); }}
                                   className="inline-flex items-center justify-between gap-0 text-sm text-white bg-black/60 px-0.5 py-0.5 rounded truncate hover:bg-white/10"
                                   aria-label={`Remove tag ${tag}`}
                                 >

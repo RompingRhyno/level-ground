@@ -7,6 +7,7 @@ import type {
 } from "@/types/sections";
 import GalleryPicker from "./GalleryPicker";
 import AlertDialog from "@/components/ui/AlertDialog";
+import { useConfirm } from "./useConfirm";
 
 // ── Preview size presets ───────────────────────────────────────────────────
 const PREVIEW_SIZES = [
@@ -289,7 +290,7 @@ function SectionEditor({
   onMoveDown: (i: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const { confirm, dialogProps } = useConfirm();
   const type = section.type;
 
   function update(key: string, value: any) {
@@ -298,15 +299,7 @@ function SectionEditor({
 
   return (
     <div className="border rounded overflow-hidden" style={{ backgroundColor: "var(--color-bg-secondary)" }}>
-      <AlertDialog
-        open={confirmRemoveOpen}
-        title={`Remove ${SECTION_LABELS[type] ?? type} section?`}
-        description="This section will be permanently removed from the page."
-        confirmVariant="danger"
-        confirmLabel="Delete"
-        onConfirm={() => { setConfirmRemoveOpen(false); onRemove(index); }}
-        onCancel={() => setConfirmRemoveOpen(false)}
-      />
+      <AlertDialog {...dialogProps} />
 
       {/* Header bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200" style={{ backgroundColor: "var(--color-bg-primary)" }}>
@@ -321,7 +314,7 @@ function SectionEditor({
         <div className="flex items-center gap-1">
           <button type="button" onClick={() => onMoveUp(index)} className="px-2 py-1 text-sm rounded admin-btn" title="Move up">↑</button>
           <button type="button" onClick={() => onMoveDown(index)} className="px-2 py-1 text-sm rounded admin-btn" title="Move down">↓</button>
-          <button type="button" onClick={() => setConfirmRemoveOpen(true)} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>
+          <button type="button" onClick={async () => { if (await confirm(`Remove ${SECTION_LABELS[type] ?? type} section?`, "This section will be permanently removed from the page.", "danger", "Remove")) onRemove(index); }} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>
         </div>
       </div>
 
