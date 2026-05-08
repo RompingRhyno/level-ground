@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import AdminFilesView from "./AdminFilesView";
 
-export default function AdminFilesApp() {
+export default function AdminFilesApp({ refreshKey }: { refreshKey?: number }) {
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
 
@@ -29,7 +29,7 @@ export default function AdminFilesApp() {
 
   return (
     <div>
-      <AdminFilesView initialFolder={selectedFolder} folders={folders} onMove={moveAssets} onDelete={deleteAssets} onRefreshFolders={loadFolders} />
+      <AdminFilesView initialFolder={selectedFolder} folders={folders} onMove={moveAssets} onDelete={deleteAssets} onRefreshFolders={loadFolders} refreshKey={refreshKey} />
     </div>
   );
 }

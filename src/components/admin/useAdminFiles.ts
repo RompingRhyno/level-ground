@@ -16,6 +16,7 @@ export interface UseAdminFilesOptions {
   onMove?: (ids: string[], folder: string) => Promise<void>;
   onDelete?: (ids: string[]) => Promise<void>;
   onRefreshFolders?: () => Promise<void>;
+  refreshKey?: number;
 }
 
 export interface UseAdminFilesReturn {
@@ -51,6 +52,7 @@ export function useAdminFiles({
   onMove,
   onDelete,
   onRefreshFolders,
+  refreshKey,
 }: UseAdminFilesOptions): UseAdminFilesReturn {
   const [assets, setAssets] = useState<any[]>([]);
   const [assetsBackup, setAssetsBackup] = useState<any[] | null>(null);
@@ -127,7 +129,7 @@ export function useAdminFiles({
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [folder]);
+  useEffect(() => { load(); }, [folder, refreshKey]);
 
   function toggleSelect(id: string) {
     setSelected((s) => ({ ...s, [id]: !s[id] }));

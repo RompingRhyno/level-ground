@@ -12,7 +12,7 @@ type UploadItem = {
   publicUrl?: string;
 };
 
-export default function FileUploader({ folder = "" }: { folder?: string }) {
+export default function FileUploader({ folder = "", onUploadComplete }: { folder?: string; onUploadComplete?: () => void }) {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [running, setRunning] = useState(false);
   const [startedUpload, setStartedUpload] = useState(false);
@@ -210,6 +210,7 @@ export default function FileUploader({ folder = "" }: { folder?: string }) {
       );
     } finally {
       setRunning(false);
+      onUploadComplete?.();
     }
   }
 

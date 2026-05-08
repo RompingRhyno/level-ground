@@ -17,7 +17,7 @@ const RenameIcon = ({ size = 18 }: { size?: number }) => (
   </svg>
 );
 
-const CloseIcon = ({ size = 16 }: { size?: number }) => (
+const CloseIcon = ({ size = 15 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
@@ -29,12 +29,14 @@ export default function AdminFilesView({
   onMove,
   onDelete,
   onRefreshFolders,
+  refreshKey,
 }: {
   initialFolder?: string | null;
   folders?: any[];
   onMove?: (ids: string[], folder: string) => Promise<void>;
   onDelete?: (ids: string[]) => Promise<void>;
   onRefreshFolders?: () => Promise<void>;
+  refreshKey?: number;
 }) {
   // UI-only state
   const [manageFolders, setManageFolders] = useState(false);
@@ -72,7 +74,7 @@ export default function AdminFilesView({
     removeTagFromAsset,
     computeMissingForTag,
     dialogProps,
-  } = useAdminFiles({ initialFolder, initialFolders, onMove, onDelete, onRefreshFolders });
+  } = useAdminFiles({ initialFolder, initialFolders, onMove, onDelete, onRefreshFolders, refreshKey });
 
   const editInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
@@ -142,15 +144,15 @@ export default function AdminFilesView({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearFolderFilter(); }} className={`px-2 py-1 rounded text-sm ${folder === null ? 'btn-selected' : 'admin-btn'}`}>All</button>
+                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearFolderFilter(); }} className={`px-3 py-1 rounded-full text-sm ${folder === null ? 'btn-selected' : 'admin-btn'}`}>All</button>
                 {folders.map((f: any) => (
                   <div key={f.id} data-folder-button={f.id} className="inline-flex items-center">
                       <button
                       onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await handleFolderClick(f, manageFolders); }}
-                      className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageFolders ? 'btn-negative' : folder === f.slug ? 'btn-selected' : 'admin-btn'}`}
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${manageFolders ? 'btn-negative' : folder === f.slug ? 'btn-selected' : 'admin-btn'}`}
                     >
                       <span>{f.name}</span>
-                      {manageFolders && <CloseIcon size={16} aria-hidden="true" />}
+                      {manageFolders && <CloseIcon size={15} aria-hidden="true" />}
                     </button>
                   </div>
                 ))}
@@ -196,13 +198,13 @@ export default function AdminFilesView({
                         }}
                         onMouseLeave={() => { setHoveredTag(null); setHoverNewCount(null); }}
                         onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await handleTagClick(t, manageTags); }}
-                        className={`inline-flex items-center gap-2 px-2 py-1 rounded text-sm ${manageTags ? 'btn-negative' : activeTags.includes(t) ? 'btn-selected' : 'admin-btn'}`}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${manageTags ? 'btn-negative' : activeTags.includes(t) ? 'btn-selected' : 'admin-btn'}`}
                       >
                         <span>{t}</span>
                         {manageTags ? (
-                          <CloseIcon size={16} aria-hidden="true" />
+                          <CloseIcon size={15} aria-hidden="true" />
                         ) : (
-                          <span className="ml-1 inline-flex items-center justify-center tag-badge text-xs font-medium px-1 py-0.5 rounded-sm">
+                          <span className="inline-flex items-center justify-center tag-badge text-xs font-medium px-1 rounded-sm">
                             <span style={{ display: 'inline-block', overflow: 'hidden', height: 18 }}>
                               <div style={{ transform: hoveredTag === t && hoverNewCount != null && hoverNewCount !== count ? 'translateY(0)' : 'translateY(-50%)', transition: 'transform 260ms ease' }}>
                                 <div style={{ height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{hoverNewCount ?? count}</div>
