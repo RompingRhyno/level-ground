@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; tags: string[] | null };
 
 // ── Static picker ─────────────────────────────────────────────────────────────
 
@@ -17,6 +17,13 @@ function StaticPicker({
   const [loading, setLoading] = useState(false);
   const [folder, setFolder] = useState<string>("");
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
+  const [tag, setTag] = useState<string>("");
+
+  const availableTags = Array.from(
+    new Set(assets.flatMap((a) => a.tags ?? []))
+  ).sort();
+
+  const filteredAssets = tag ? assets.filter((a) => (a.tags ?? []).includes(tag)) : assets;
 
   useEffect(() => {
     fetch("/api/folders")
@@ -45,29 +52,71 @@ function StaticPicker({
 
   return (
     <div className="flex flex-col gap-3 h-full">
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-gray-600">Filter by folder</label>
-        <select
-          value={folder}
-          onChange={(e) => setFolder(e.target.value)}
-          className="rounded border px-2 py-1 text-sm"
-        >
-          <option value="">All</option>
-          {folders.map((f) => (
-            <option key={f.slug} value={f.slug}>
-              {f.name}
-            </option>
-          ))}
-        </select>
+      {/* Status line — top, slightly larger */}
+      <div className="text-sm text-gray-600">
+        {selected.length} selected — click to toggle, order is preserved
+      </div>
+
+      {/* Filter controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Folder</label>
+          <select
+            value={folder}
+            onChange={(e) => setFolder(e.target.value)}
+            className="rounded border px-2 py-1 text-sm"
+          >
+            <option value="">All</option>
+            {folders.map((f) => (
+              <option key={f.slug} value={f.slug}>
+                {f.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Tag</label>
+          <select
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            className="rounded border px-2 py-1 text-sm"
+          >
+            <option value="">All</option>
+            {availableTags.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={() => {
+              const toAdd = filteredAssets.map((a) => a.id).filter((id) => !selected.includes(id));
+              if (toAdd.length) onChange([...selected, ...toAdd]);
+            }}
+            className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
+          >
+            Select all
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
+          >
+            Clear selection
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="text-sm text-gray-500">Loading…</div>
-      ) : assets.length === 0 ? (
+      ) : filteredAssets.length === 0 ? (
         <div className="text-sm text-gray-500">No assets found.</div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 overflow-y-auto flex-1 pr-1">
-          {assets.map((a) => {
+          {filteredAssets.map((a) => {
             const isSelected = selected.includes(a.id);
             return (
               <button
@@ -105,9 +154,6 @@ function StaticPicker({
         </div>
       )}
 
-      <div className="text-xs text-gray-500">
-        {selected.length} selected — click to toggle, order is preserved
-      </div>
     </div>
   );
 }
