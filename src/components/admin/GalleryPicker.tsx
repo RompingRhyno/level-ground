@@ -123,7 +123,7 @@ function StaticPicker({
                 key={a.id}
                 type="button"
                 onClick={() => toggle(a.id)}
-                className={`relative aspect-square rounded overflow-hidden border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                className={`relative aspect-video rounded overflow-hidden border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   isSelected ? "border-blue-500" : "border-transparent hover:border-gray-300"
                 }`}
                 title={a.filename ?? a.id}

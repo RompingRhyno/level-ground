@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, useContext } from "react";
-import type { PageSection, GallerySection } from "@/types/sections";
+import type { PageSection } from "@/types/sections";
 import { PreviewWidthContext } from "./PreviewWidthContext";
 
 // ── SectionPreviewFrame (iframe-based) ────────────────────────────────────
@@ -114,32 +114,6 @@ export default function SectionPreview({ section, index }: { section: PageSectio
     : index % 2 === 0
       ? "var(--color-bg-primary)"
       : "var(--color-bg-secondary)";
-
-  if (type === "gallery") {
-    const gs = section as GallerySection;
-    const assetCount = gs.mode === "static" ? (gs as any).assetIds?.length ?? 0 : null;
-    const tagCount = gs.mode === "dynamic" ? ((gs as any).filters?.tags?.length ?? 0) : null;
-    const folder = gs.mode === "dynamic" ? ((gs as any).filters?.folder ?? null) : null;
-    return (
-      <div className="mt-3">
-        <div className="text-xs text-gray-500 mb-1">Preview</div>
-        <div
-          className="rounded border border-gray-300 flex items-center justify-center"
-          style={{ height: 100, backgroundColor: bg }}
-        >
-          <div className="text-center text-sm text-gray-500">
-            <div className="font-medium text-gray-600 capitalize">{gs.layout ?? "grid"} gallery · {gs.mode}</div>
-            <div className="text-xs mt-1">
-              {gs.mode === "static"
-                ? `${assetCount} image${assetCount !== 1 ? "s" : ""}`
-                : `${tagCount ? `${tagCount} tag${tagCount !== 1 ? "s" : ""}` : "Any tag"}${folder ? ` · folder: ${folder}` : ""}`}
-              {gs.lightbox ? " · lightbox" : ""}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return <SectionPreviewFrame section={section} bg={bg} />;
 }

@@ -4,13 +4,67 @@ import Hero from "@/components/sections/Hero";
 import Banner from "@/components/sections/Banner";
 import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
+import GalleryClient from "@/components/sections/GalleryClient";
 import type {
   PageSection,
   HeroSection,
   BannerSection,
   TwoColumnSection,
   ServicesSection,
+  GallerySection,
 } from "@/types/sections";
+
+type AssetRow = { id: string; publicUrl: string; alt: string | null };
+
+function GalleryPreview({ section }: { section: GallerySection }) {
+  const [assets, setAssets] = useState<AssetRow[]>([]);
+
+  useEffect(() => {
+    const folder = section.mode === "dynamic" ? section.filters?.folder : undefined;
+    const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
+    fetch(`/api/assets${q}`)
+      .then((r) => r.json())
+      .then((data: any[]) => {
+        let rows = data.filter((a) => a.publicUrl);
+        if (section.mode === "static") {
+          const order = new Map(section.assetIds.map((id, i) => [id, i]));
+          rows = rows
+            .filter((a) => order.has(a.id))
+            .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+        } else {
+          const tags = section.filters?.tags ?? [];
+          if (tags.length) rows = rows.filter((a) => tags.some((t: string) => (a.tags ?? []).includes(t)));
+        }
+        setAssets(rows);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(section)]);
+
+  if (assets.length === 0) return <div className="py-12 text-center text-sm text-gray-400">No images</div>;
+
+  return (
+    <>
+      {(section.heading || section.body) && (
+        <div className="max-w-7xl mx-auto px-4 mb-8">
+          {section.heading && (
+            <h2
+              className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+              dangerouslySetInnerHTML={{ __html: section.heading }}
+              style={{ color: "var(--color-text-heading)" }}
+            />
+          )}
+          {section.body && (
+            <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
+              {section.body}
+            </p>
+          )}
+        </div>
+      )}
+      <GalleryClient assets={assets} layoutMode={section.layout ?? "grid"} />
+    </>
+  );
+}
 
 function renderContent(section: PageSection, bg?: string) {
   const type = section.type;
@@ -45,6 +99,15 @@ function renderContent(section: PageSection, bg?: string) {
       <div style={{ backgroundColor: bg }}>
         <div className="mx-auto max-w-7xl px-6 py-20">
           <Services {...s} services={previewServices} />
+        </div>
+      </div>
+    );
+  }
+  if (type === "gallery") {
+    return (
+      <div style={{ backgroundColor: bg }}>
+        <div className="py-12">
+          <GalleryPreview section={section as GallerySection} />
         </div>
       </div>
     );
