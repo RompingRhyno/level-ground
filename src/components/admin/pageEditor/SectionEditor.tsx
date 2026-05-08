@@ -5,6 +5,7 @@ import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
 import SectionPreview from "./SectionPreview";
+import ImagePicker from "../ImagePicker";
 
 const SECTION_LABELS: Record<string, string> = {
   hero: "Hero",
@@ -73,7 +74,7 @@ export default function SectionEditor({
               <label className="block text-sm">Button href</label>
               <input value={(section as any).buttonHref || ""} onChange={(e) => update("buttonHref", e.target.value)} className="w-full rounded border px-2 py-1" />
               <label className="block text-sm">Image</label>
-              <input value={(section as any).image || ""} onChange={(e) => update("image", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
             </div>
           )}
 
@@ -84,7 +85,7 @@ export default function SectionEditor({
               <label className="block text-sm">Body</label>
               <textarea value={(section as any).body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" />
               <label className="block text-sm">Image</label>
-              <input value={(section as any).image || ""} onChange={(e) => update("image", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
             </div>
           )}
 
@@ -95,7 +96,7 @@ export default function SectionEditor({
               <label className="block text-sm">Subheading</label>
               <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
               <label className="block text-sm">Image</label>
-              <input value={(section as any).image || ""} onChange={(e) => update("image", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
               <label className="block text-sm">Overlay opacity (0-1)</label>
               <input value={(section as any).overlayOpacity ?? ""} onChange={(e) => update("overlayOpacity", Number(e.target.value))} className="w-full rounded border px-2 py-1" />
             </div>
@@ -114,22 +115,32 @@ export default function SectionEditor({
               <div>
                 <div className="font-medium text-sm mb-1">Services</div>
                 {((section as any).services || []).map((s: any, si: number) => (
-                  <div key={si} className="flex gap-2 items-center mt-2">
-                    <input value={s.title} onChange={(e) => {
-                      const services = [...(section as any).services];
-                      services[si] = { ...services[si], title: e.target.value };
-                      update("services", services);
-                    }} className="rounded border px-2 py-1" placeholder="Title" />
-                    <input value={s.href} onChange={(e) => {
-                      const services = [...(section as any).services];
-                      services[si] = { ...services[si], href: e.target.value };
-                      update("services", services);
-                    }} className="rounded border px-2 py-1" placeholder="href" />
-                    <button onClick={() => {
-                      const services = [...(section as any).services];
-                      services.splice(si, 1);
-                      update("services", services);
-                    }} className="text-sm btn-negative px-2 py-1 rounded">Remove</button>
+                  <div key={si} className="mt-3 rounded border p-2 space-y-1.5">
+                    <div className="flex gap-2 items-center">
+                      <input value={s.title} onChange={(e) => {
+                        const services = [...(section as any).services];
+                        services[si] = { ...services[si], title: e.target.value };
+                        update("services", services);
+                      }} className="rounded border px-2 py-1 flex-1" placeholder="Title" />
+                      <input value={s.href} onChange={(e) => {
+                        const services = [...(section as any).services];
+                        services[si] = { ...services[si], href: e.target.value };
+                        update("services", services);
+                      }} className="rounded border px-2 py-1 flex-1" placeholder="href" />
+                      <button onClick={() => {
+                        const services = [...(section as any).services];
+                        services.splice(si, 1);
+                        update("services", services);
+                      }} className="text-sm btn-negative px-2 py-1 rounded shrink-0">Remove</button>
+                    </div>
+                    <ImagePicker
+                      value={s.image || ""}
+                      onChange={(url) => {
+                        const services = [...(section as any).services];
+                        services[si] = { ...services[si], image: url };
+                        update("services", services);
+                      }}
+                    />
                   </div>
                 ))}
                 <button onClick={() => {
