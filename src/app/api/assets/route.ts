@@ -10,7 +10,8 @@ export async function GET(request: Request) {
   if (folder) where.folder = folder;
 
   const rows = await prisma.asset.findMany({ where, orderBy: { createdAt: "desc" }, take: 200 });
-  return NextResponse.json(rows);
+  const sorted = rows.map((r) => ({ ...r, tags: Array.isArray(r.tags) ? [...r.tags].sort() : r.tags }));
+  return NextResponse.json(sorted);
 }
 
 export async function POST(request: Request) {
