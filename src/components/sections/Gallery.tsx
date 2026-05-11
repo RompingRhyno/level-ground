@@ -62,7 +62,7 @@ export default async function Gallery(section: GallerySection) {
 
   if (section.lightbox) {
     return (
-      <section className="py-12">
+      <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <GalleryClient assets={valid} layoutMode={layout === "bento" ? "bento" : "grid"} />
       </section>
@@ -71,7 +71,7 @@ export default async function Gallery(section: GallerySection) {
 
   if (layout === "masonry") {
     return (
-      <section className="py-12">
+      <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <div className="max-w-7xl mx-auto px-4 columns-1 sm:columns-2 md:columns-3 gap-4">
           {valid.map((asset) => (
@@ -96,7 +96,7 @@ export default async function Gallery(section: GallerySection) {
   const cells = getLayoutCells(valid.length, layout === "bento" ? "bento" : "grid");
 
   return (
-    <section className="py-12">
+    <section>
       <SectionHeader heading={section.heading} body={section.body} />
 
       {/* Mobile: simple 1–2 col responsive grid */}
