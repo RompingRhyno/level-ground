@@ -43,6 +43,8 @@
   --btn-negative-bg: #cf6161; /* red-500 */
   --btn-negative-text: #ffffff;
   --btn-negative-hover-bg: #f84040; /* red-600 */
+  /* Default control hover background (used on white backgrounds) */
+  --btn-default-hover-bg: rgba(108,157,48,0.06);
 
   /* Typography */
   --font-heading: "Jost", sans-serif;

@@ -103,11 +103,11 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
           </div>
 
           {/* Pages list */}
-          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--color-bg-secondary)" }}>
+          <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--color-brand-dark)", backgroundColor: "white" }}>
             {/* Table header */}
             <div
               className="grid grid-cols-[1fr_1fr_5rem] justify-items-start px-4 py-2 text-sm font-semibold uppercase tracking-wide"
-              style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-heading)" }}
+                style={{ backgroundColor: "white", color: "var(--color-brand-dark)" }}
             >
               <span className="text-left">Label</span>
               <span className="text-left">Slug</span>
@@ -125,12 +125,12 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
                 key={page.slug}
                 onClick={() => router.push(`/admin/pages/${page.slug}`)}
                 className="grid grid-cols-[1fr_1fr_5rem] justify-items-start items-center px-4 py-3 cursor-pointer transition-colors duration-100"
-                style={{ borderTop: "1px solid var(--color-bg-secondary)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--color-bg-secondary)")}
+                style={{ borderTop: "1px solid var(--color-brand-dark)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
               >
-                <span className="font-normal" style={{ color: "var(--color-text-primary)" }}>{page.label}</span>
-                <span className="text-sm" style={{ color: "var(--color-text-primary)" }}>{page.slug}</span>
+                <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>{page.label}</span>
+                <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{page.slug}</span>
                 <button
                   onClick={(e) => handleDelete(e, page.slug, page.label)}
                   className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
