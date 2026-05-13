@@ -6,6 +6,7 @@ import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
 import SectionPreview from "./SectionPreview";
 import ImagePicker from "../ImagePicker";
+import RichContentEditable from "./RichContentEditable";
 
 const SECTION_LABELS: Record<string, string> = {
   hero: "Hero",
@@ -40,17 +41,17 @@ export default function SectionEditor({
   }
 
   return (
-    <div className="border rounded overflow-hidden" style={{ backgroundColor: "var(--color-bg-secondary)" }}>
+    <div className="border rounded overflow-hidden" style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-brand-dark)" }}>
       <AlertDialog {...dialogProps} />
 
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200" style={{ backgroundColor: "var(--color-bg-primary)" }}>
+      <div className="flex items-center justify-between px-3 py-2 border-b" style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}>
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
           className="flex items-center gap-2 text-sm font-medium flex-1 text-left"
         >
-          <span className="text-gray-400 text-xs">{expanded ? "▼" : "▶"}</span>
+          <span className="text-xs opacity-50">{expanded ? "▼" : "▶"}</span>
           <span>{SECTION_LABELS[type] ?? type}</span>
         </button>
         <div className="flex items-center gap-1">
@@ -62,11 +63,11 @@ export default function SectionEditor({
 
       {/* Expanded body */}
       {expanded && (
-        <div className="p-3 space-y-2 section-fields">
+        <div className="p-3 space-y-2 section-fields" style={{ backgroundColor: "white" }}>
           {type === "hero" && (
             <div className="space-y-2">
               <label className="block text-sm">Heading</label>
-              <input value={(section as any).heading || ""} onChange={(e) => update("heading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
               <label className="block text-sm">Subheading</label>
               <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
               <label className="block text-sm">Button text</label>
@@ -92,7 +93,7 @@ export default function SectionEditor({
           {type === "banner" && (
             <div className="space-y-2">
               <label className="block text-sm">Heading</label>
-              <input value={(section as any).heading || ""} onChange={(e) => update("heading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
               <label className="block text-sm">Subheading</label>
               <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
               <label className="block text-sm">Image</label>
@@ -109,7 +110,7 @@ export default function SectionEditor({
           {type === "services" && (
             <div className="space-y-2">
               <label className="block text-sm">Heading</label>
-              <input value={(section as any).heading || ""} onChange={(e) => update("heading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
               <label className="block text-sm">Body text</label>
               <textarea value={(section as any).bodyText || ""} onChange={(e) => update("bodyText", e.target.value)} className="w-full rounded border px-2 py-1" />
               <div>

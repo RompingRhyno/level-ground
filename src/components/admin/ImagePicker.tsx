@@ -137,7 +137,8 @@ export default function ImagePicker({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-50 self-start"
+          className="rounded border px-3 py-1 text-sm transition-colors self-start"
+          style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
         >
           {value ? "Change image…" : "Choose image…"}
         </button>

@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { PageSection } from "@/types/sections";
 import GalleryPicker from "../GalleryPicker";
+import RichContentEditable from "./RichContentEditable";
 
 type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
 
@@ -141,7 +142,7 @@ export default function GalleryEditor({
   return (
     <div className="space-y-2">
       <label className="block text-sm">Heading</label>
-      <input value={gs.heading || ""} onChange={(e) => update("heading", e.target.value)} className="w-full rounded border px-2 py-1" placeholder="Optional" />
+      <RichContentEditable value={gs.heading || ""} onChange={(val) => update("heading", val)} className="w-full" placeholder="Optional" />
       <label className="block text-sm">Body text</label>
       <textarea value={gs.body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" rows={2} placeholder="Optional" />
 
@@ -179,7 +180,8 @@ export default function GalleryEditor({
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
+          className="rounded border px-3 py-1 text-sm transition-colors"
+          style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
         >
           {gs.mode === "static" ? "Choose images\u2026" : "Edit filters\u2026"}
         </button>
@@ -187,7 +189,7 @@ export default function GalleryEditor({
 
       {/* Sortable thumbnail strip — static mode only */}
       {gs.mode === "static" && assetIds.length > 0 && (
-        <p className="text-xs text-gray-400 mt-1">Drag to reorder · hover to remove</p>
+        <p className="text-xs mt-1" style={{ color: "var(--color-brand-dark)" }}>Drag to reorder · hover to remove</p>
       )}
       {gs.mode === "static" && assetIds.length > 0 && (
         <DndContext

@@ -106,6 +106,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           className="mt-1 block w-full rounded border px-3 py-2"
+          style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
         />
       </div>
 
@@ -117,6 +118,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               defaultValue=""
               onChange={(e) => { addSection(e.target.value); (e.target as HTMLSelectElement).value = ""; }}
               className="rounded border px-2 py-1 text-sm"
+              style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
             >
               <option value="" disabled>Add section&hellip;</option>
               <option value="hero">Hero</option>
@@ -176,6 +178,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         {showRaw && (
           <textarea
             className="mt-2 block w-full rounded border px-3 py-2 font-mono text-sm"
+            style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
             rows={12}
             value={JSON.stringify(sections, null, 2)}
             onChange={(e) => {

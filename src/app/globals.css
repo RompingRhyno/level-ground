@@ -158,8 +158,11 @@ body.preview-bare > main {
 /* Section editor fields — primary background for contrast on secondary section body */
 .section-fields input,
 .section-fields textarea,
-.section-fields select {
-  background-color: var(--color-bg-primary);
+.section-fields select,
+.section-fields [contenteditable] {
+  background-color: white;
+  color: var(--color-brand-dark);
+  border-color: var(--color-brand-dark);
 }
 
 .heading {
