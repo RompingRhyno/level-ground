@@ -10,7 +10,7 @@ export default function AdminFilesPage() {
       <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '2rem' }}>
         <div className="mx-auto px-6">
           <h1 className="text-2xl font-semibold">Files</h1>
-          <p className="text-sm text-gray-600">Upload and manage media stored in Cloudflare R2.</p>
+          <p className="text-sm text-gray-600">Upload and organise images and files used across the site.</p>
         </div>
       </div>
 

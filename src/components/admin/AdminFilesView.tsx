@@ -1,5 +1,6 @@
 ﻿"use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from 'react-dom';
 import Image from "next/image";
 import AlertDialog from "../ui/AlertDialog";
 import { useAdminFiles, filenameParts } from "./useAdminFiles";
@@ -22,6 +23,151 @@ const CloseIcon = ({ size = 15 }: { size?: number }) => (
     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+
+const MAX_TAG_ROWS = 3;
+
+function TagsDisplay({
+  tags,
+  editing,
+  onRemove,
+}: {
+  tags: string[];
+  editing: boolean;
+  onRemove: (tag: string) => Promise<void>;
+}) {
+  const tagRefs = useRef<(HTMLElement | null)[]>([]);
+  const [hiddenCount, setHiddenCount] = useState(0);
+  const pillRef = useRef<HTMLButtonElement | null>(null);
+  const mobileRef = useRef<HTMLButtonElement | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useLayoutEffect(() => {
+    const els = tagRefs.current.filter((el): el is HTMLElement => el != null).slice(0, tags.length);
+    if (els.length === 0) { setHiddenCount(0); return; }
+    const rowTops = [...new Set(els.map(el => Math.round(el.offsetTop)))].sort((a, b) => a - b);
+    if (rowTops.length <= MAX_TAG_ROWS) { setHiddenCount(0); return; }
+    const cutoff = rowTops[MAX_TAG_ROWS];
+    setHiddenCount(els.filter(el => Math.round(el.offsetTop) >= cutoff).length);
+  }, [tags, editing]);
+
+  const visibleCount = tags.length - hiddenCount;
+
+  function openPopover(el: HTMLElement | null) {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setPopoverPos({ top: rect.top, left: rect.left });
+    setPopoverOpen(true);
+  }
+
+  function schedClose() {
+    closeTimer.current = setTimeout(() => setPopoverOpen(false), 150);
+  }
+
+  function cancelClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }
+
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current); }, []);
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+    function onDown(e: MouseEvent) {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (pillRef.current?.contains(target) || mobileRef.current?.contains(target)) return;
+      setPopoverOpen(false);
+    }
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [popoverOpen]);
+
+  const popover = popoverOpen && popoverPos ? createPortal(
+    <div
+      style={{ position: 'fixed', top: popoverPos.top - 8, left: popoverPos.left, transform: 'translateY(-100%)', zIndex: 9999 }}
+      className="bg-gray-900/95 rounded-lg p-2 shadow-xl max-w-[220px]"
+      onMouseEnter={cancelClose}
+      onMouseLeave={schedClose}
+    >
+      <div className="flex flex-wrap gap-1">
+        {tags.map((tag) => editing ? (
+          <button
+            key={tag}
+            type="button"
+            onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await onRemove(tag); }}
+            className="inline-flex items-center gap-0.5 text-xs text-white bg-white/20 px-1.5 py-0.5 rounded-full hover:bg-white/30"
+          >
+            {tag}<CloseIcon size={11} aria-hidden="true" />
+          </button>
+        ) : (
+          <span key={tag} className="text-xs text-white bg-white/20 px-1.5 py-0.5 rounded-full">{tag}</span>
+        ))}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <>
+      {/* Desktop: wrapping flex up to MAX_TAG_ROWS rows, then +N pill */}
+      <div className="hidden md:flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+        {tags.map((tag, i) => editing ? (
+          <button
+            key={tag}
+            ref={(el) => { tagRefs.current[i] = el; }}
+            type="button"
+            style={{ display: i >= visibleCount ? 'none' : undefined }}
+            onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await onRemove(tag); }}
+            className="inline-flex items-center gap-0.5 text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full hover:bg-white/10"
+          >
+            {tag}<CloseIcon size={11} aria-hidden="true" />
+          </button>
+        ) : (
+          <span
+            key={tag}
+            ref={(el) => { tagRefs.current[i] = el; }}
+            style={{ display: i >= visibleCount ? 'none' : undefined }}
+            className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full"
+          >
+            {tag}
+          </span>
+        ))}
+        {hiddenCount > 0 && (
+          <button
+            ref={pillRef}
+            type="button"
+            className="text-xs text-white bg-white/30 px-1.5 py-0.5 rounded-full hover:bg-white/50"
+            onMouseEnter={() => openPopover(pillRef.current)}
+            onMouseLeave={schedClose}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); openPopover(pillRef.current); }}
+          >
+            +{hiddenCount}
+          </button>
+        )}
+      </div>
+      {/* Mobile: tag count button opens popover on click */}
+      {tags.length > 0 && (
+        <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
+          <button
+            ref={mobileRef}
+            type="button"
+            className="inline-flex items-center gap-1 text-xs text-white bg-black/60 px-2 py-0.5 rounded-full"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (popoverOpen) setPopoverOpen(false); else openPopover(mobileRef.current); }}
+          >
+            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+            {tags.length}
+          </button>
+        </div>
+      )}
+      {popover}
+    </>
+  );
+}
 
 export default function AdminFilesView({
   initialFolder,
@@ -223,7 +369,13 @@ export default function AdminFilesView({
         </div>
       </div>
 
-      {loading ? <div>Loading...</div> : (
+      {loading ? (
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
+              <div className="max-w-7xl mx-auto px-4 pt-6">
+                <div className="text-sm text-gray-700">Loading...</div>
+              </div>
+            </div>
+          ) : (
         <>
           {/* Action bar */}
           <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
@@ -272,12 +424,12 @@ export default function AdminFilesView({
                       <div className={`absolute inset-0 pointer-events-none ${selected[a.id] ? 'thumbnail-selected' : ''}`} />
 
                       <div className="absolute inset-0 flex flex-col justify-between p-3 text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(a.id); }}>
-                        <div className="flex items-start justify-between">
-                          <div className="text-sm font-medium flex items-center gap-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-sm font-medium min-w-0 flex-1">
                             {editingId === a.id ? (
                               <input
                                 ref={editInputRef}
-                                className="px-1 py-0.5 border rounded text-sm text-white bg-transparent placeholder-gray-400"
+                                className="w-full px-1 py-0.5 border rounded text-sm text-white bg-transparent placeholder-gray-400"
                                 value={editingName}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => setEditingName(e.target.value)}
@@ -287,11 +439,11 @@ export default function AdminFilesView({
                                 }}
                               />
                             ) : (
-                              <span className="truncate max-w-48">{filenameParts(a).base || a.filename || a.storageKey}</span>
+                              <span className="truncate block">{filenameParts(a).base || a.filename || a.storageKey}</span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 shrink-0">
                             <button
                               title={editingId === a.id ? 'Save' : 'Rename'}
                               onClick={async (e) => {
@@ -316,32 +468,21 @@ export default function AdminFilesView({
                                 <CloseIcon />
                               </button>
                             )}
+                            <button
+                              aria-label={a.filename || 'Open image'}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenImage(a); }}
+                              className="px-2 py-1 text-white text-sm underline rounded hover:bg-white/10"
+                            >
+                              View
+                            </button>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 max-w-[70%] overflow-hidden">
-                            {(a.tags || []).map((tag: string) => (
-                              editingId === a.id ? (
-                                <button
-                                  key={tag}
-                                  type="button"
-                                  onClick={async (e) => { e.preventDefault(); e.stopPropagation(); await removeTagFromAsset(a.id, tag); }}
-                                  className="inline-flex items-center justify-between gap-0 text-sm text-white bg-black/60 px-0.5 py-0.5 rounded truncate hover:bg-white/10"
-                                  aria-label={`Remove tag ${tag}`}
-                                >
-                                  <span className="truncate mr-0.5">{tag}</span>
-                                  <span className="text-xs bg-white/10 px-0.5 rounded"><CloseIcon size={16} aria-hidden="true" /></span>
-                                </button>
-                              ) : (
-                                <span key={tag} className="inline-flex items-center gap-2 text-sm text-white bg-black/60 px-1 py-0.5 rounded truncate">
-                                  <span className="truncate">{tag}</span>
-                                </span>
-                              )
-                            ))}
-                          </div>
-                          <button aria-label={a.filename || 'Open image'} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpenImage(a); }} className="text-white text-sm underline px-2 py-1 rounded hover:bg-white/10">View</button>
-                        </div>
+                        <TagsDisplay
+                          tags={a.tags || []}
+                          editing={editingId === a.id}
+                          onRemove={async (tag) => { await removeTagFromAsset(a.id, tag); }}
+                        />
                       </div>
                     </div>
                   </div>

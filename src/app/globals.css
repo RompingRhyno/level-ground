@@ -17,6 +17,7 @@
   --color-brand-primary-hover: #435921;  /* hover CTA button */
   --color-brand-accent: #597772;         /* accents, highlights */
   --color-brand-dark: #304C50;           /* reused for headings if needed */
+  --color-brand-logo: #6c9d30;           /* logo green / nav active underline */
 
   /* Admin button colors (shared) */
   --btn-primary-bg: lab(34.2% 10.84 -44.13);

@@ -1,36 +1,20 @@
-import Link from "next/link";
 import { getPages } from "@/lib/pages";
+import AdminPagesClient from "@/components/admin/AdminPagesClient";
 
 export default async function AdminPagesList() {
   const pages = await getPages();
+  const pageList = pages.map(({ slug, label }) => ({ slug, label }));
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Pages</h2>
+    <div>
+      <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '2rem' }}>
+        <div className="mx-auto px-6">
+          <h1 className="text-2xl font-semibold">Pages</h1>
+          <p className="text-sm text-gray-600">Create and manage pages, layouts, and section content.</p>
+        </div>
+      </div>
 
-      <table className="w-full border border-gray-200 bg-white">
-        <thead>
-          <tr className="border-b">
-            <th className="px-4 py-2 text-left">Label</th>
-            <th className="px-4 py-2 text-left">Slug</th>
-            <th className="px-4 py-2" />
-          </tr>
-        </thead>
-
-        <tbody>
-          {pages.map((page) => (
-            <tr key={page.slug} className="border-b">
-              <td className="px-4 py-2 font-medium">{page.label}</td>
-              <td className="px-4 py-2 text-gray-600">{page.slug}</td>
-              <td className="px-4 py-2 text-right">
-                <Link href={`/admin/pages/${page.slug}`} className="text-blue-600 underline">
-                  View
-                </Link>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <AdminPagesClient initialPages={pageList} />
     </div>
   );
 }

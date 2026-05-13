@@ -1,3 +1,5 @@
+import AdminNav from "@/components/admin/AdminNav";
+
 export default function AdminLayout({
   children,
 }: {
@@ -5,6 +7,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <AdminNav />
       <main className="p-6">{children}</main>
     </div>
   );

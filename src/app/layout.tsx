@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
+import SiteHeader from "@/components/SiteHeader";
 import { getNavPages } from "@/lib/pages";
 
 export const metadata: Metadata = {
@@ -14,9 +14,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en">
       <body className="antialiased">
-        <header className="sticky top-0 z-50">
-          <Navigation navPages={navPages} />
-        </header>
+        <SiteHeader navPages={navPages} />
         <main>{children}</main>
         <footer className="bg-(--color-bg-secondary) px-6 py-4">
           © 2025 Level Ground Landscaping

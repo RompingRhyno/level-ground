@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import AdminBreadcrumbs from "@/components/admin/AdminBreadcrumbs";
-
 type NavPage = { slug: string; label: string };
 
 export default function Navigation({ navPages }: { navPages: NavPage[] }) {
@@ -95,7 +93,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
   return (
     <nav
       ref={navRef}
-      className="sticky top-0 left-0 right-0 w-full z-50 flex items-center justify-between px-6 py-4"
+      className="sticky top-0 left-0 right-0 w-full z-50 flex items-stretch justify-between px-6"
         style={{
           backgroundColor: "var(--color-bg-primary)",
           WebkitBackdropFilter: "blur(4px)",
@@ -103,7 +101,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
         }}
     >
       {/* Logo on the left (with mobile breadcrumb underneath) */}
-      <div className="shrink-0">
+      <div className="shrink-0 flex items-center py-4">
         <Link href="/">
           <Image
             src="/logo-dark.webp"
@@ -112,22 +110,10 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
             height={36}
           />
         </Link>
-        {pathname?.startsWith("/admin") && (
-          <div className="md:hidden mt-2">
-            <AdminBreadcrumbs />
-          </div>
-        )}
       </div>
 
-      {/* Admin breadcrumbs shown in the global nav when on admin pages */}
-      {pathname?.startsWith("/admin") && (
-        <div className="hidden md:flex flex-1 justify-center">
-          <AdminBreadcrumbs />
-        </div>
-      )}
-
       {/* Desktop links */}
-      <div className="hidden md:flex gap-8 items-center">
+      <div className="hidden md:flex gap-0 items-stretch">
         {navPages.map((page) => {
           const href = `/${page.slug}`;
           const isActive = pathname === href;
@@ -135,7 +121,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
             <Link
               key={page.slug}
               href={href}
-              className={`font-medium uppercase ${isActive ? "underline" : ""}`}
+              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${isActive ? "border-[var(--color-brand-logo)]" : "border-transparent hover:border-[var(--color-brand-logo)]"}`}
             >
               {page.label}
             </Link>
@@ -144,7 +130,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
       </div>
 
       {/* Mobile hamburger */}
-      <div className="md:hidden">
+      <div className="md:hidden flex items-center py-4">
         <button
           id="mobile-menu-button"
           ref={buttonRef}
