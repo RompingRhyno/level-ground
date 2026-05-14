@@ -6,6 +6,7 @@ import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
 import SectionPreview from "./SectionPreview";
 import ImagePicker from "../ImagePicker";
+import VideoPicker from "../VideoPicker";
 import RichContentEditable from "./RichContentEditable";
 
 const SECTION_LABELS: Record<string, string> = {
@@ -15,6 +16,7 @@ const SECTION_LABELS: Record<string, string> = {
   services: "Services",
   gallery: "Gallery",
   cta: "CTA",
+  video: "Video",
 };
 
 export default function SectionEditor({
@@ -105,6 +107,17 @@ export default function SectionEditor({
 
           {type === "gallery" && (
             <GalleryEditor section={section} index={index} onChange={onChange} />
+          )}
+
+          {type === "video" && (
+            <div className="space-y-2">
+              <label className="block text-sm">Heading</label>
+              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
+              <label className="block text-sm">Subheading</label>
+              <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              <label className="block text-sm">Video</label>
+              <VideoPicker value={(section as any).videoUrl || ""} onChange={(url) => update("videoUrl", url)} />
+            </div>
           )}
 
           {type === "services" && (

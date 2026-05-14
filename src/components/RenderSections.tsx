@@ -6,6 +6,7 @@ import Gallery from "./sections/Gallery";
 import CTA from "./sections/CTA";
 import Services from "./sections/Services";
 import Banner from "./sections/Banner";
+import Video from "./sections/Video";
 
 type Props = {
   sections: PageSection[];
@@ -41,6 +42,10 @@ export default function RenderSections({ sections }: Props) {
 
           case "twoColumn":
             content = <TwoColumn {...section} />;
+            break;
+
+          case "video":
+            content = <Video {...section} />;
             break;
 
           case "cta":

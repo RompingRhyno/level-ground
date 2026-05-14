@@ -65,10 +65,18 @@ export type BannerSection = {
   overlayOpacity?: number; // e.g. 0.25 for 25%
 };
 
+export type VideoSection = {
+  type: "video";
+  heading?: string;
+  subheading?: string;
+  videoUrl: string;
+};
+
 export type PageSection =
   | HeroSection
   | ServicesSection
   | BannerSection
   | TwoColumnSection
   | GallerySection
-  | CTASection;
+  | CTASection
+  | VideoSection;

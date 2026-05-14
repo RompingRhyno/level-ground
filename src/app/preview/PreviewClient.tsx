@@ -12,6 +12,7 @@ import type {
   TwoColumnSection,
   ServicesSection,
   GallerySection,
+  VideoSection,
 } from "@/types/sections";
 
 type AssetRow = { id: string; publicUrl: string; alt: string | null };
@@ -108,6 +109,38 @@ function renderContent(section: PageSection, bg?: string) {
       <div style={{ backgroundColor: bg }}>
         <div className="py-12">
           <GalleryPreview section={section as GallerySection} />
+        </div>
+      </div>
+    );
+  }
+  if (type === "video") {
+    const s = section as VideoSection;
+    return (
+      <div style={{ backgroundColor: bg }}>
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          {(s.heading || s.subheading) && (
+            <div className="mb-8">
+              {s.heading && (
+                <h2
+                  className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+                  dangerouslySetInnerHTML={{ __html: s.heading }}
+                  style={{ color: "var(--color-text-heading)" }}
+                />
+              )}
+              {s.subheading && (
+                <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
+                  {s.subheading}
+                </p>
+              )}
+            </div>
+          )}
+          {s.videoUrl ? (
+            <video src={s.videoUrl} className="w-full rounded" preload="metadata" muted playsInline />
+          ) : (
+            <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-gray-400">
+              No video selected
+            </div>
+          )}
         </div>
       </div>
     );

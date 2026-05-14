@@ -68,6 +68,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       banner: { type: "banner", heading: "", subheading: "", image: "", overlayOpacity: 0.35 },
       services: { type: "services", heading: "", services: [], bodyText: "" },
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },
+      video: { type: "video", heading: "", subheading: "", videoUrl: "" },
     };
     if (defaults[type]) setSections([...sections, defaults[type]]);
   }
@@ -126,6 +127,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               <option value="banner">Banner</option>
               <option value="services">Services</option>
               <option value="gallery">Gallery</option>
+              <option value="video">Video</option>
             </select>
             <button onClick={() => setShowRaw((s) => !s)} className="text-sm admin-btn px-2 py-1 rounded">
               {showRaw ? "Hide JSON" : "Show JSON"}
