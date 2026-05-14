@@ -58,7 +58,7 @@ export default function AdminNav() {
               key={href}
               href={href}
               style={{ color: "var(--color-text-heading)" }}
-              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${active ? "border-[var(--color-brand-logo)]" : "border-transparent hover:border-[var(--color-brand-logo)]"}`}
+              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${active ? "border-(--color-brand-logo)" : "border-transparent hover:border-(--color-brand-logo)"}`}
             >
               {label}
             </Link>

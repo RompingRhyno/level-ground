@@ -121,7 +121,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
             <Link
               key={page.slug}
               href={href}
-              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${isActive ? "border-[var(--color-brand-logo)]" : "border-transparent hover:border-[var(--color-brand-logo)]"}`}
+              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${isActive ? "border-(--color-brand-logo)" : "border-transparent hover:border-(--color-brand-logo)"}`}
             >
               {page.label}
             </Link>

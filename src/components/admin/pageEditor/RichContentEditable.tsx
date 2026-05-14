@@ -94,7 +94,7 @@ export default function RichContentEditable({
         onInput={handleInput}
         onPaste={handlePaste}
         data-placeholder={placeholder}
-        className={`min-h-[34px] rounded border px-2 py-1 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none ${className ?? ""}`}
+        className={`min-h-8.5 rounded border px-2 py-1 empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none ${className ?? ""}`}
       />
     </div>
   );
