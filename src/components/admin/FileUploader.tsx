@@ -1,5 +1,87 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import type { FFmpeg as FFmpegType } from '@ffmpeg/ffmpeg';
+
+// new Function bypasses webpack static analysis — modules are resolved at runtime from CDN
+// eslint-disable-next-line no-new-func
+const cdnImport = new Function('url', 'return import(url)') as (url: string) => Promise<Record<string, unknown>>;
+
+// Self-hosted from public/ffmpeg/ — same origin avoids CSP worker restrictions.
+// When index.js runs, import.meta.url is http://localhost/ffmpeg/ffmpeg/index.js,
+// so new URL("./worker.js", import.meta.url) resolves to the same origin naturally.
+const FFMPEG_LOCAL = '/ffmpeg/ffmpeg/index.js';
+const UTIL_LOCAL   = '/ffmpeg/util/index.js';
+
+// Module-level ffmpeg singleton — persists across re-renders and component remounts
+let ffmpegInstance: FFmpegType | null = null;
+
+async function getFFmpeg(): Promise<FFmpegType> {
+  const { FFmpeg } = await cdnImport(FFMPEG_LOCAL) as { FFmpeg: new () => FFmpegType };
+  const { toBlobURL } = await cdnImport(UTIL_LOCAL) as { toBlobURL: (url: string, type: string) => Promise<string> };
+  if (!ffmpegInstance) {
+    ffmpegInstance = new FFmpeg();
+  }
+  if (!ffmpegInstance.loaded) {
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+    await ffmpegInstance.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+  }
+  return ffmpegInstance;
+}
+
+const WEB_SAFE_VIDEO = /\.(webm|ogv|ogg)$/i;
+
+async function convertIfVideo(
+  f: File,
+  onProgress: (p: number) => void,
+  onLabel: (label: string) => void,
+): Promise<File> {
+  if (!f.type.startsWith('video/')) return f;
+  // Already web-safe containers (VP8/VP9/AV1)
+  if (WEB_SAFE_VIDEO.test(f.name) || f.type === 'video/webm' || f.type === 'video/ogg') return f;
+
+  try {
+    onLabel('Loading engine…');
+    const ffmpeg = await getFFmpeg();
+    const { fetchFile } = await cdnImport(UTIL_LOCAL) as { fetchFile: (data: File) => Promise<Uint8Array> };
+
+    onLabel('Reading file…');
+    const ext = (f.name.match(/\.[^.]+$/) || ['.mp4'])[0];
+    const inputName = 'input' + ext;
+    await ffmpeg.writeFile(inputName, await fetchFile(f));
+
+    // Skip codec probe — the probe exec (-f null -) can hang in single-threaded
+    // WASM. Always transcode to H.264; if the source is already H.264 the
+    // re-encode is a one-time cost but never blocks.
+    const outputName = f.name.replace(/\.[^.]+$/, '') + '_h264.mp4';
+    onLabel('Transcoding…');
+    const progressHandler = ({ progress }: { progress: number }) => {
+      onProgress(Math.min(99, Math.round(progress * 100)));
+    };
+    ffmpeg.on('progress', progressHandler);
+    await ffmpeg.exec([
+      '-i', inputName,
+      '-c:v', 'libx264', '-crf', '23', '-preset', 'fast',
+      '-c:a', 'aac',
+      '-movflags', '+faststart',
+      outputName,
+    ]);
+    ffmpeg.off('progress', progressHandler);
+
+    onLabel('Finishing…');
+    const data = await ffmpeg.readFile(outputName);
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+
+    const blob = new Blob([data as Uint8Array], { type: 'video/mp4' });
+    return new File([blob], f.name.replace(/\.[^.]+$/, '.mp4'), { type: 'video/mp4' });
+  } catch (err) {
+    console.warn('[ffmpeg] transcoding failed, using original file', err);
+    return f;
+  }
+}
 
 type UploadItem = {
   id: string;
@@ -7,6 +89,7 @@ type UploadItem = {
   preview?: string;
   progress: number;
   status: "converting" | "idle" | "uploading" | "done" | "error";
+  convertingLabel?: string;
   error?: string;
   key?: string;
   publicUrl?: string;
@@ -52,9 +135,14 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
     setItems((s) => [...next, ...s]);
     // Convert each in the background and update when ready
     next.forEach(async (item, i) => {
-      const converted = await convertIfHeic(fileArray[i]);
+      let converted = await convertIfHeic(fileArray[i]);
+      converted = await convertIfVideo(
+        converted,
+        (p) => updateItem(item.id, { progress: p }),
+        (label) => updateItem(item.id, { convertingLabel: label }),
+      );
       const preview = converted.type.startsWith('image/') ? URL.createObjectURL(converted) : undefined;
-      updateItem(item.id, { file: converted, preview, status: 'idle' });
+      updateItem(item.id, { file: converted, preview, status: 'idle', progress: 0, convertingLabel: undefined });
     });
   }
 
@@ -296,7 +384,11 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
               <div className="mt-2">
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   {it.status === "converting" ? (
-                    <div className="h-full bg-blue-400 animate-pulse w-full" />
+                    it.progress > 0 ? (
+                      <div style={{ width: `${it.progress}%` }} className="h-full bg-blue-400 transition-all duration-300" />
+                    ) : (
+                      <div className="h-full bg-blue-400 animate-pulse w-full" />
+                    )
                   ) : (
                     <div
                       style={{ width: `${it.progress}%` }}
@@ -306,7 +398,9 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
                   {it.status === "converting"
-                    ? "Converting…"
+                    ? (it.convertingLabel
+                        ? `${it.convertingLabel}${it.progress > 0 ? ' ' + it.progress + '%' : ''}`
+                        : "Converting…")
                     : it.status === "error"
                     ? `Error: ${it.error}`
                     : `${it.progress}%`}

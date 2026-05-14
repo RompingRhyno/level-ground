@@ -26,6 +26,10 @@ const CloseIcon = ({ size = 15 }: { size?: number }) => (
 
 const MAX_TAG_ROWS = 3;
 
+function isVideoMime(mime?: string | null) {
+  return /^video\//i.test(mime || '');
+}
+
 function TagsDisplay({
   tags,
   editing,
@@ -87,7 +91,7 @@ function TagsDisplay({
   const popover = popoverOpen && popoverPos ? createPortal(
     <div
       style={{ position: 'fixed', top: popoverPos.top - 8, left: popoverPos.left, transform: 'translateY(-100%)', zIndex: 9999 }}
-      className="bg-gray-900/95 rounded-lg p-2 shadow-xl max-w-[220px]"
+      className="bg-gray-900/95 rounded-lg p-2 shadow-xl max-w-55"
       onMouseEnter={cancelClose}
       onMouseLeave={schedClose}
     >
@@ -411,6 +415,14 @@ export default function AdminFilesView({
                     <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="bg-gray-800">
                       {a.publicUrl && /^image\/(jpeg|jpg|png|gif|webp|avif|svg\+xml)$/i.test(a.mime || '') ? (
                         <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
+                      ) : a.publicUrl && isVideoMime(a.mime) ? (
+                        <video
+                          src={a.publicUrl}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          preload="metadata"
+                          muted
+                          playsInline
+                        />
                       ) : a.publicUrl ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -499,11 +511,20 @@ export default function AdminFilesView({
           <button onClick={close} aria-label="Close" className="absolute right-4 top-4 z-30 bg-white/90 rounded-full w-10 h-10 flex items-center justify-center text-gray-700 shadow"><CloseIcon aria-hidden="true" /></button>
           <div className="relative max-w-[calc(100vw-48px)] max-h-[calc(100vh-48px)] p-4 z-20" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', maxWidth: '100%', maxHeight: '100%' }}>
-              <img
-                src={openImage.publicUrl}
-                alt={openImage.alt || ''}
-                style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 'calc(100vh - 80px)', objectFit: 'contain', display: 'block' }}
-              />
+              {isVideoMime(openImage.mime) ? (
+                <video
+                  src={openImage.publicUrl}
+                  controls
+                  playsInline
+                  style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 'calc(100vh - 80px)', display: 'block' }}
+                />
+              ) : (
+                <img
+                  src={openImage.publicUrl}
+                  alt={openImage.alt || ''}
+                  style={{ width: 'auto', maxWidth: '100%', height: 'auto', maxHeight: 'calc(100vh - 80px)', objectFit: 'contain', display: 'block' }}
+                />
+              )}
             </div>
           </div>
         </div>
