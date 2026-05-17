@@ -13,11 +13,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en">
-      <body className="antialiased">
+      <body className="antialiased min-h-dvh flex flex-col">
         <SiteHeader navPages={navPages} />
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
         <footer className="bg-(--color-bg-secondary) px-6 py-4">
-          © 2025 Level Ground Landscaping
+          © {new Date().getFullYear()} Level Ground Landscaping
         </footer>
       </body>
     </html>
