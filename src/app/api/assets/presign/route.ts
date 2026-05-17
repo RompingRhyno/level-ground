@@ -1,14 +1,32 @@
 import { NextResponse } from "next/server";
 
+const CONTACT_UPLOAD_ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+const CONTACT_UPLOAD_MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const CONTACT_UPLOAD_MAX_FILES = 5;
+
 export async function POST(request: Request) {
   const body = await request.json();
-  const { filename, contentType, folder = "" } = body;
+  const { filename, contentType, folder = "", size } = body;
 
   if (!filename || !contentType) {
     return NextResponse.json(
       { error: "missing filename or contentType" },
       { status: 400 }
     );
+  }
+
+  if (folder === "contact-uploads") {
+    if (!CONTACT_UPLOAD_ALLOWED_MIME.has(contentType)) {
+      return NextResponse.json({ error: "UPLOAD_INVALID_MIME" }, { status: 400 });
+    }
+    if (typeof size === "number" && size > CONTACT_UPLOAD_MAX_SIZE) {
+      return NextResponse.json({ error: "UPLOAD_TOO_LARGE" }, { status: 400 });
+    }
   }
 
   const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
