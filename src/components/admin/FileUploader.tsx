@@ -76,7 +76,8 @@ async function convertIfVideo(
     await ffmpeg.deleteFile(inputName);
     await ffmpeg.deleteFile(outputName);
 
-    const blob = new Blob([data as Uint8Array], { type: 'video/mp4' });
+    const byteArray = data instanceof Uint8Array ? data : new Uint8Array(data as any);
+    const blob = new Blob([byteArray], { type: 'video/mp4' });
     return new File([blob], f.name.replace(/\.[^.]+$/, '.mp4'), { type: 'video/mp4' });
   } catch (err) {
     console.warn('[ffmpeg] transcoding failed, using original file', err);
