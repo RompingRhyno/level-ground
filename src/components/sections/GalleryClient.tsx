@@ -5,9 +5,11 @@ import Image from "next/image";
 import { getLayoutCells, getCellSizes } from "@/lib/gallery-layout";
 import GalleryLightbox from "./GalleryLightbox";
 
+import type { GalleryLayout } from "@/types/sections";
+
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
-export default function GalleryClient({ assets, layoutMode = "bento" }: { assets: Asset[]; layoutMode?: "bento" | "grid" }) {
+export default function GalleryClient({ assets, layoutMode = "bento" }: { assets: Asset[]; layoutMode?: GalleryLayout }) {
   const [open, setOpen] = useState<number | null>(null);
 
   const prev = () => setOpen((i) => (i !== null ? (i > 0 ? i - 1 : assets.length - 1) : null));
