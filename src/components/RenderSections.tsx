@@ -7,12 +7,14 @@ import CTA from "./sections/CTA";
 import Services from "./sections/Services";
 import Banner from "./sections/Banner";
 import Video from "./sections/Video";
+import Contact from "./sections/Contact";
 
 type Props = {
   sections: PageSection[];
+  pageSlug: string;
 };
 
-export default function RenderSections({ sections }: Props) {
+export default function RenderSections({ sections, pageSlug }: Props) {
   return (
     <>
       {sections.map((section, index) => {
@@ -47,6 +49,10 @@ export default function RenderSections({ sections }: Props) {
           case "video":
             content = <Video {...section} />;
             break;
+
+          case "contact":
+            if (!section.id) throw new Error("Invalid contact section: missing id");
+            return <Contact key={index} {...section} pageSlug={pageSlug} />;
 
           case "cta":
             content = <CTA {...section} />;

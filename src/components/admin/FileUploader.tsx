@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { type UploadItem, uploadWithProgress } from "@/lib/uploadWithProgress";
 import type { FFmpeg as FFmpegType } from '@ffmpeg/ffmpeg';
 
 // new Function bypasses webpack static analysis — modules are resolved at runtime from CDN
@@ -83,18 +84,6 @@ async function convertIfVideo(
   }
 }
 
-type UploadItem = {
-  id: string;
-  file: File;
-  preview?: string;
-  progress: number;
-  status: "converting" | "idle" | "uploading" | "done" | "error";
-  convertingLabel?: string;
-  error?: string;
-  key?: string;
-  publicUrl?: string;
-};
-
 export default function FileUploader({ folder = "", onUploadComplete }: { folder?: string; onUploadComplete?: () => void }) {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [running, setRunning] = useState(false);
@@ -150,23 +139,6 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
     setItems((prev) =>
       prev.map((it) => (it.id === id ? { ...it, ...patch } : it))
     );
-  }
-
-  function uploadWithProgress(uploadUrl: string, file: File, contentType: string, onProgress: (p: number) => void) {
-    return new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", uploadUrl, true);
-      xhr.setRequestHeader("Content-Type", contentType);
-      xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error(`Upload failed: ${xhr.status}`));
-      };
-      xhr.onerror = () => reject(new Error("Network error during upload"));
-      xhr.send(file);
-    });
   }
 
   function uploadFormWithProgress(

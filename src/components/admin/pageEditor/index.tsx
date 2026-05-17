@@ -69,6 +69,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       services: { type: "services", heading: "", services: [], bodyText: "" },
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },
       video: { type: "video", heading: "", subheading: "", videoUrl: "" },
+      contact: { id: crypto.randomUUID(), type: "contact", heading: "", fields: [], recipientIds: [] },
     };
     if (defaults[type]) setSections([...sections, defaults[type]]);
   }
@@ -128,6 +129,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               <option value="services">Services</option>
               <option value="gallery">Gallery</option>
               <option value="video">Video</option>
+              <option value="contact">Contact Form</option>
             </select>
             <button onClick={() => setShowRaw((s) => !s)} className="text-sm admin-btn px-2 py-1 rounded">
               {showRaw ? "Hide JSON" : "Show JSON"}

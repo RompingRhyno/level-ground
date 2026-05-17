@@ -4,6 +4,7 @@ import type { PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
+import ContactEditor from "./ContactEditor";
 import SectionPreview from "./SectionPreview";
 import ImagePicker from "../ImagePicker";
 import VideoPicker from "../VideoPicker";
@@ -17,6 +18,7 @@ const SECTION_LABELS: Record<string, string> = {
   gallery: "Gallery",
   cta: "CTA",
   video: "Video",
+  contact: "Contact Form",
 };
 
 export default function SectionEditor({
@@ -107,6 +109,10 @@ export default function SectionEditor({
 
           {type === "gallery" && (
             <GalleryEditor section={section} index={index} onChange={onChange} />
+          )}
+
+          {type === "contact" && (
+            <ContactEditor section={section} index={index} onChange={onChange} />
           )}
 
           {type === "video" && (

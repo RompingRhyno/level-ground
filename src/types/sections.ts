@@ -72,6 +72,31 @@ export type VideoSection = {
   videoUrl: string;
 };
 
+export type ContactFormFieldType = "text" | "email" | "tel" | "textarea";
+
+export type ContactFormField = {
+  id: string;
+  label: string;
+  type: ContactFormFieldType;
+  required: boolean;
+  placeholder?: string;
+};
+
+export type ContactSection = {
+  type: "contact";
+  id: string;
+  heading: string;
+  subheading?: string;
+  image?: string;
+  fields: ContactFormField[];
+  servicesHeading?: string;
+  serviceOptions?: string[];
+  showUploader?: boolean;
+  uploaderLabel?: string;
+  submitLabel?: string;
+  recipientIds: number[];
+};
+
 export type PageSection =
   | HeroSection
   | ServicesSection
@@ -79,4 +104,5 @@ export type PageSection =
   | TwoColumnSection
   | GallerySection
   | CTASection
-  | VideoSection;
+  | VideoSection
+  | ContactSection;
