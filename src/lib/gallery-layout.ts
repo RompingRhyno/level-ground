@@ -166,8 +166,10 @@ export function buildCells(blocks: Block[]): LayoutCell[] {
 }
 
 /** Convenience: decompose + build in one call. */
-export function getLayoutCells(n: number, mode: "bento" | "grid"): LayoutCell[] {
-  return buildCells(mode === "bento" ? decomposeBlocksModeA(n) : decomposeBlocksModeB(n));
+export function getLayoutCells(n: number, mode: "bento" | "grid" | "masonry"): LayoutCell[] {
+  // Treat "masonry" as the same layout behavior as "grid" for now.
+  const blocks = mode === "bento" ? decomposeBlocksModeA(n) : decomposeBlocksModeB(n);
+  return buildCells(blocks);
 }
 
 /** Appropriate Next.js Image `sizes` hint per cell type in a max-3-column grid. */
