@@ -46,6 +46,9 @@
   /* Default control hover background (used on white backgrounds) */
   --btn-default-hover-bg: rgba(108,157,48,0.06);
 
+  /* Section editor */
+  --color-editor-bg: #e9e9e9;
+
   /* Typography */
   --font-heading: "Jost", sans-serif;
   --font-body: "Open Sans", sans-serif;
@@ -74,6 +77,15 @@ body {
 h1, h2, h3, h4, h5 {
   font-family: var(--font-heading);
   line-height: var(--line-heading);
+}
+
+/* Section editor field cards */
+.section-fields .editor-form .space-y-1,
+.section-fields .editor-form .field-group {
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(48, 76, 80, 0.18);
+  padding: 0.625rem 0.75rem;
 }
 
 .btn-primary {
