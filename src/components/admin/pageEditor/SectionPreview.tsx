@@ -68,38 +68,46 @@ export function SectionPreviewFrame({ section, bg }: { section: PageSection; bg?
   const containerHeight = rawHeight * scale;
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 px-3 pb-3">
       {/* Invisible full-width sentinel — measures available editor space */}
       <div ref={measureRef} className="w-full" style={{ height: 0, overflow: "hidden" }} />
-      <div className="text-xs text-gray-500 mb-1">Preview</div>
       <div
         style={{
           width: containerWidth ?? "100%",
-          height: containerHeight,
-          overflow: "hidden",
-          position: "relative",
-          transition: "height 150ms ease",
-          border: "2px solid var(--color-brand-dark)",
-          borderRadius: "0.25rem",
+          marginLeft: containerWidth ? "auto" : undefined,
+          marginRight: containerWidth ? "auto" : undefined,
         }}
       >
-        <iframe
-          ref={iframeRef}
-          src="/preview"
-          title="Section preview"
+        <div className="block text-sm text-gray-500 mb-1">Preview</div>
+        <div
           style={{
-            width: previewWidth,
-            height: rawHeight,
-            border: "none",
-            display: "block",
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
-            pointerEvents: "none",
-            // Fade in once the iframe has reported its content height
-            opacity: iframeReady ? 1 : 0,
-            transition: "opacity 0.15s ease",
+            width: "100%",
+            height: containerHeight,
+            overflow: "hidden",
+            position: "relative",
+            transition: "height 150ms ease",
+            border: "2px solid var(--color-brand-dark)",
+            borderRadius: "0.25rem",
           }}
-        />
+        >
+          <iframe
+            ref={iframeRef}
+            src="/preview"
+            title="Section preview"
+            style={{
+              width: previewWidth,
+              height: rawHeight,
+              border: "none",
+              display: "block",
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+              pointerEvents: "none",
+              // Fade in once the iframe has reported its content height
+              opacity: iframeReady ? 1 : 0,
+              transition: "opacity 0.15s ease",
+            }}
+          />
+        </div>
       </div>
     </div>
   );

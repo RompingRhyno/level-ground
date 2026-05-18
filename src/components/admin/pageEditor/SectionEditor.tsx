@@ -67,43 +67,72 @@ export default function SectionEditor({
 
       {/* Expanded body */}
       {expanded && (
-        <div className="p-3 space-y-2 section-fields" style={{ backgroundColor: "white" }}>
+        <div className="section-fields" style={{ backgroundColor: "var(--color-editor-bg)" }}>
+          <div className="editor-form max-w-6xl mx-auto px-4 py-4 space-y-6">
           {type === "hero" && (
-            <div className="space-y-2">
-              <label className="block text-sm">Heading</label>
-              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
-              <label className="block text-sm">Subheading</label>
-              <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Button text</label>
-              <input value={(section as any).buttonText || ""} onChange={(e) => update("buttonText", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Button href</label>
-              <input value={(section as any).buttonHref || ""} onChange={(e) => update("buttonHref", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Image</label>
-              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Subheading</label>
+                <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Button text</label>
+                <input value={(section as any).buttonText || ""} onChange={(e) => update("buttonText", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Button href</label>
+                <input value={(section as any).buttonHref || ""} onChange={(e) => update("buttonHref", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Image</label>
+                <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+              </div>
             </div>
           )}
 
           {type === "twoColumn" && (
-            <div className="space-y-2">
-              <label className="block text-sm">Title</label>
-              <input value={(section as any).title || ""} onChange={(e) => update("title", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Body</label>
-              <textarea value={(section as any).body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Image</label>
-              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Title</label>
+                <input value={(section as any).title || ""} onChange={(e) => update("title", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Body</label>
+                <textarea value={(section as any).body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Image</label>
+                <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+              </div>
             </div>
           )}
 
           {type === "banner" && (
-            <div className="space-y-2">
-              <label className="block text-sm">Heading</label>
-              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
-              <label className="block text-sm">Subheading</label>
-              <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Image</label>
-              <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
-              <label className="block text-sm">Overlay opacity (0-1)</label>
-              <input value={(section as any).overlayOpacity ?? ""} onChange={(e) => update("overlayOpacity", Number(e.target.value))} className="w-full rounded border px-2 py-1" />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Subheading</label>
+                <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Image</label>
+                <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Overlay opacity (0-1)</label>
+                <input value={(section as any).overlayOpacity ?? ""} onChange={(e) => update("overlayOpacity", Number(e.target.value))} className="w-full rounded border px-2 py-1" />
+              </div>
             </div>
           )}
 
@@ -116,26 +145,36 @@ export default function SectionEditor({
           )}
 
           {type === "video" && (
-            <div className="space-y-2">
-              <label className="block text-sm">Heading</label>
-              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
-              <label className="block text-sm">Subheading</label>
-              <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <label className="block text-sm">Video</label>
-              <VideoPicker value={(section as any).videoUrl || ""} onChange={(url) => update("videoUrl", url)} />
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Subheading</label>
+                <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Video</label>
+                <VideoPicker value={(section as any).videoUrl || ""} onChange={(url) => update("videoUrl", url)} />
+              </div>
             </div>
           )}
 
           {type === "services" && (
-            <div className="space-y-2">
-              <label className="block text-sm">Heading</label>
-              <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
-              <label className="block text-sm">Body text</label>
-              <textarea value={(section as any).bodyText || ""} onChange={(e) => update("bodyText", e.target.value)} className="w-full rounded border px-2 py-1" />
-              <div>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Body text</label>
+                <textarea value={(section as any).bodyText || ""} onChange={(e) => update("bodyText", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+              <div className="field-group">
                 <div className="font-medium text-sm mb-1">Services</div>
                 {((section as any).services || []).map((s: any, si: number) => (
-                  <div key={si} className="mt-3 rounded border p-2 space-y-1.5">
+                  <div key={si} className="mt-3 rounded border p-2 space-y-2" style={{ backgroundColor: "var(--color-editor-bg)" }}>
                     <div className="flex gap-2 items-center">
                       <input value={s.title} onChange={(e) => {
                         const services = [...(section as any).services];
@@ -163,13 +202,22 @@ export default function SectionEditor({
                     />
                   </div>
                 ))}
-                <button onClick={() => {
-                  const services = [...((section as any).services || []), { title: "", image: "", href: "" }];
-                  update("services", services);
-                }} className="mt-2 text-sm">Add service</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const services = [...((section as any).services || []), { title: "", image: "", href: "" }];
+                    update("services", services);
+                  }}
+                  className="mt-2 rounded border px-3 py-1 text-sm transition-colors self-start"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  Add service
+                </button>
               </div>
             </div>
           )}
+
+          </div>
 
           <SectionPreview section={section} index={index} />
         </div>
