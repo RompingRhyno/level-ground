@@ -15,7 +15,7 @@ function mapDbPageToConfig(db: any): PageConfig {
 }
 
 export async function getPages(): Promise<PageConfig[]> {
-  const dbPages = await prisma.page.findMany({ orderBy: { id: "asc" } });
+  const dbPages = await prisma.page.findMany({ orderBy: [{ order: "asc" }, { id: "asc" }] });
 
   if (!dbPages || dbPages.length === 0) {
     // fallback to in-repo mock pages for dev or initial state
@@ -29,7 +29,7 @@ export function getNavPages(): Promise<Pick<PageConfig, "slug" | "label">[]> {
   return unstable_cache(
     async () => {
       const dbPages = await prisma.page.findMany({
-        orderBy: { id: "asc" },
+        orderBy: [{ order: "asc" }, { id: "asc" }],
         select: { slug: true, label: true },
       });
       if (!dbPages || dbPages.length === 0) {
@@ -52,6 +52,13 @@ export function getPageBySlug(slug: string): Promise<PageConfig | null> {
     [`page-${slug}`],
     { tags: [`page:${slug}`] }
   )();
+}
+
+/** Sets the `order` of each page by the position of its slug in the provided array. */
+export async function reorderPages(slugs: string[]): Promise<void> {
+  await Promise.all(
+    slugs.map((slug, i) => prisma.page.update({ where: { slug }, data: { order: i } }))
+  );
 }
 
 export async function upsertPage(page: PageConfig) {
