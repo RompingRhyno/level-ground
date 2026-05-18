@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { PageSection, ContactSection, ContactFormField, ContactFormFieldType } from "@/types/sections";
+
+const CloseIcon = ({ size = 14 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 import ImagePicker from "../ImagePicker";
 import RichContentEditable from "./RichContentEditable";
 
@@ -116,49 +122,51 @@ export default function ContactEditor({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Section meta */}
-      <div className="space-y-2">
-        <label className="block text-sm">Heading</label>
-        <RichContentEditable
-          value={cs.heading}
-          onChange={(val) => update({ heading: val })}
-          className="w-full"
-        />
-        <label className="block text-sm">Subheading</label>
-        <RichContentEditable
-          value={cs.subheading ?? ""}
-          onChange={(val) => update({ subheading: val })}
-          className="w-full"
-        />
-        <label className="block text-sm">Submit button label</label>
-        <input
-          value={cs.submitLabel ?? ""}
-          onChange={(e) => update({ submitLabel: e.target.value })}
-          className="w-full rounded border px-2 py-1"
-          placeholder="Send message"
-        />
-        <label className="block text-sm mt-2">Side image (optional)</label>
-        <ImagePicker
-          value={cs.image ?? ""}
-          onChange={(url) => update({ image: url })}
-        />
-        {cs.image && (
-          <button
-            type="button"
-            onClick={() => update({ image: undefined })}
-            className="mt-1 text-xs text-red-600 underline"
-          >
-            Remove image
-          </button>
-        )}
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <label className="block text-sm">Heading</label>
+          <RichContentEditable
+            value={cs.heading}
+            onChange={(val) => update({ heading: val })}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm">Subheading</label>
+          <RichContentEditable
+            value={cs.subheading ?? ""}
+            onChange={(val) => update({ subheading: val })}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm">Submit button label</label>
+          <input
+            value={cs.submitLabel ?? ""}
+            onChange={(e) => update({ submitLabel: e.target.value })}
+            className="w-full rounded border px-2 py-1"
+            placeholder="Send message"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm mt-2">Side image (optional)</label>
+          <ImagePicker
+            value={cs.image ?? ""}
+            onChange={(url) => update({ image: url })}
+          />
+        </div>
       </div>
 
       {/* Fields */}
-      <div>
+      <div className="field-group">
         <div className="font-medium text-sm mb-1">Fields</div>
         {cs.fields.map((field, fi) => (
-          <div key={field.id} className="mt-2 rounded border p-2 space-y-1.5">
+          <div key={field.id} className="mt-2 rounded border p-2 space-y-1.5" style={{ backgroundColor: "var(--color-editor-bg)" }}>
             <div className="flex gap-2 items-center flex-wrap">
               <input
                 value={field.label}
@@ -199,40 +207,41 @@ export default function ContactEditor({
             />
           </div>
         ))}
-        <button type="button" onClick={addField} className="mt-2 text-sm">
+        <button type="button" onClick={addField} className="mt-2 text-sm px-3 py-1 rounded border">
           + Add field
         </button>
       </div>
 
       {/* Services */}
-      <div>
-        <div className="font-medium text-sm mb-1">Services (optional)</div>
-        <label className="block text-sm">Services section heading</label>
+      <div className="field-group">
+        <div className="font-medium text-sm mb-1">Checkboxes (optional)</div>
+        <label className="block text-sm">Heading</label>
         <input
           value={cs.servicesHeading ?? ""}
           onChange={(e) => update({ servicesHeading: e.target.value })}
           className="w-full rounded border px-2 py-1 mb-2"
           placeholder="Services"
         />
-        {(cs.serviceOptions ?? []).map((opt, oi) => (
-          <div key={oi} className="flex items-center gap-2 mt-1">
-            <span className="text-sm flex-1">{opt}</span>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {(cs.serviceOptions ?? []).map((opt, oi) => (
             <button
+              key={oi}
               type="button"
               onClick={() => removeServiceOption(oi)}
-              className="text-xs btn-negative px-2 py-0.5 rounded"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm btn-negative"
             >
-              Remove
+              <span>{opt}</span>
+              <CloseIcon size={13} aria-hidden="true" />
             </button>
-          </div>
-        ))}
+          ))}
+        </div>
         <div className="flex gap-2 mt-2">
           <input
             value={newServiceText}
             onChange={(e) => setNewServiceText(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addServiceOption(); } }}
             className="rounded border px-2 py-1 flex-1 text-sm"
-            placeholder="New service option"
+            placeholder="New option"
           />
           <button type="button" onClick={addServiceOption} className="text-sm px-2 py-1 rounded border">
             Add
@@ -241,7 +250,7 @@ export default function ContactEditor({
       </div>
 
       {/* Uploader */}
-      <div>
+      <div className="field-group">
         <label className="flex items-center gap-2 text-sm cursor-pointer font-medium">
           <input
             type="checkbox"
@@ -264,7 +273,7 @@ export default function ContactEditor({
       </div>
 
       {/* Recipients */}
-      <div>
+      <div className="field-group">
         <div className="font-medium text-sm mb-1">Recipients</div>
         {recipients.length === 0 && (
           <p className="text-xs text-gray-500 mb-1">No recipients yet.</p>
@@ -279,8 +288,7 @@ export default function ContactEditor({
             {r.name ? `${r.name} <${r.email}>` : r.email}
           </label>
         ))}
-        <div className="mt-2 space-y-1">
-          <div className="text-xs font-medium text-gray-600">Add recipient</div>
+        <div className="mt-2 space-y-2">
           <input
             value={newRecipientName}
             onChange={(e) => setNewRecipientName(e.target.value)}

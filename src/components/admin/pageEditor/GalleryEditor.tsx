@@ -140,75 +140,83 @@ export default function GalleryEditor({
   const assetIds: string[] = gs.assetIds ?? [];
 
   return (
-    <div className="space-y-2">
-      <label className="block text-sm">Heading</label>
-      <RichContentEditable value={gs.heading || ""} onChange={(val) => update("heading", val)} className="w-full" placeholder="Optional" />
-      <label className="block text-sm">Body text</label>
-      <textarea value={gs.body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" rows={2} placeholder="Optional" />
-
-      <label className="block text-sm">Mode</label>
-      <select
-        value={gs.mode || "static"}
-        onChange={(e) => {
-          const mode = e.target.value;
-          if (mode === "static") {
-            onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, assetIds: [] }, index);
-          } else {
-            onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, filters: { tags: [], folder: undefined } }, index);
-          }
-        }}
-        className="rounded border px-2 py-1"
-      >
-        <option value="static">Static (explicit asset IDs)</option>
-        <option value="dynamic">Dynamic (tag / folder filters)</option>
-      </select>
-
-      <div className="flex items-center gap-3 mt-1">
-        <div className="text-sm text-gray-600">
-          {gs.mode === "static" && (
-            assetCount === 0
-              ? <span className="italic text-gray-400">No images selected</span>
-              : <span>{assetCount} image{assetCount !== 1 ? "s" : ""} selected</span>
-          )}
-          {gs.mode === "dynamic" && (
-            <span>
-              {activeTagCount ? `${activeTagCount} tag${activeTagCount !== 1 ? "s" : ""}` : "Any tag"}
-              {activeFolder ? `, folder: ${activeFolder}` : ""}
-            </span>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setPickerOpen(true)}
-          className="rounded border px-3 py-1 text-sm transition-colors"
-          style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
-        >
-          {gs.mode === "static" ? "Choose images\u2026" : "Edit filters\u2026"}
-        </button>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <label className="block text-sm">Heading</label>
+        <RichContentEditable value={gs.heading || ""} onChange={(val) => update("heading", val)} className="w-full" placeholder="Optional" />
       </div>
 
-      {/* Sortable thumbnail strip — static mode only */}
-      {gs.mode === "static" && assetIds.length > 0 && (
-        <p className="text-xs mt-1" style={{ color: "var(--color-brand-dark)" }}>Drag to reorder · hover to remove</p>
-      )}
-      {gs.mode === "static" && assetIds.length > 0 && (
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+      <div className="space-y-1">
+        <label className="block text-sm">Body text</label>
+        <textarea value={gs.body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" rows={2} placeholder="Optional" />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm">Mode</label>
+        <select
+          value={gs.mode || "static"}
+          onChange={(e) => {
+            const mode = e.target.value;
+            if (mode === "static") {
+              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, assetIds: [] }, index);
+            } else {
+              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, filters: { tags: [], folder: undefined } }, index);
+            }
+          }}
+          className="rounded border px-2 py-1"
         >
-          <SortableContext items={assetIds} strategy={rectSortingStrategy}>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {assetIds.map((id) => (
-                <SortableThumbnail
-                  key={id}
-                  id={id}
-                  asset={assetMap[id]}
-                  onRemove={removeAsset}
-                />
-              ))}
-            </div>
-          </SortableContext>
+          <option value="static">Static (explicit asset IDs)</option>
+          <option value="dynamic">Dynamic (tag / folder filters)</option>
+        </select>
+      </div>
+
+      <div className="space-y-1">
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-gray-600">
+            {gs.mode === "static" && (
+              assetCount === 0
+                ? <span className="italic text-gray-400">No images selected</span>
+                : <span>{assetCount} image{assetCount !== 1 ? "s" : ""} selected</span>
+            )}
+            {gs.mode === "dynamic" && (
+              <span>
+                {activeTagCount ? `${activeTagCount} tag${activeTagCount !== 1 ? "s" : ""}` : "Any tag"}
+                {activeFolder ? `, folder: ${activeFolder}` : ""}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="rounded border px-3 py-1 text-sm transition-colors"
+            style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+          >
+            {gs.mode === "static" ? "Choose images\u2026" : "Edit filters\u2026"}
+          </button>
+        </div>
+
+        {/* Sortable thumbnail strip — static mode only */}
+        {gs.mode === "static" && assetIds.length > 0 && (
+          <p className="text-xs" style={{ color: "var(--color-brand-dark)" }}>Drag to reorder · hover to remove</p>
+        )}
+        {gs.mode === "static" && assetIds.length > 0 && (
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={assetIds} strategy={rectSortingStrategy}>
+              <div className="flex flex-wrap gap-2">
+                {assetIds.map((id) => (
+                  <SortableThumbnail
+                    key={id}
+                    id={id}
+                    asset={assetMap[id]}
+                    onRemove={removeAsset}
+                  />
+                ))}
+              </div>
+            </SortableContext>
           <DragOverlay>
             {activeId ? (
               <div className="relative w-36 aspect-video">
@@ -218,6 +226,7 @@ export default function GalleryEditor({
           </DragOverlay>
         </DndContext>
       )}
+      </div>
 
       {pickerOpen && (
         <GalleryPicker
@@ -232,25 +241,29 @@ export default function GalleryEditor({
         />
       )}
 
-      <label className="block text-sm mt-1">Layout</label>
-      <select
-        value={gs.layout || "grid"}
-        onChange={(e) => update("layout", e.target.value)}
-        className="rounded border px-2 py-1"
-      >
-        <option value="bento">Bento (visual blocks)</option>
-        <option value="grid">Grid (uniform rows)</option>
-        <option value="masonry">Masonry</option>
-      </select>
+      <div className="space-y-1">
+        <label className="block text-sm">Layout</label>
+        <select
+          value={gs.layout || "grid"}
+          onChange={(e) => update("layout", e.target.value)}
+          className="rounded border px-2 py-1"
+        >
+          <option value="bento">Bento (visual blocks)</option>
+          <option value="grid">Grid (uniform rows)</option>
+          <option value="masonry">Masonry</option>
+        </select>
+      </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={!!gs.lightbox}
-          onChange={(e) => update("lightbox", e.target.checked)}
-        />
-        Enable lightbox
-      </label>
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!gs.lightbox}
+            onChange={(e) => update("lightbox", e.target.checked)}
+          />
+          Enable lightbox
+        </label>
+      </div>
     </div>
   );
 }
