@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "@/components/admin/useConfirm";
@@ -19,6 +19,8 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
   const { confirm, dialogProps } = useConfirm();
 
   const [pages, setPages] = useState(initialPages);
+  const [savedOrder, setSavedOrder] = useState(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // New page modal state
   const [showNewPage, setShowNewPage] = useState(false);
@@ -75,6 +77,25 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
     }
   }
 
+  async function handleMove(e: React.MouseEvent, index: number, direction: "up" | "down") {
+    e.stopPropagation();
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= pages.length) return;
+    const newPages = [...pages];
+    [newPages[index], newPages[targetIndex]] = [newPages[targetIndex], newPages[index]];
+    setPages(newPages);
+    const res = await fetch("/api/pages", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slugs: newPages.map((p) => p.slug) }),
+    });
+    if (res.ok) {
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      setSavedOrder(true);
+      savedTimerRef.current = setTimeout(() => setSavedOrder(false), 2000);
+    }
+  }
+
   async function handleDelete(e: React.MouseEvent, slug: string, label: string) {
     e.stopPropagation();
     const ok = await confirm(
@@ -96,7 +117,10 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
       <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
         <div className="max-w-7xl mx-auto px-4">
           {/* Action bar */}
-          <div className="flex items-center justify-end mb-6">
+          <div className="flex items-center justify-end gap-3 mb-6">
+            {savedOrder && (
+              <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>Saved</span>
+            )}
             <button onClick={openNewPage} className="px-3 py-1.5 rounded text-sm btn-positive">
               New Page
             </button>
@@ -106,11 +130,12 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
           <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--color-brand-dark)", backgroundColor: "white" }}>
             {/* Table header */}
             <div
-              className="grid grid-cols-[1fr_1fr_5rem] justify-items-start px-4 py-2 text-sm font-semibold uppercase tracking-wide"
+              className="grid grid-cols-[1fr_1fr_5rem_5rem] justify-items-start px-4 py-2 text-sm font-semibold uppercase tracking-wide"
                 style={{ backgroundColor: "white", color: "var(--color-brand-dark)" }}
             >
               <span className="text-left">Label</span>
               <span className="text-left">Slug</span>
+              <span />
               <span />
             </div>
 
@@ -120,17 +145,31 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
               </div>
             )}
 
-            {pages.map((page) => (
+            {pages.map((page, i) => (
               <div
                 key={page.slug}
                 onClick={() => router.push(`/admin/pages/${page.slug}`)}
-                className="grid grid-cols-[1fr_1fr_5rem] justify-items-start items-center px-4 py-3 cursor-pointer transition-colors duration-100"
+                className="grid grid-cols-[1fr_1fr_5rem_5rem] justify-items-start items-center px-4 py-3 cursor-pointer transition-colors duration-100"
                 style={{ borderTop: "1px solid var(--color-brand-dark)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
               >
                 <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>{page.label}</span>
                 <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{page.slug}</span>
+                <div className="flex items-center gap-1 mr-2">
+                  <button
+                    onClick={(e) => handleMove(e, i, "up")}
+                    disabled={i === 0}
+                    className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                    title="Move up"
+                  >↑</button>
+                  <button
+                    onClick={(e) => handleMove(e, i, "down")}
+                    disabled={i === pages.length - 1}
+                    className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                    title="Move down"
+                  >↓</button>
+                </div>
                 <button
                   onClick={(e) => handleDelete(e, page.slug, page.label)}
                   className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
