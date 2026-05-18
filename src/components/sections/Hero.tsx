@@ -22,15 +22,16 @@ export default function Hero({
         {/* Image */}
         <div className="order-1 flex justify-center md:order-2 md:justify-start">
           <div
-            className="
+            className={`
               relative
               aspect-square
-              w-[320px]
-              sm:w-95
-              md:w-110
+              w-[min(320px,100%)]
+              sm:w-[380px]
+              md:w-[440px]
+              max-w-full
               rounded-full
               shadow-xl
-            "
+            `}
             style={{
               boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
             }}
