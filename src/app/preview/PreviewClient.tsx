@@ -5,6 +5,7 @@ import Banner from "@/components/sections/Banner";
 import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
+import Contact from "@/components/sections/Contact";
 import type {
   PageSection,
   HeroSection,
@@ -141,6 +142,16 @@ function renderContent(section: PageSection, bg?: string) {
               No video selected
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+  if (type === "contact") {
+    const s = section as any;
+    return (
+      <div style={{ backgroundColor: bg }}>
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
         </div>
       </div>
     );
