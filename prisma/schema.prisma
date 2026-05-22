@@ -13,6 +13,7 @@ model Page {
   label     String
   sections  Json
   order     Int      @default(0)
+  type      String   @default("page")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -22,6 +23,7 @@ model Asset {
   storageKey String
   provider   String
   folder     String?
+  orderIndex Int?
   tags       String[]
   size       Int?
   publicUrl  String?
@@ -35,16 +37,18 @@ model Asset {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  @@unique([folder, orderIndex])
   @@index([provider])
 }
 
 model Folder {
-  id        Int      @id @default(autoincrement())
-  name      String
-  slug      String   @unique
-  parentId  Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  parentId    Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
   @@index([slug])
 }

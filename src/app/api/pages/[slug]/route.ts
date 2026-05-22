@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
-import { getPageBySlug, upsertPage } from "@/lib/pages";
+import { getPageBySlug, upsertPage, ensureCollectionTemplates } from "@/lib/pages";
 import { reconcileMediaUsage } from "@/lib/gallery-utils";
 import { prisma } from "@/lib/prisma";
 
@@ -23,6 +23,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
 
     const saved = await upsertPage(body);
     await reconcileMediaUsage(saved.slug, saved.sections);
+    const newTemplates = await ensureCollectionTemplates(saved.sections);
+    for (const s of newTemplates) revalidateTag(`page:${s}`, {});
 
     // Revalidate old slug if it changed
     if (slug !== saved.slug) {

@@ -7,11 +7,12 @@ export async function PATCH(request: NextRequest, context: any) {
     if (p && typeof p.then === "function") p = await p;
     const id = Number(p?.id);
     const body = await request.json();
-    const { name, slug, parentId } = body;
+    const { name, slug, parentId, description } = body;
     const data: any = {};
     if (name) data.name = name;
     if (slug) data.slug = slug;
     if (typeof parentId !== "undefined") data.parentId = parentId;
+    if (typeof description !== "undefined") data.description = description;
 
     const updated = await prisma.folder.update({ where: { id }, data });
     return NextResponse.json(updated);

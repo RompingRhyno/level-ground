@@ -88,11 +88,33 @@ export async function PATCH(request: NextRequest, context: any) {
     const { filename, folder, alt, tags } = body || {};
     const data: any = {};
     if (filename) data.filename = filename;
-    if (typeof folder !== "undefined") data.folder = folder;
     if (typeof alt !== "undefined") data.alt = alt;
     if (typeof tags !== "undefined") data.tags = tags;
 
-    const updated = await prisma.asset.update({ where: { id }, data });
+    let updated: any;
+    if (typeof folder !== "undefined") {
+      const current = await prisma.asset.findUnique({ where: { id }, select: { folder: true } });
+      const folderChanging = current?.folder !== folder;
+
+      if (folderChanging) {
+        if (folder) {
+          updated = await prisma.$transaction(async (tx) => {
+            const agg = await tx.asset.aggregate({
+              where: { folder, NOT: { id } },
+              _max: { orderIndex: true },
+            });
+            const nextIndex = (agg._max.orderIndex ?? 0) + 1;
+            return tx.asset.update({ where: { id }, data: { ...data, folder, orderIndex: nextIndex } });
+          });
+        } else {
+          updated = await prisma.asset.update({ where: { id }, data: { ...data, folder: null, orderIndex: null } });
+        }
+      } else {
+        updated = await prisma.asset.update({ where: { id }, data: { ...data, folder } });
+      }
+    } else {
+      updated = await prisma.asset.update({ where: { id }, data });
+    }
 
     // Tags or folder changes affect dynamic gallery queries — revalidate those pages
     if (typeof tags !== "undefined" || typeof folder !== "undefined") {

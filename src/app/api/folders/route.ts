@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const folders = await prisma.folder.findMany({ orderBy: { createdAt: "desc" } });
+    const folders = await prisma.folder.findMany({ orderBy: { name: "asc" } });
     return NextResponse.json(folders);
   } catch (err: any) {
     console.error('GET /api/folders error', err);
