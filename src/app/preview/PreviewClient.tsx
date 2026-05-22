@@ -14,6 +14,8 @@ import type {
   ServicesSection,
   GallerySection,
   VideoSection,
+  CollectionIndexSection,
+  CollectionItemSection,
 } from "@/types/sections";
 
 type AssetRow = { id: string; publicUrl: string; alt: string | null };
@@ -65,6 +67,97 @@ function GalleryPreview({ section }: { section: GallerySection }) {
       )}
       <GalleryClient assets={assets} layoutMode={section.layout ?? "grid"} />
     </>
+  );
+}
+
+function CollectionIndexPreview({ section }: { section: CollectionIndexSection }) {
+  const { source, heading, entityImages } = section;
+  const [items, setItems] = useState<{ slug: string; name: string }[]>([]);
+  const [firstAssets, setFirstAssets] = useState<Record<string, string>>({});
+  const [folderTags, setFolderTags] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    const endpoint = source === "folders" ? "/api/folders" : "/api/tags";
+    fetch(endpoint)
+      .then((r) => r.json())
+      .then((data: any[]) => setItems(data || []))
+      .catch(() => {});
+  }, [source]);
+
+  useEffect(() => {
+    if (!items.length) return;
+    const param = source === "folders" ? "folder" : "tag";
+    let cancelled = false;
+    Promise.all(
+      items.map((item) =>
+        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}`)
+          .then((r) => r.json())
+          .then((assets: any[]) => {
+            const first = assets.find(
+              (a: any) => a.publicUrl && (!a.mime || a.mime.startsWith("image/"))
+            );
+            const tags = source === "folders"
+              ? [...new Set<string>(assets.flatMap((a: any) => a.tags ?? []))].sort()
+              : [];
+            return { slug: item.slug, url: first?.publicUrl as string | undefined, tags };
+          })
+          .catch(() => ({ slug: item.slug, url: undefined, tags: [] }))
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      setFirstAssets(Object.fromEntries(results.filter((r) => r.url).map((r) => [r.slug, r.url!])));
+      if (source === "folders") {
+        setFolderTags(Object.fromEntries(results.map((r) => [r.slug, r.tags])));
+      }
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(items), source]);
+
+  return (
+    <div className="mx-auto max-w-7xl px-6 py-12">
+      {heading && (
+        <h2
+          className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+          dangerouslySetInnerHTML={{ __html: heading }}
+          style={{ color: "var(--color-text-heading)" }}
+        />
+      )}
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-400">No items found.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map((item) => {
+            const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
+            const tags = source === "folders" ? (folderTags[item.slug] ?? []) : [];
+            return (
+              <div key={item.slug} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="relative aspect-video w-full">
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt={item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-gray-100" />
+                  )}
+                  {tags.length > 0 && (
+                    <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+                      {tags.map((tag) => (
+                        <span key={tag} className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-medium">{item.name}</h3>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -152,6 +245,35 @@ function renderContent(section: PageSection, bg?: string) {
       <div style={{ backgroundColor: bg }}>
         <div className="mx-auto max-w-7xl px-6 py-20">
           <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
+        </div>
+      </div>
+    );
+  }
+  if (type === "collection-index") {
+    return (
+      <div style={{ backgroundColor: bg }}>
+        <CollectionIndexPreview section={section as CollectionIndexSection} />
+      </div>
+    );
+  }
+  if (type === "collection-item") {
+    const s = section as CollectionItemSection;
+    return (
+      <div style={{ backgroundColor: bg }} className="mx-auto max-w-7xl px-6 py-20">
+        <div
+          className="rounded border border-dashed p-8 text-center space-y-2"
+          style={{ borderColor: "var(--color-brand-dark)", color: "var(--color-text-muted)" }}
+        >
+          <div className="text-lg font-light" style={{ color: "var(--color-text-heading)" }}>
+            Collection Item
+          </div>
+          <p className="text-sm">
+            Heading, tags, description and gallery load dynamically from the collection entity.
+          </p>
+          <p className="text-xs">
+            Layout: <strong>{s.layout ?? "grid"}</strong> · Lightbox:{" "}
+            <strong>{s.lightbox ? "on" : "off"}</strong>
+          </p>
         </div>
       </div>
     );

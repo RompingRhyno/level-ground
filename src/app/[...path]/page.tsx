@@ -1,0 +1,57 @@
+import { notFound } from "next/navigation";
+import RenderSections from "@/components/RenderSections";
+import { getPageBySlug } from "@/lib/pages";
+import { getFolderBySlug } from "@/lib/folders";
+import { getTagBySlug } from "@/lib/tags";
+import type { CollectionIndexSection } from "@/types/sections";
+
+type Props = { params: Promise<{ path: string[] }> };
+
+export default async function CatchAllPage({ params }: Props) {
+  const { path } = await params;
+
+  // Single-segment: page resolution
+  if (path.length === 1) {
+    const [slug] = path;
+    const page = await getPageBySlug(slug);
+    if (!page) return notFound();
+    return <RenderSections sections={page.sections} pageSlug={slug} />;
+  }
+
+  // Two-segment: entity detail resolution
+  if (path.length === 2) {
+    const [collectionName, entitySlug] = path;
+
+    // Find the collection index page
+    const collectionPage = await getPageBySlug(collectionName);
+    if (!collectionPage) return notFound();
+
+    // Locate the collection-index section
+    const indexSection = collectionPage.sections.find(
+      (s): s is CollectionIndexSection => s.type === "collection-index"
+    );
+    if (!indexSection) return notFound();
+
+    // Resolve the entity
+    let entityName: string | null = null;
+    if (indexSection.source === "folders") {
+      const folder = await getFolderBySlug(entitySlug);
+      if (!folder) return notFound();
+      entityName = folder.name;
+    } else if (indexSection.source === "tags") {
+      const tag = await getTagBySlug(entitySlug);
+      if (!tag) return notFound();
+      entityName = tag.name;
+    } else {
+      return notFound();
+    }
+
+    // Load the detail template page
+    const templatePage = await getPageBySlug(indexSection.detailTemplateSlug);
+    const sections = templatePage?.sections ?? [];
+
+    return <RenderSections sections={sections} pageSlug={entitySlug} />;
+  }
+
+  return notFound();
+}

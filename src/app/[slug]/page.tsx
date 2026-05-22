@@ -12,4 +12,4 @@ export default async function Page({ params }: Props) {
   if (!page) return notFound();
 
   return <RenderSections sections={page.sections} pageSlug={slug} />;
-}
+}   

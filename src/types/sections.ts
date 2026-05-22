@@ -1,8 +1,11 @@
 // types/sections.ts
+export type PageType = "page" | "template";
+
 export type PageConfig = {
   slug: string;
   label: string;
   sections: PageSection[];
+  type?: PageType;
 };
 
 export type HeroSection = {
@@ -97,6 +100,27 @@ export type ContactSection = {
   recipientIds: number[];
 };
 
+export type CollectionIndexSection = {
+  type: "collection-index";
+  source: "folders" | "tags";
+  routeBase: string;
+  detailTemplateSlug: string;
+  heading?: string;
+  entitySlugField?: string;
+  cardComponent?: string;
+  entityImages?: Record<string, string>;
+  query?: {
+    filter?: string;
+  };
+};
+
+export type CollectionItemSection = {
+  type: "collection-item";
+  source?: "folders" | "tags";
+  layout?: GalleryLayout;
+  lightbox?: boolean;
+};
+
 export type PageSection =
   | HeroSection
   | ServicesSection
@@ -105,4 +129,6 @@ export type PageSection =
   | GallerySection
   | CTASection
   | VideoSection
-  | ContactSection;
+  | ContactSection
+  | CollectionIndexSection
+  | CollectionItemSection;

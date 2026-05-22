@@ -8,13 +8,18 @@ import Services from "./sections/Services";
 import Banner from "./sections/Banner";
 import Video from "./sections/Video";
 import Contact from "./sections/Contact";
+import CollectionIndex from "./sections/CollectionIndex";
+import CollectionItem from "./sections/CollectionItem";
+
+type EntityContext = { entitySlug: string; source: "folders" | "tags" };
 
 type Props = {
   sections: PageSection[];
   pageSlug: string;
+  entityContext?: EntityContext;
 };
 
-export default function RenderSections({ sections, pageSlug }: Props) {
+export default function RenderSections({ sections, pageSlug, entityContext }: Props) {
   return (
     <>
       {sections.map((section, index) => {
@@ -57,6 +62,24 @@ export default function RenderSections({ sections, pageSlug }: Props) {
           case "cta":
             content = <CTA {...section} />;
             break;
+
+          case "collection-index":
+            return (
+              <section key={index} className={backgroundClass}>
+                <div className="mx-auto max-w-7xl px-6 py-20">
+                  <CollectionIndex {...section} />
+                </div>
+              </section>
+            );
+
+          case "collection-item":
+            return (
+              <section key={index} className={backgroundClass}>
+                <div className="mx-auto max-w-7xl px-6 py-20">
+                  <CollectionItem {...section} entityContext={entityContext} />
+                </div>
+              </section>
+            );
 
           default:
             return null;
