@@ -99,7 +99,7 @@ export function buildCells(blocks: Block[]): LayoutCell[] {
         cells.push({
           assetIndex: idx++,
           cellType: "hero",
-          colStart: 1, colSpan: 3,
+          colStart: 1, colSpan: 6,
           rowStart: row, rowSpan: 1,
         });
         row += 1;
@@ -107,25 +107,25 @@ export function buildCells(blocks: Block[]): LayoutCell[] {
 
       case "bento": {
         const norm = block.variant === "normal";
-        // Large image first in source order; left 2 cols (normal) or right 2 cols (reverse)
+        // Large image: left 4 cols (normal) or right 4 cols (reverse) in 6-col grid
         cells.push({
           assetIndex: idx++,
           cellType: "bento-large",
-          colStart: norm ? 1 : 2, colSpan: 2,
+          colStart: norm ? 1 : 3, colSpan: 4,
           rowStart: row, rowSpan: 2,
         });
         // Top small
         cells.push({
           assetIndex: idx++,
           cellType: "small",
-          colStart: norm ? 3 : 1, colSpan: 1,
+          colStart: norm ? 5 : 1, colSpan: 2,
           rowStart: row, rowSpan: 1,
         });
         // Bottom small
         cells.push({
           assetIndex: idx++,
           cellType: "small",
-          colStart: norm ? 3 : 1, colSpan: 1,
+          colStart: norm ? 5 : 1, colSpan: 2,
           rowStart: row + 1, rowSpan: 1,
         });
         row += 2;
@@ -133,14 +133,9 @@ export function buildCells(blocks: Block[]): LayoutCell[] {
       }
 
       case "triple":
-        for (let c = 1; c <= 3; c++) {
-          cells.push({
-            assetIndex: idx++,
-            cellType: "small",
-            colStart: c, colSpan: 1,
-            rowStart: row, rowSpan: 1,
-          });
-        }
+        cells.push({ assetIndex: idx++, cellType: "small", colStart: 1, colSpan: 2, rowStart: row, rowSpan: 1 });
+        cells.push({ assetIndex: idx++, cellType: "small", colStart: 3, colSpan: 2, rowStart: row, rowSpan: 1 });
+        cells.push({ assetIndex: idx++, cellType: "small", colStart: 5, colSpan: 2, rowStart: row, rowSpan: 1 });
         row += 1;
         break;
 
@@ -148,13 +143,13 @@ export function buildCells(blocks: Block[]): LayoutCell[] {
         cells.push({
           assetIndex: idx++,
           cellType: "small",
-          colStart: 1, colSpan: 1,
+          colStart: 1, colSpan: 3,
           rowStart: row, rowSpan: 1,
         });
         cells.push({
           assetIndex: idx++,
           cellType: "small",
-          colStart: 2, colSpan: 1,
+          colStart: 4, colSpan: 3,
           rowStart: row, rowSpan: 1,
         });
         row += 1;
@@ -172,9 +167,13 @@ export function getLayoutCells(n: number, mode: "bento" | "grid" | "masonry"): L
   return buildCells(blocks);
 }
 
-/** Appropriate Next.js Image `sizes` hint per cell type in a max-3-column grid. */
-export function getCellSizes(cellType: CellType): string {
+/** Appropriate Next.js Image `sizes` hint per cell type in a max-6-column grid.
+ * Pass colSpan so double-row cells (colSpan 3 = half-width) get a larger hint.
+ */
+export function getCellSizes(cellType: CellType, colSpan?: number): string {
   if (cellType === "hero") return "100vw";
   if (cellType === "bento-large") return "(min-width:768px) 66vw, 100vw";
+  // small: colSpan 3 of 6 = 50% width; colSpan 2 of 6 = 33% width
+  if (colSpan === 3) return "(min-width:1024px) 50vw, 100vw";
   return "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
 }

@@ -41,7 +41,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
       </div>
 
       {/* Desktop: bento/grid layout engine */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 max-w-7xl mx-auto px-4">
+      <div className="hidden md:grid md:grid-cols-6 gap-4 max-w-7xl mx-auto px-4">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
           return (
@@ -61,7 +61,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
                 src={asset.publicUrl}
                 alt={asset.alt ?? ""}
                 fill
-                sizes={getCellSizes(cell.cellType)}
+                sizes={getCellSizes(cell.cellType, cell.colSpan)}
                 className="object-cover transition-opacity hover:opacity-90"
                 loading="lazy"
               />
