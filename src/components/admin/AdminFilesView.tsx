@@ -200,6 +200,17 @@ export default function AdminFilesView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
+  // DnD reorder state (folder view only)
+  const [dragItemId, setDragItemId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  // Folder description editor state
+  const [folderDesc, setFolderDesc] = useState('');
+  const [folderDescDirty, setFolderDescDirty] = useState(false);
+  const [folderDescSaving, setFolderDescSaving] = useState(false);
+  const [folderDescSaved, setFolderDescSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const {
     assets,
     folders,
@@ -215,6 +226,7 @@ export default function AdminFilesView({
     clearSelection,
     clearFolderFilter,
     clearTagFilter,
+    load,
     bulkDelete,
     handleFolderClick,
     handleTagClick,
@@ -223,8 +235,68 @@ export default function AdminFilesView({
     saveRename,
     removeTagFromAsset,
     computeMissingForTag,
+    saveAssetOrder,
     dialogProps,
   } = useAdminFiles({ initialFolder, initialFolders, onMove, onDelete, onRefreshFolders, refreshKey });
+
+  const activeFolder = (folders as any[]).find((f) => f.slug === folder);
+
+  useEffect(() => {
+    setFolderDesc((folders as any[]).find((f) => f.slug === folder)?.description || '');
+    setFolderDescDirty(false);
+    setFolderDescSaved(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folder, folders]);
+
+  async function saveFolderDescription() {
+    if (!activeFolder) return;
+    setFolderDescSaving(true);
+    await fetch(`/api/folders/${activeFolder.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: folderDesc }),
+    });
+    setFolderDescSaving(false);
+    setFolderDescDirty(false);
+    setFolderDescSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setFolderDescSaved(false), 2500);
+    await load();
+  }
+
+  function handleReorderDragStart(e: React.DragEvent, assetId: string) {
+    setDragItemId(assetId);
+    e.dataTransfer.setData('reorder', assetId);
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function handleReorderDragOver(e: React.DragEvent, targetId: string) {
+    if (!dragItemId || dragItemId === targetId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverId !== targetId) setDragOverId(targetId);
+  }
+
+  async function handleReorderDrop(e: React.DragEvent, targetId: string) {
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('reorder');
+    setDragItemId(null);
+    setDragOverId(null);
+    if (!sourceId || sourceId === targetId) return;
+    const current = (assets as any[]).map((x) => x.id);
+    const sourceIdx = current.indexOf(sourceId);
+    if (sourceIdx === -1) return;
+    const newOrder = [...current];
+    newOrder.splice(sourceIdx, 1);
+    const insertAt = newOrder.indexOf(targetId);
+    newOrder.splice(insertAt === -1 ? newOrder.length : insertAt, 0, sourceId);
+    await saveAssetOrder(newOrder);
+  }
+
+  function handleReorderDragEnd() {
+    setDragItemId(null);
+    setDragOverId(null);
+  }
 
   const editInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => { if (editingId && editInputRef.current) editInputRef.current.focus(); }, [editingId]);
@@ -381,6 +453,33 @@ export default function AdminFilesView({
             </div>
           ) : (
         <>
+          {/* Folder description editor — shown when a folder is active */}
+          {folder && activeFolder && (
+            <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '0.75rem 0' }}>
+              <div className="max-w-7xl mx-auto px-4">
+                <div className="flex items-start gap-2">
+                  <textarea
+                    rows={2}
+                    placeholder={`Description for "${activeFolder.name}"…`}
+                    value={folderDesc}
+                    onChange={(e) => { setFolderDesc(e.target.value); setFolderDescDirty(true); setFolderDescSaved(false); }}
+                    className="flex-1 px-2 py-1.5 rounded border text-sm resize-none"
+                    style={{ backgroundColor: 'var(--color-editor-bg)', borderColor: 'var(--color-border)', color: 'inherit' }}
+                  />
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={saveFolderDescription}
+                      disabled={!folderDescDirty || folderDescSaving}
+                      className={`px-3 py-1.5 rounded text-sm ${folderDescDirty && !folderDescSaving ? 'btn-positive' : 'bg-gray-500 cursor-not-allowed text-white'}`}
+                    >
+                      {folderDescSaving ? 'Saving…' : 'Save'}
+                    </button>
+                    {folderDescSaved && <span className="text-xs text-green-600 text-center">Saved</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Action bar */}
           <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', padding: '1rem 0' }}>
             <div className="max-w-7xl mx-auto px-4 mb-3">
@@ -408,10 +507,24 @@ export default function AdminFilesView({
             <div className="max-w-7xl mx-auto px-4">
               <div className="grid grid-cols-3 gap-4">
                 {assets.map((a: any) => (
-                  <div key={a.id} data-asset-id={a.id} draggable onDragStart={(e) => {
-                    const dragging = selectedIds.length ? selectedIds : [a.id];
-                    e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
-                  }} className={`group rounded-xl overflow-hidden bg-gray-800 isolate ${selected[a.id] ? 'border border-transparent' : 'border border-gray-700'}`}>
+                  <div
+                    key={a.id}
+                    data-asset-id={a.id}
+                    draggable
+                    onDragStart={(e) => {
+                      if (folder) {
+                        handleReorderDragStart(e, a.id);
+                      } else {
+                        const dragging = selectedIds.length ? selectedIds : [a.id];
+                        e.dataTransfer.setData('application/json', JSON.stringify({ assetIds: dragging }));
+                      }
+                    }}
+                    onDragOver={folder ? (e) => handleReorderDragOver(e, a.id) : undefined}
+                    onDragLeave={folder ? () => { if (dragOverId === a.id) setDragOverId(null); } : undefined}
+                    onDrop={folder ? (e) => handleReorderDrop(e, a.id) : undefined}
+                    onDragEnd={folder ? handleReorderDragEnd : undefined}
+                    className={`group rounded-xl overflow-hidden bg-gray-800 isolate transition-opacity ${selected[a.id] ? 'border border-transparent' : 'border border-gray-700'} ${dragItemId === a.id ? 'opacity-40' : ''} ${dragOverId === a.id ? 'ring-2 ring-blue-400' : ''}`}
+                  >
                     <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }} className="bg-gray-800">
                       {a.publicUrl && /^image\/(jpeg|jpg|png|gif|webp|avif|svg\+xml)$/i.test(a.mime || '') ? (
                         <Image src={a.publicUrl} alt={a.alt || ''} fill style={{ objectFit: 'cover' }} sizes="(max-width: 768px) 100vw, 33vw" />
@@ -437,6 +550,16 @@ export default function AdminFilesView({
 
                       <div className="absolute inset-0 flex flex-col justify-between p-3 text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(a.id); }}>
                         <div className="flex items-start justify-between gap-2">
+                          {folder && (
+                            <div
+                              className="shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-70 mt-0.5 touch-none"
+                              title="Drag to reorder"
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="2"/><circle cx="16" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/></svg>
+                            </div>
+                          )}
                           <div className="text-sm font-medium min-w-0 flex-1">
                             {editingId === a.id ? (
                               <input

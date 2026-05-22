@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "@/components/admin/useConfirm";
 import type { PageConfig } from "@/types/sections";
+import type { PageRow, TemplateRow } from "@/app/admin/pages/page";
 
 function slugify(label: string) {
   return label
@@ -14,11 +15,11 @@ function slugify(label: string) {
     .replace(/-+/g, "-");
 }
 
-export default function AdminPagesClient({ initialPages }: { initialPages: Pick<PageConfig, "slug" | "label">[] }) {
+export default function AdminPagesClient({ initialPages }: { initialPages: PageRow[] }) {
   const router = useRouter();
   const { confirm, dialogProps } = useConfirm();
 
-  const [pages, setPages] = useState(initialPages);
+  const [pages, setPages] = useState<PageRow[]>(initialPages);
   const [savedOrder, setSavedOrder] = useState(false);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -68,7 +69,7 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
         return;
       }
       const created = await res.json();
-      setPages((prev) => [...prev, { slug: created.slug, label: created.label }]);
+      setPages((prev) => [...prev, { slug: created.slug, label: created.label, templates: [] }]);
       setShowNewPage(false);
     } catch {
       setCreateError("Failed to create page");
@@ -110,6 +111,27 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
       setPages((prev) => prev.filter((p) => p.slug !== slug));
     }
   }
+  async function handleDeleteTemplate(e: React.MouseEvent, parentSlug: string, tSlug: string, tLabel: string) {
+    e.stopPropagation();
+    const ok = await confirm(
+      `Delete template "${tLabel}"?`,
+      "This will permanently delete the template and all its content. This cannot be undone.",
+      "danger",
+      "Delete"
+    );
+    if (!ok) return;
+    const res = await fetch(`/api/pages/${tSlug}`, { method: "DELETE" });
+    if (res.ok) {
+      setPages((prev) =>
+        prev.map((p) =>
+          p.slug === parentSlug
+            ? { ...p, templates: p.templates.filter((t) => t.slug !== tSlug) }
+            : p
+        )
+      );
+    }
+  }
+
   return (
     <div>
       <AlertDialog {...dialogProps} />
@@ -146,37 +168,72 @@ export default function AdminPagesClient({ initialPages }: { initialPages: Pick<
             )}
 
             {pages.map((page, i) => (
-              <div
-                key={page.slug}
-                onClick={() => router.push(`/admin/pages/${page.slug}`)}
-                className="grid grid-cols-[1fr_1fr_5rem_5rem] justify-items-start items-center px-4 py-3 cursor-pointer transition-colors duration-100"
-                style={{ borderTop: "1px solid var(--color-brand-dark)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
-              >
-                <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>{page.label}</span>
-                <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{page.slug}</span>
-                <div className="flex items-center gap-1 mr-2">
-                  <button
-                    onClick={(e) => handleMove(e, i, "up")}
-                    disabled={i === 0}
-                    className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
-                    title="Move up"
-                  >↑</button>
-                  <button
-                    onClick={(e) => handleMove(e, i, "down")}
-                    disabled={i === pages.length - 1}
-                    className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
-                    title="Move down"
-                  >↓</button>
-                </div>
-                <button
-                  onClick={(e) => handleDelete(e, page.slug, page.label)}
-                  className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
+              <React.Fragment key={page.slug}>
+                {/* ── Main page row ── */}
+                <div
+                  onClick={() => router.push(`/admin/pages/${page.slug}`)}
+                  className="grid grid-cols-[1fr_1fr_5rem_5rem] justify-items-start items-center px-4 py-3 cursor-pointer transition-colors duration-100"
+                  style={{ borderTop: "1px solid var(--color-brand-dark)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
                 >
-                  Delete
-                </button>
-              </div>
+                  <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>{page.label}</span>
+                  <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{page.slug}</span>
+                  <div className="flex items-center gap-1 mr-2">
+                    <button
+                      onClick={(e) => handleMove(e, i, "up")}
+                      disabled={i === 0}
+                      className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                      title="Move up"
+                    >↑</button>
+                    <button
+                      onClick={(e) => handleMove(e, i, "down")}
+                      disabled={i === pages.length - 1}
+                      className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                      title="Move down"
+                    >↓</button>
+                  </div>
+                  <button
+                    onClick={(e) => handleDelete(e, page.slug, page.label)}
+                    className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                {/* ── Template sub-rows ── */}
+                {page.templates.map((tpl) => (
+                  <div
+                    key={tpl.slug}
+                    onClick={() => router.push(`/admin/pages/${tpl.slug}`)}
+                    className="grid grid-cols-[1fr_1fr_5rem_5rem] justify-items-start items-center pl-10 pr-4 py-2 cursor-pointer transition-colors duration-100"
+                    style={{
+                      borderTop: "1px solid var(--color-brand-dark)",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
+                  >
+                    <span className="flex items-center gap-2" style={{ color: "var(--color-brand-dark)" }}>
+                      <span className="select-none">↳</span>
+                      {tpl.label}
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide"
+                        style={{ backgroundColor: "var(--color-brand-dark)", color: "white", opacity: 0.55 }}
+                      >
+                        template
+                      </span>
+                    </span>
+                    <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{tpl.slug}</span>
+                    <div />
+                    <button
+                      onClick={(e) => handleDeleteTemplate(e, page.slug, tpl.slug, tpl.label)}
+                      className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </React.Fragment>
             ))}
           </div>
         </div>

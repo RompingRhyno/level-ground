@@ -9,15 +9,19 @@ type Asset = { id: string; publicUrl: string | null; filename: string | null; al
 function ImagePickerModal({
   onPick,
   onClose,
+  defaultFolder,
+  defaultTag,
 }: {
   onPick: (url: string) => void;
   onClose: () => void;
+  defaultFolder?: string;
+  defaultTag?: string;
 }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [folder, setFolder] = useState<string>("");
+  const [folder, setFolder] = useState<string>(defaultFolder ?? "");
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
-  const [tag, setTag] = useState<string>("");
+  const [tag, setTag] = useState<string>(defaultTag ?? "");
 
   useEffect(() => {
     fetch("/api/folders")
@@ -114,9 +118,15 @@ function ImagePickerModal({
 export default function ImagePicker({
   value,
   onChange,
+  defaultFolder,
+  defaultTag,
+  defaultImage,
 }: {
   value: string;
   onChange: (url: string) => void;
+  defaultFolder?: string;
+  defaultTag?: string;
+  defaultImage?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -126,6 +136,11 @@ export default function ImagePicker({
       {value ? (
         <div className="relative w-36 aspect-video rounded overflow-hidden border border-gray-200 shrink-0">
           <Image src={value} alt="" fill sizes="144px" className="object-cover" />
+        </div>
+      ) : defaultImage ? (
+        <div className="relative w-36 aspect-video rounded overflow-hidden border border-dashed border-gray-300 shrink-0">
+          <Image src={defaultImage} alt="" fill sizes="144px" className="object-cover opacity-70" />
+          <div className="absolute inset-x-0 bottom-0 bg-black/40 text-white text-[10px] text-center py-0.5 leading-none">auto</div>
         </div>
       ) : (
         <div className="w-36 aspect-video rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-400 shrink-0">
@@ -157,6 +172,8 @@ export default function ImagePicker({
         <ImagePickerModal
           onPick={onChange}
           onClose={() => setOpen(false)}
+          defaultFolder={defaultFolder}
+          defaultTag={defaultTag}
         />
       )}
     </div>

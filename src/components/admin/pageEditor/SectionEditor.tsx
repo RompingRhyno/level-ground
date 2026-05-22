@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "../useConfirm";
@@ -19,6 +19,8 @@ const SECTION_LABELS: Record<string, string> = {
   cta: "CTA",
   video: "Video",
   contact: "Contact Form",
+  "collection-index": "Collection Index",
+  "collection-item": "Collection Item",
 };
 
 export default function SectionEditor({
@@ -39,6 +41,55 @@ export default function SectionEditor({
   const [expanded, setExpanded] = useState(false);
   const { confirm, dialogProps } = useConfirm();
   const type = section.type;
+
+  const [collectionFolders, setCollectionFolders] = useState<{ slug: string; name: string }[]>([]);
+  const [collectionTags, setCollectionTags] = useState<{ slug: string; name: string }[]>([]);
+  const [collectionDefaultImages, setCollectionDefaultImages] = useState<Record<string, string>>({});
+
+  const collectionSource: string = (section as any).source ?? "folders";
+
+  useEffect(() => {
+    if (type !== "collection-index") return;
+    if (collectionSource === "folders") {
+      fetch("/api/folders")
+        .then((r) => r.json())
+        .then((d) => setCollectionFolders(d || []))
+        .catch(() => {});
+    } else if (collectionSource === "tags") {
+      fetch("/api/tags")
+        .then((r) => r.json())
+        .then((d) => setCollectionTags(d || []))
+        .catch(() => {});
+    }
+  }, [type, collectionSource]);
+
+  useEffect(() => {
+    if (type !== "collection-index") return;
+    const items = collectionSource === "folders" ? collectionFolders : collectionTags;
+    if (!items.length) return;
+    const param = collectionSource === "folders" ? "folder" : "tag";
+    let cancelled = false;
+    Promise.all(
+      items.map((item) =>
+        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}`)
+          .then((r) => r.json())
+          .then((assets: any[]) => {
+            const first = assets.find(
+              (a: any) => a.publicUrl && (!a.mime || a.mime.startsWith("image/"))
+            );
+            return [item.slug, first?.publicUrl] as [string, string | undefined];
+          })
+          .catch(() => [item.slug, undefined] as [string, undefined])
+      )
+    ).then((entries) => {
+      if (!cancelled) {
+        setCollectionDefaultImages(
+          Object.fromEntries(entries.filter(([, v]) => v) as [string, string][])
+        );
+      }
+    });
+    return () => { cancelled = true; };
+  }, [type, collectionSource, collectionFolders, collectionTags]);
 
   function update(key: string, value: any) {
     onChange({ ...section, [key]: value } as PageSection, index);
@@ -213,6 +264,124 @@ export default function SectionEditor({
                 >
                   Add service
                 </button>
+              </div>
+            </div>
+          )}
+
+          {type === "collection-index" && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable
+                  value={(section as any).heading || ""}
+                  onChange={(val) => update("heading", val)}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Source</label>
+                <select
+                  value={(section as any).source || "folders"}
+                  onChange={(e) => update("source", e.target.value)}
+                  className="rounded border px-2 py-1"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  <option value="folders">Folders (Projects)</option>
+                  <option value="tags">Tags (Services)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Route base</label>
+                <input
+                  value={(section as any).routeBase || ""}
+                  onChange={(e) => update("routeBase", e.target.value)}
+                  className="w-full rounded border px-2 py-1"
+                  placeholder="e.g. /projects"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Detail template slug</label>
+                <input
+                  value={(section as any).detailTemplateSlug || ""}
+                  onChange={(e) => update("detailTemplateSlug", e.target.value)}
+                  className="w-full rounded border px-2 py-1"
+                  placeholder="e.g. projects-detail"
+                />
+              </div>
+
+              {(() => {
+                const items = collectionSource === "folders" ? collectionFolders : collectionTags;
+                if (!items.length) return null;
+                const label = collectionSource === "folders" ? "Folder images" : "Tag images";
+                const autoHint = collectionSource === "folders"
+                  ? "(auto: first image in folder)"
+                  : "(auto: first image with tag)";
+                return (
+                  <div className="field-group">
+                    <div className="font-medium text-sm mb-1">{label}</div>
+                    {items.map((item) => (
+                      <div key={item.slug} className="mt-3 rounded border p-2 space-y-2" style={{ backgroundColor: "var(--color-editor-bg)" }}>
+                        <div className="text-sm font-medium mb-1">{item.name}</div>
+                        <ImagePicker
+                          value={(section as any).entityImages?.[item.slug] || ""}
+                          onChange={(url) => {
+                            const entityImages = { ...((section as any).entityImages || {}), [item.slug]: url || undefined };
+                            if (!url) delete entityImages[item.slug];
+                            update("entityImages", entityImages);
+                          }}
+                          defaultFolder={collectionSource === "folders" ? item.slug : undefined}
+                          defaultTag={collectionSource === "tags" ? item.slug : undefined}
+                          defaultImage={collectionDefaultImages[item.slug]}
+                        />
+                        {!(section as any).entityImages?.[item.slug] && (
+                          <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{autoHint}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {type === "collection-item" && (
+            <div className="space-y-4">
+              <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
+                Heading, tags, and description are populated automatically from the collection item. Only display settings can be configured here.
+              </p>
+              <div className="space-y-1">
+                <label className="block text-sm">Source</label>
+                <select
+                  value={(section as any).source || "folders"}
+                  onChange={(e) => update("source", e.target.value)}
+                  className="rounded border px-2 py-1"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  <option value="folders">Folders (Projects)</option>
+                  <option value="tags">Tags (Services)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Layout</label>
+                <select
+                  value={(section as any).layout || "grid"}
+                  onChange={(e) => update("layout", e.target.value)}
+                  className="rounded border px-2 py-1"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  <option value="grid">Grid</option>
+                  <option value="bento">Bento</option>
+                  <option value="masonry">Masonry</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`lightbox-${index}`}
+                  checked={!!(section as any).lightbox}
+                  onChange={(e) => update("lightbox", e.target.checked)}
+                />
+                <label htmlFor={`lightbox-${index}`} className="text-sm">Enable lightbox</label>
               </div>
             </div>
           )}

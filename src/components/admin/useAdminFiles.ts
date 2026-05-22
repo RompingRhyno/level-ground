@@ -43,6 +43,8 @@ export interface UseAdminFilesReturn {
   saveRename: (id: string, name: string) => Promise<boolean>;
   removeTagFromAsset: (assetId: string, tag: string) => Promise<void>;
   computeMissingForTag: (tag: string) => number;
+  reorderAssetsLocally: (orderedIds: string[]) => void;
+  saveAssetOrder: (orderedIds: string[]) => Promise<void>;
   dialogProps: ConfirmDialogProps;
 }
 
@@ -197,7 +199,11 @@ export function useAdminFiles({
         'primary'
       ))) return;
       if (onMove) await onMove(ids, f.slug);
-      else await Promise.all(ids.map((id) => fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: f.slug }) })));
+      else await fetch('/api/assets/batch-move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids, folder: f.slug }),
+      });
       setSelected({});
       try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
       setFolder(f.slug);
@@ -328,6 +334,26 @@ export function useAdminFiles({
     }
   }
 
+  async function saveAssetOrder(orderedIds: string[]) {
+    reorderAssetsLocally(orderedIds);
+    try {
+      await fetch('/api/assets/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds }),
+      });
+    } catch (err) {
+      console.error('saveAssetOrder failed', err);
+    }
+  }
+
+  function reorderAssetsLocally(orderedIds: string[]) {
+    setAssets((prev) => {
+      const map = new Map(prev.map((a) => [a.id, a]));
+      return orderedIds.map((id) => map.get(id)).filter(Boolean) as any[];
+    });
+  }
+
   const selectedIds = getSelectedIds();
 
   return {
@@ -354,6 +380,8 @@ export function useAdminFiles({
     saveRename,
     removeTagFromAsset,
     computeMissingForTag,
+    reorderAssetsLocally,
+    saveAssetOrder,
     dialogProps,
   };
 }
