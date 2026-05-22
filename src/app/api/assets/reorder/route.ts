@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing orderedIds" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Null out orderIndex first to avoid unique constraint violations
       // during the sequential reassignment (PostgreSQL checks per-statement).
       await tx.asset.updateMany({
