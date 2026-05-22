@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
 export async function GET(request: Request) {
@@ -29,7 +28,7 @@ export async function POST(request: Request) {
     const { key, filename, mime, size, folder, publicUrl, alt, tags } = body;
     if (!key) return NextResponse.json({ error: "missing key" }, { status: 400 });
 
-    const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const created = await prisma.$transaction(async (tx) => {
       let orderIndex: number | undefined;
       if (folder) {
         const agg = await tx.asset.aggregate({

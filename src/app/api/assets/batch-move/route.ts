@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
 export async function POST(request: Request) {
@@ -16,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing folder" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await prisma.$transaction(async (tx) => {
       if (!folder) {
         // Removing from folder — clear orderIndex for all
         await tx.asset.updateMany({

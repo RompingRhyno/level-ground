@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
 import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
 export async function DELETE(request: NextRequest, context: any) {
@@ -99,7 +98,7 @@ export async function PATCH(request: NextRequest, context: any) {
 
       if (folderChanging) {
         if (folder) {
-          updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          updated = await prisma.$transaction(async (tx) => {
             const agg = await tx.asset.aggregate({
               where: { folder, NOT: { id } },
               _max: { orderIndex: true },
