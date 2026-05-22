@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing orderedIds" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // Null out orderIndex first to avoid unique constraint violations
       // during the sequential reassignment (PostgreSQL checks per-statement).
       await tx.asset.updateMany({

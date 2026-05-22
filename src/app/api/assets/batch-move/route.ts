@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing folder" }, { status: 400 });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       if (!folder) {
         // Removing from folder — clear orderIndex for all
         await tx.asset.updateMany({
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
 
     const dynamicSlugs = await resolveDynamicAffectedPages();
     for (const slug of dynamicSlugs) {
-      revalidateTag(`page:${slug}`);
+      revalidateTag(`page:${slug}`, {});
     }
 
     return NextResponse.json({ ok: true });

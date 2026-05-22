@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const { key, filename, mime, size, folder, publicUrl, alt, tags } = body;
     if (!key) return NextResponse.json({ error: "missing key" }, { status: 400 });
 
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await prisma.$transaction(async (tx: any) => {
       let orderIndex: number | undefined;
       if (folder) {
         const agg = await tx.asset.aggregate({
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     // New upload may appear in dynamic galleries — revalidate those pages
     const dynamicSlugs = await resolveDynamicAffectedPages();
     for (const slug of dynamicSlugs) {
-      revalidateTag(`page:${slug}`);
+      revalidateTag(`page:${slug}`, {});
     }
 
     return NextResponse.json(created);

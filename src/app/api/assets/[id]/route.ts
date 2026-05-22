@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest, context: any) {
 
       if (folderChanging) {
         if (folder) {
-          updated = await prisma.$transaction(async (tx) => {
+          updated = await prisma.$transaction(async (tx: any) => {
             const agg = await tx.asset.aggregate({
               where: { folder, NOT: { id } },
               _max: { orderIndex: true },
