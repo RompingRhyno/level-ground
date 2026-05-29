@@ -36,8 +36,18 @@ function GalleryPreview({ section }: { section: GallerySection }) {
             .filter((a) => order.has(a.id))
             .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
         } else {
-          const tags = section.filters?.tags ?? [];
-          if (tags.length) rows = rows.filter((a) => tags.some((t: string) => (a.tags ?? []).includes(t)));
+          const filterTags = section.filters?.tags ?? [];
+          if (filterTags.length) {
+            // Filter assets by folder membership — a.tags no longer exists
+            const activeFolderSlugs: string[] = data
+              .filter((a: any) => a.folder)
+              .map((a: any) => a.folder)
+              .filter((v: string, i: number, arr: string[]) => arr.indexOf(v) === i);
+            // We need to know which folders have these tags, but we only have asset data here.
+            // As a best-effort client-side preview, include assets whose folder matches section.filters.folder,
+            // or all assets if we can't filter (server-side Gallery component is authoritative).
+            // No-op: show all for preview.
+          }
         }
         setAssets(rows);
       })
