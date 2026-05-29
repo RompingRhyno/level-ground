@@ -18,8 +18,15 @@ async function fetchAssets(section: GallerySection): Promise<AssetRow[]> {
   }
 
   const where: Prisma.AssetWhereInput = {};
-  if (section.filters.tags?.length) where.tags = { hasSome: section.filters.tags };
-  if (section.filters.folder) where.folder = section.filters.folder;
+  if (section.filters.folder) {
+    where.folder = section.filters.folder;
+  } else if (section.filters.tags?.length) {
+    const taggedFolders = await prisma.folder.findMany({
+      where: { tags: { hasSome: section.filters.tags } },
+      select: { slug: true },
+    });
+    where.folder = { in: taggedFolders.map((f) => f.slug) };
+  }
 
   return prisma.asset.findMany({
     where,
