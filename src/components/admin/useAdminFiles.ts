@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useConfirm, ConfirmDialogProps } from "./useConfirm";
+
+export type TagDbRecord = {
+  id: number;
+  slug: string;
+  name: string;
+  description: string | null;
+};
 
 export function filenameParts(a: any): { base: string; ext: string } {
   const raw = a.filename || a.storageKey || '';
@@ -22,10 +29,16 @@ export interface UseAdminFilesOptions {
 export interface UseAdminFilesReturn {
   assets: any[];
   folders: any[];
-  tags: string[];
+  tags: TagDbRecord[];
   loading: boolean;
   selected: Record<string, boolean>;
-  activeTags: string[];
+  /** Single active tag slug used as top-level folder filter (null = no filter). */
+  activeTag: string | null;
+  /** Tag slugs currently assigned to the open folder. */
+  folderActiveTags: string[];
+  currentFolderId: number | null;
+  /** First image URL per folder slug, for thumbnail display at top level. */
+  folderThumbnails: Record<string, string>;
   folder: string | null;
   selectedIds: string[];
   selectedCount: number;
@@ -37,12 +50,11 @@ export interface UseAdminFilesReturn {
   load: () => Promise<void>;
   bulkDelete: () => Promise<void>;
   handleFolderClick: (f: any, isManageFolders: boolean) => Promise<void>;
-  handleTagClick: (t: string, isManageTags: boolean) => Promise<void>;
+  /** isDeleteMode=true â†’ delete tag from DB; false â†’ toggle (folder membership or top-level filter). */
+  handleTagClick: (t: string, isDeleteMode: boolean) => Promise<void>;
   createFolder: (name: string) => Promise<boolean>;
-  createTag: (name: string) => Promise<void>;
+  createTag: (name: string, description?: string) => Promise<void>;
   saveRename: (id: string, name: string) => Promise<boolean>;
-  removeTagFromAsset: (assetId: string, tag: string) => Promise<void>;
-  computeMissingForTag: (tag: string) => number;
   reorderAssetsLocally: (orderedIds: string[]) => void;
   saveAssetOrder: (orderedIds: string[]) => Promise<void>;
   dialogProps: ConfirmDialogProps;
@@ -57,10 +69,12 @@ export function useAdminFiles({
   refreshKey,
 }: UseAdminFilesOptions): UseAdminFilesReturn {
   const [assets, setAssets] = useState<any[]>([]);
-  const [assetsBackup, setAssetsBackup] = useState<any[] | null>(null);
   const [folders, setFolders] = useState<any[]>(initialFolders || []);
-  const [tags, setTags] = useState<string[]>([]);
-  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<TagDbRecord[]>([]);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [folderActiveTags, setFolderActiveTags] = useState<string[]>([]);
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null);
+  const [folderThumbnails, setFolderThumbnails] = useState<Record<string, string>>({});
   const [folder, setFolder] = useState<string | null>(initialFolder ?? null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -71,58 +85,63 @@ export function useAdminFiles({
   useEffect(() => {
     try {
       if (typeof window !== 'undefined') sessionStorage.setItem(SELECTED_KEY, JSON.stringify(selected));
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }, [selected]);
-
-  function computeMissingForTag(tag: string) {
-    const ids = getSelectedIds();
-    if (!ids.length) return 0;
-    let missing = 0;
-    ids.forEach((id) => {
-      const asset = (assets || []).find((a) => a.id === id) || (assetsBackup || []).find((a) => a.id === id);
-      if (!asset) return;
-      const has = Array.isArray(asset.tags) && asset.tags.includes(tag);
-      if (!has) missing += 1;
-    });
-    return missing;
-  }
 
   async function load() {
     setLoading(true);
     try {
+      const [tagsRes, fRes] = await Promise.all([fetch('/api/tags'), fetch('/api/folders')]);
+      const tagsData = await tagsRes.json().catch(() => []);
+      const fData = await fRes.json().catch(() => []);
+      setTags(tagsData || []);
+      setFolders(fData || []);
+
+      if (folder) {
+        const currentFolderObj = (fData || []).find((f: any) => f.slug === folder);
+        setFolderActiveTags(Array.isArray(currentFolderObj?.tags) ? currentFolderObj.tags : []);
+        setCurrentFolderId(typeof currentFolderObj?.id === 'number' ? currentFolderObj.id : null);
+      } else {
+        setFolderActiveTags([]);
+        setCurrentFolderId(null);
+      }
+
+      // In folder view: load that folder's assets. At top level: load all, keep only unassigned.
       const q = folder ? `?folder=${encodeURIComponent(folder)}` : '';
       const res = await fetch(`/api/assets${q}`);
       const data = await res.json().catch(() => []);
-      setAssets(data || []);
-      setAssetsBackup(data || []);
+      const assetList = folder ? (data || []) : (data || []).filter((a: any) => !a.folder);
+      setAssets(assetList);
+
+      // Compute folder thumbnails from the all-assets result (top-level only)
+      // Use the lowest orderIndex image for each folder (preferred), falling back to any image.
+      if (!folder) {
+        const best: Record<string, { orderIndex: number; publicUrl: string }> = {};
+        for (const a of (data || [])) {
+          if (!a.folder) continue;
+          if (!a.publicUrl) continue;
+          if (a.mime && !a.mime.startsWith('image/')) continue;
+          const idx = typeof a.orderIndex === 'number' ? a.orderIndex : Number.POSITIVE_INFINITY;
+          const existing = best[a.folder];
+          if (!existing || idx < existing.orderIndex) {
+            best[a.folder] = { orderIndex: idx, publicUrl: a.publicUrl };
+          }
+        }
+        const thumbs: Record<string, string> = {};
+        for (const k of Object.keys(best)) thumbs[k] = best[k].publicUrl;
+        setFolderThumbnails(thumbs);
+      }
+
       try {
         const raw = typeof window !== 'undefined' ? sessionStorage.getItem(SELECTED_KEY) : null;
         const persisted: Record<string, boolean> = raw ? JSON.parse(raw) : {};
         if (persisted && Object.keys(persisted).length) {
-          const ids = new Set((data || []).map((a: any) => a.id));
+          const ids = new Set(assetList.map((a: any) => a.id));
           const restored: Record<string, boolean> = {};
           Object.keys(persisted).forEach((k) => { if (ids.has(k) && persisted[k]) restored[k] = true; });
           setSelected((s) => ({ ...s, ...restored }));
         }
-      } catch (err) {
-        // ignore sessionStorage errors
-      }
-      const fRes = await fetch('/api/folders');
-      const fData = await fRes.json().catch(() => []);
-      setFolders(fData || []);
-      try {
-        const allRes = await fetch('/api/assets');
-        const allData = await allRes.json().catch(() => []);
-        const ts = new Set<string>();
-        (allData || []).forEach((a: any) => (a.tags || []).forEach((t: string) => ts.add(t)));
-        setTags(Array.from(ts));
-      } catch (err) {
-        const ts = new Set<string>();
-        (data || []).forEach((a: any) => (a.tags || []).forEach((t: string) => ts.add(t)));
-        setTags(Array.from(ts));
-      }
+      } catch (err) {}
     } catch (err) {
       console.error('load failed', err);
     } finally {
@@ -153,13 +172,13 @@ export function useAdminFiles({
 
   function clearFolderFilter() {
     setFolder(null);
-    setActiveTags([]);
-    setAssets(assetsBackup || []);
+    setFolderActiveTags([]);
+    setCurrentFolderId(null);
+    setActiveTag(null);
   }
 
   function clearTagFilter() {
-    setActiveTags([]);
-    setAssets(assetsBackup || []);
+    setActiveTag(null);
   }
 
   async function bulkDelete() {
@@ -182,7 +201,7 @@ export function useAdminFiles({
       const data = await res.json().catch(() => []);
       if (Array.isArray(data) && data.length > 0) {
         const go = await confirm('Folder not empty', 'Remove files first', 'primary', 'Go to folder');
-        if (go) { setFolder(f.slug); setActiveTags([]); await load(); }
+        if (go) { setFolder(f.slug); setActiveTag(null); await load(); }
         return;
       }
       if (!(await confirm(`Delete folder '${f.name}'?`, undefined, 'danger', 'Delete'))) return;
@@ -207,95 +226,91 @@ export function useAdminFiles({
       setSelected({});
       try { if (typeof window !== 'undefined') sessionStorage.removeItem(SELECTED_KEY); } catch (e) {}
       setFolder(f.slug);
-      setActiveTags([]);
+      setActiveTag(null);
       await load();
       if (onRefreshFolders) await onRefreshFolders();
       return;
     }
     if (folder === f.slug) {
       setFolder(null);
-      setAssets(assetsBackup || []);
+      setFolderActiveTags([]);
+      setCurrentFolderId(null);
     } else {
       setFolder(f.slug);
-      setActiveTags([]);
+      setActiveTag(null);
     }
   }
 
-  async function applyTagToSelected(tag: string) {
-    const ids = getSelectedIds();
-    if (!ids.length) { await confirm('No files selected'); return; }
-    if (!(await confirm(
-      `Add tag '${tag}' to ${ids.length} selected file(s)?`,
-      "Click 'Clear selection' before selecting a tag if you meant to filter by this tag instead",
-      'primary'
-    ))) return;
-    try {
-      await Promise.all(ids.map((id) => {
-        const asset = assets.find((x) => x.id === id) || (assetsBackup || []).find((x) => x.id === id);
-        const current = Array.isArray(asset?.tags) ? asset.tags : [];
-        const updated = Array.from(new Set([...current, tag]));
-        return fetch(`/api/assets/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: updated }) });
-      }));
-      await load();
-    } catch (err) {
-      console.error('applyTag error', err);
-      await confirm('Failed to apply tag');
-    }
-  }
-
-  async function removeTagGlobally(tag: string) {
-    if (!(await confirm(`Remove tag '${tag}' from all assets?`, undefined, 'danger', 'Delete'))) return;
-    try {
-      const res = await fetch('/api/assets');
-      const all = await res.json().catch(() => []);
-      const targets = (all || []).filter((a: any) => Array.isArray(a.tags) && a.tags.includes(tag));
-      await Promise.all(targets.map((a: any) => {
-        const updated = (a.tags || []).filter((t: string) => t !== tag);
-        return fetch(`/api/assets/${a.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: updated }) });
-      }));
-      await load();
-    } catch (err) {
-      console.error('removeTagGlobally', err);
-      await confirm('Failed to remove tag');
-    }
-  }
-
-  async function handleTagClick(t: string, isManageTags: boolean) {
-    if (isManageTags) { await removeTagGlobally(t); return; }
-    if (getSelectedIds().length) { await applyTagToSelected(t); return; }
-    setActiveTags((prev) => {
-      const exists = prev.includes(t);
-      const next = exists ? prev.filter((x) => x !== t) : [...prev, t];
-      if (!next.length) {
-        setAssets(assetsBackup || []);
-      } else {
-        setAssets((assetsBackup || []).filter((a: any) => Array.isArray(a.tags) && next.every((nt: string) => a.tags.includes(nt))));
+  async function handleTagClick(t: string, isDeleteMode: boolean) {
+    if (isDeleteMode) {
+      const tagObj = tags.find((tag) => tag.slug === t);
+      if (!tagObj) return;
+      if (!(await confirm(`Delete tag '${tagObj.name}'?`, 'This will remove it from all folders.', 'danger', 'Delete'))) return;
+      try {
+        await fetch(`/api/tags?id=${tagObj.id}`, { method: 'DELETE' });
+        setFolderActiveTags((prev) => prev.filter((s) => s !== t));
+        await load();
+      } catch (err) {
+        console.error('deleteTag error', err);
+        await confirm('Failed to delete tag');
       }
-      return next;
-    });
-  }
-
-  async function removeTagFromAsset(assetId: string, tag: string) {
-    if (!(await confirm(`Remove tag '${tag}' from this file?`, undefined, 'danger', 'Delete'))) return;
-    try {
-      const asset = assets.find((x) => x.id === assetId) || (assetsBackup || []).find((x) => x.id === assetId);
-      if (!asset) return;
-      const updated = (asset.tags || []).filter((t: string) => t !== tag);
-      const res = await fetch(`/api/assets/${assetId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tags: updated }) });
-      if (!res.ok) throw new Error('Failed');
-      await load();
-    } catch (err) {
-      console.error('removeTagFromAsset', err);
-      await confirm('Failed to remove tag');
+      return;
     }
+
+    if (folder && currentFolderId) {
+      // Folder view: toggle membership for the current folder
+      const newTags = folderActiveTags.includes(t)
+        ? folderActiveTags.filter((s) => s !== t)
+        : [...folderActiveTags, t];
+      setFolderActiveTags(newTags);
+      try {
+        await fetch(`/api/folders/${currentFolderId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags: newTags }),
+        });
+        const fRes = await fetch('/api/folders');
+        const fData = await fRes.json().catch(() => []);
+        setFolders(fData || []);
+      } catch (err) {
+        console.error('toggleFolderTag error', err);
+        setFolderActiveTags(folderActiveTags);
+      }
+      return;
+    }
+
+    // Top-level view: single-toggle folder filter
+    setActiveTag((prev) => (prev === t ? null : t));
   }
 
-  async function createTag(name: string) {
-    const tag = (name || '').trim();
-    if (!tag) return;
-    const ids = getSelectedIds();
-    if (ids.length) await applyTagToSelected(tag);
-    else setTags((t) => Array.from(new Set([...t, tag])));
+  async function createTag(name: string, description?: string) {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    try {
+      const res = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, description: description ?? null }),
+      });
+      if (!res.ok) { await confirm('Failed to create tag'); return; }
+      const newTag = await res.json();
+      setTags((prev) => [...prev, newTag].sort((a, b) => a.name.localeCompare(b.name)));
+
+      if (folder && currentFolderId && newTag.slug) {
+        const newFolderTags = [...folderActiveTags, newTag.slug];
+        setFolderActiveTags(newFolderTags);
+        await fetch(`/api/folders/${currentFolderId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tags: newFolderTags }),
+        });
+        const fRes = await fetch('/api/folders');
+        const fData = await fRes.json().catch(() => []);
+        setFolders(fData || []);
+      }
+    } catch (err) {
+      console.error('createTag error', err);
+    }
   }
 
   async function createFolder(name: string): Promise<boolean> {
@@ -362,7 +377,10 @@ export function useAdminFiles({
     tags,
     loading,
     selected,
-    activeTags,
+    activeTag,
+    folderActiveTags,
+    currentFolderId,
+    folderThumbnails,
     folder,
     selectedIds,
     selectedCount: selectedIds.length,
@@ -378,10 +396,9 @@ export function useAdminFiles({
     createFolder,
     createTag,
     saveRename,
-    removeTagFromAsset,
-    computeMissingForTag,
     reorderAssetsLocally,
     saveAssetOrder,
     dialogProps,
   };
 }
+

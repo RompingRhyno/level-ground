@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; tags: string[] | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
 
@@ -21,13 +21,17 @@ function ImagePickerModal({
   const [loading, setLoading] = useState(false);
   const [folder, setFolder] = useState<string>(defaultFolder ?? "");
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
+  const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>(defaultTag ?? "");
 
   useEffect(() => {
-    fetch("/api/folders")
-      .then((r) => r.json())
-      .then((d) => setFolders(d || []))
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/folders").then((r) => r.json()).catch(() => []),
+      fetch("/api/tags").then((r) => r.json()).catch(() => []),
+    ]).then(([fData, tData]) => {
+      setFolders(fData || []);
+      setAllTags(tData || []);
+    });
   }, []);
 
   useEffect(() => {
@@ -48,8 +52,7 @@ function ImagePickerModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const availableTags = Array.from(new Set(assets.flatMap((a) => a.tags ?? []))).sort();
-  const filtered = tag ? assets.filter((a) => (a.tags ?? []).includes(tag)) : assets;
+  const filtered = assets;
 
   return (
     <div
@@ -76,7 +79,7 @@ function ImagePickerModal({
             <label className="text-sm text-gray-600">Tag</label>
             <select value={tag} onChange={(e) => setTag(e.target.value)} className="rounded border px-2 py-1 text-sm">
               <option value="">All</option>
-              {availableTags.map((t) => <option key={t} value={t}>{t}</option>)}
+              {allTags.map((t) => <option key={t.slug} value={t.slug}>{t.name}</option>)}
             </select>
           </div>
         </div>

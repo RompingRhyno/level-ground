@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; tags: string[] | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
+type TagRecord = { id: number; slug: string; name: string };
 
 // ── Static picker ─────────────────────────────────────────────────────────────
 
@@ -18,18 +19,18 @@ function StaticPicker({
   const [folder, setFolder] = useState<string>("");
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>("");
+  const [allTags, setAllTags] = useState<TagRecord[]>([]);
 
-  const availableTags = Array.from(
-    new Set(assets.flatMap((a) => a.tags ?? []))
-  ).sort();
-
-  const filteredAssets = tag ? assets.filter((a) => (a.tags ?? []).includes(tag)) : assets;
+  const filteredAssets = assets;
 
   useEffect(() => {
-    fetch("/api/folders")
-      .then((r) => r.json())
-      .then((d) => setFolders(d || []))
-      .catch(() => {});
+    Promise.all([
+      fetch("/api/folders").then((r) => r.json()).catch(() => []),
+      fetch("/api/tags").then((r) => r.json()).catch(() => []),
+    ]).then(([fData, tData]) => {
+      setFolders(fData || []);
+      setAllTags(tData || []);
+    });
   }, []);
 
   useEffect(() => {
@@ -82,9 +83,9 @@ function StaticPicker({
             className="rounded border px-2 py-1 text-sm"
           >
             <option value="">All</option>
-            {availableTags.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {allTags.map((t) => (
+              <option key={t.slug} value={t.slug}>
+                {t.name}
               </option>
             ))}
           </select>
@@ -167,19 +168,17 @@ function DynamicPicker({
   filters: { tags?: string[]; folder?: string };
   onChange: (filters: { tags?: string[]; folder?: string }) => void;
 }) {
-  const [allTags, setAllTags] = useState<string[]>([]);
+  const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [tagInput, setTagInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/assets").then((r) => r.json()).catch(() => []),
+      fetch("/api/tags").then((r) => r.json()).catch(() => []),
       fetch("/api/folders").then((r) => r.json()).catch(() => []),
-    ]).then(([assets, foldersData]) => {
-      const ts = new Set<string>();
-      (assets as any[]).forEach((a) => (a.tags ?? []).forEach((t: string) => ts.add(t)));
-      setAllTags(Array.from(ts).sort());
+    ]).then(([tagsData, foldersData]) => {
+      setAllTags(tagsData || []);
       setFolders(foldersData || []);
     });
   }, []);
@@ -204,7 +203,7 @@ function DynamicPicker({
 
   const suggestions = tagInput
     ? allTags.filter(
-        (t) => t.toLowerCase().includes(tagInput.toLowerCase()) && !activeTags.includes(t)
+        (t) => t.name.toLowerCase().includes(tagInput.toLowerCase()) && !activeTags.includes(t.slug)
       )
     : [];
 
@@ -234,16 +233,16 @@ function DynamicPicker({
           <div className="flex flex-wrap gap-1.5 mb-2">
             {allTags.map((t) => (
               <button
-                key={t}
+                key={t.slug}
                 type="button"
-                onClick={() => toggleTag(t)}
+                onClick={() => toggleTag(t.slug)}
                 className={`rounded-full px-3 py-0.5 text-sm border ${
-                  activeTags.includes(t)
+                  activeTags.includes(t.slug)
                     ? "bg-blue-500 text-white border-blue-500"
                     : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
                 }`}
               >
-                {t}
+                {t.name}
               </button>
             ))}
           </div>
@@ -274,12 +273,12 @@ function DynamicPicker({
             <div className="absolute z-10 left-0 right-0 mt-1 bg-white border rounded shadow-md max-h-40 overflow-y-auto">
               {suggestions.map((t) => (
                 <button
-                  key={t}
+                  key={t.slug}
                   type="button"
                   className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
-                  onClick={() => { toggleTag(t); setTagInput(""); }}
+                  onClick={() => { toggleTag(t.slug); setTagInput(""); }}
                 >
-                  {t}
+                  {t.name}
                 </button>
               ))}
             </div>
