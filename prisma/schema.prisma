@@ -24,7 +24,6 @@ model Asset {
   provider   String
   folder     String?
   orderIndex Int?
-  tags       String[]
   size       Int?
   publicUrl  String?
   filename   String?
@@ -47,9 +46,21 @@ model Folder {
   slug        String   @unique
   description String?
   parentId    Int?
+  tags        String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
+  @@index([slug])
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   @@index([slug])
 }
 
