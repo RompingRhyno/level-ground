@@ -85,11 +85,10 @@ export async function PATCH(request: NextRequest, context: any) {
 
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
-    const { filename, folder, alt, tags } = body || {};
+    const { filename, folder, alt } = body || {};
     const data: any = {};
     if (filename) data.filename = filename;
     if (typeof alt !== "undefined") data.alt = alt;
-    if (typeof tags !== "undefined") data.tags = tags;
 
     let updated: any;
     if (typeof folder !== "undefined") {
@@ -116,8 +115,8 @@ export async function PATCH(request: NextRequest, context: any) {
       updated = await prisma.asset.update({ where: { id }, data });
     }
 
-    // Tags or folder changes affect dynamic gallery queries — revalidate those pages
-    if (typeof tags !== "undefined" || typeof folder !== "undefined") {
+    // Folder changes affect dynamic gallery queries — revalidate those pages
+    if (typeof folder !== "undefined") {
       const dynamicSlugs = await resolveDynamicAffectedPages();
       for (const slug of dynamicSlugs) {
         revalidateTag(`page:${slug}`, {});

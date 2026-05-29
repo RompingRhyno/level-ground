@@ -9,7 +9,13 @@ export async function GET(request: Request) {
   const tag = url.searchParams.get("tag");
   const where: any = {};
   if (folder) where.folder = folder;
-  if (tag) where.tags = { has: tag };
+  if (tag) {
+    const taggedFolders = await prisma.folder.findMany({
+      where: { tags: { has: tag } },
+      select: { slug: true },
+    });
+    where.folder = { in: taggedFolders.map((f) => f.slug) };
+  }
 
   const rows = await prisma.asset.findMany({
     where,
@@ -18,14 +24,14 @@ export async function GET(request: Request) {
       : [{ createdAt: "desc" }],
     take: 200,
   });
-  const sorted = rows.map((r: any) => ({ ...r, tags: Array.isArray(r.tags) ? [...r.tags].sort() : r.tags }));
+    const sorted = rows;
   return NextResponse.json(sorted);
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { key, filename, mime, size, folder, publicUrl, alt, tags } = body;
+    const { key, filename, mime, size, folder, publicUrl, alt } = body;
     if (!key) return NextResponse.json({ error: "missing key" }, { status: 400 });
 
     const created = await prisma.$transaction(async (tx) => {
@@ -49,7 +55,6 @@ export async function POST(request: Request) {
           publicUrl,
           alt,
           meta: { uploadedAt: new Date().toISOString() },
-          tags,
         },
       });
     });
