@@ -7,6 +7,7 @@ export type FolderRecord = {
   slug: string;
   description: string | null;
   parentId: number | null;
+  tags: string[];
 };
 
 export function getFolders(): Promise<FolderRecord[]> {
@@ -30,27 +31,32 @@ export function getFolderBySlug(slug: string): Promise<FolderRecord | null> {
 }
 
 /**
- * Returns a map of folder slug → sorted unique tags across all assets in that folder.
+ * Returns a map of folder slug → the folder's own tags array, sorted.
  */
 export async function getTagsByFolderSlugs(
   slugs: string[]
 ): Promise<Record<string, string[]>> {
   if (!slugs.length) return {};
 
-  const assets = await prisma.asset.findMany({
-    where: { folder: { in: slugs }, tags: { isEmpty: false } },
-    select: { folder: true, tags: true },
+  const folders = await prisma.folder.findMany({
+    where: { slug: { in: slugs } },
+    select: { slug: true, tags: true },
   });
 
-  const result: Record<string, Set<string>> = {};
-  for (const asset of assets) {
-    if (!asset.folder) continue;
-    if (!result[asset.folder]) result[asset.folder] = new Set();
-    for (const tag of asset.tags) result[asset.folder].add(tag);
-  }
   return Object.fromEntries(
-    Object.entries(result).map(([slug, set]) => [slug, [...set].sort()])
+    folders.map((f) => [f.slug, [...f.tags].sort()])
   );
+}
+
+/**
+ * Returns folder slugs that have the given tag slug in their tags array.
+ */
+export async function getFoldersByTag(tagSlug: string): Promise<string[]> {
+  const folders = await prisma.folder.findMany({
+    where: { tags: { has: tagSlug } },
+    select: { slug: true },
+  });
+  return folders.map((f) => f.slug);
 }
 
 /**
