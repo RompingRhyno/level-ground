@@ -154,8 +154,8 @@ function serializeEmailContent(ctx: {
   const photosBlock =
     submission.photoUrls.length > 0
       ? `<div style="margin-top:16px"><strong>Attached photos:</strong><br>${submission.photoUrls
-          .map((u) => `<img src="${escapeHtml(u)}" style="max-width:400px;max-height:300px;display:block;margin:8px 0" alt="">`)
-          .join("")}</div>`
+        .map((u) => `<img src="${escapeHtml(u)}" style="max-width:400px;max-height:300px;display:block;margin:8px 0" alt="">`)
+        .join("")}</div>`
       : "";
 
   const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:600px">
@@ -234,11 +234,29 @@ export async function POST(request: Request) {
 
   let turnstileRes: Response;
   try {
-    turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: turnstileSecret, response: turnstileToken }),
+    const ip =
+      request.headers.get("cf-connecting-ip") ??
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+
+    const formData = new URLSearchParams({
+      secret: turnstileSecret,
+      response: turnstileToken,
     });
+
+    if (ip) {
+      formData.set("remoteip", ip);
+    }
+
+    turnstileRes = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData,
+      }
+    );
   } catch {
     return NextResponse.json({ error: "TURNSTILE_UNREACHABLE" }, { status: 502 });
   }
@@ -254,11 +272,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "TURNSTILE_UNREACHABLE" }, { status: 502 });
   }
 
-  if (
-    typeof turnstileData !== "object" ||
-    turnstileData === null ||
-    !(turnstileData as Record<string, unknown>).success
-  ) {
+  if (typeof turnstileData !== "object" || turnstileData === null) {
+    return NextResponse.json({ error: "TURNSTILE_FAILED" }, { status: 400 });
+  }
+
+  const result = turnstileData as Record<string, unknown>;
+
+  if (result.success !== true) {
     return NextResponse.json({ error: "TURNSTILE_FAILED" }, { status: 400 });
   }
 
