@@ -15,11 +15,17 @@ export function uploadWithProgress(
   file: File,
   contentType: string,
   onProgress: (p: number) => void,
+  extraHeaders?: Record<string, string>,
 ): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", uploadUrl, true);
     xhr.setRequestHeader("Content-Type", contentType);
+    if (extraHeaders) {
+      for (const [k, v] of Object.entries(extraHeaders)) {
+        xhr.setRequestHeader(k, v);
+      }
+    }
     xhr.upload.onprogress = (ev) => {
       if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
     };

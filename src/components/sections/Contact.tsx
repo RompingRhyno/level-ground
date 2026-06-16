@@ -13,6 +13,23 @@ declare global {
 
 type Props = ContactSection & { pageSlug: string };
 
+async function convertIfHeic(f: File): Promise<File> {
+  const isHeic =
+    f.type === "image/heic" ||
+    f.type === "image/heif" ||
+    /\.(heic|heif)$/i.test(f.name);
+  if (!isHeic) return f;
+  try {
+    const heic2any = (await import("heic2any")).default;
+    const blob = (await heic2any({ blob: f, toType: "image/jpeg", quality: 0.85 })) as Blob;
+    const newName = f.name.replace(/\.(heic|heif)$/i, ".jpg");
+    return new File([blob], newName, { type: "image/jpeg" });
+  } catch (err) {
+    console.warn("heic2any conversion failed, using original", err);
+    return f;
+  }
+}
+
 export default function Contact({
   id: sectionId,
   pageSlug,
@@ -36,6 +53,7 @@ export default function Contact({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   // Load Turnstile widget
   useEffect(() => {
@@ -72,7 +90,8 @@ export default function Contact({
   }
 
   async function handleFiles(fileList: FileList | null) {
-    if (!fileList) return;
+    if (!fileList || fileList.length === 0) return;
+
     const newItems: UploadItem[] = Array.from(fileList).map((file) => ({
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       file,
@@ -82,28 +101,89 @@ export default function Contact({
     }));
     setUploads((prev) => [...prev, ...newItems]);
 
+    // Lazy session creation on first upload
+    if (!sessionIdRef.current) {
+      try {
+        const sessionRes = await fetch("/api/contact/upload-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pageSlug, sectionId }),
+        });
+        if (!sessionRes.ok) {
+          const data = await sessionRes.json().catch(() => ({}));
+          const msg = (data as { error?: string }).error ?? "Session creation failed";
+          setUploads((prev) =>
+            prev.map((u) =>
+              newItems.some((n) => n.id === u.id)
+                ? { ...u, status: "error" as const, error: msg }
+                : u
+            )
+          );
+          return;
+        }
+        const { sessionId } = await sessionRes.json();
+        sessionIdRef.current = sessionId;
+      } catch {
+        setUploads((prev) =>
+          prev.map((u) =>
+            newItems.some((n) => n.id === u.id)
+              ? { ...u, status: "error" as const, error: "Session creation failed" }
+              : u
+          )
+        );
+        return;
+      }
+    }
+
+    const currentSessionId = sessionIdRef.current!;
+
     for (const item of newItems) {
+      // Step 1 — Convert HEIC if needed
+      updateUpload(item.id, { status: "converting" });
+      let converted: File;
+      try {
+        converted = await convertIfHeic(item.file);
+      } catch {
+        converted = item.file;
+      }
+
+      // Step 2 — Request upload slot
       updateUpload(item.id, { status: "uploading", progress: 1 });
       try {
-        const presignRes = await fetch("/api/assets/presign", {
+        const slotRes = await fetch("/api/contact/upload-session/slot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            filename: item.file.name,
-            contentType: item.file.type,
-            folder: "contact-uploads",
-            size: item.file.size,
+            sessionId: currentSessionId,
+            filename: converted.name,
+            contentType: converted.type,
+            size: converted.size,
           }),
         });
-        if (!presignRes.ok) {
-          const data = await presignRes.json().catch(() => ({}));
-          throw new Error((data as { error?: string }).error ?? "Presign failed");
+        if (!slotRes.ok) {
+          const data = await slotRes.json().catch(() => ({}));
+          throw new Error((data as { error?: string }).error ?? "Slot allocation failed");
         }
-        const { uploadUrl, publicUrl } = await presignRes.json();
-        await uploadWithProgress(uploadUrl, item.file, item.file.type, (p) =>
-          updateUpload(item.id, { progress: p })
+        const { key, workerUrl, uploadToken } = await slotRes.json();
+
+        // Step 3 — Upload via Cloudflare Worker
+        await uploadWithProgress(workerUrl, converted, converted.type, (p) =>
+          updateUpload(item.id, { progress: p }),
+          { Authorization: `Bearer ${uploadToken}` }
         );
-        updateUpload(item.id, { status: "done", progress: 100, publicUrl });
+
+        // Step 4 — Confirm upload server-side
+        const patchRes = await fetch("/api/contact/upload-session/slot", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId: currentSessionId, key }),
+        });
+        if (!patchRes.ok) {
+          const data = await patchRes.json().catch(() => ({}));
+          throw new Error((data as { error?: string }).error ?? "Upload confirmation failed");
+        }
+
+        updateUpload(item.id, { status: "done", progress: 100, key });
       } catch (err: unknown) {
         updateUpload(item.id, {
           status: "error",
@@ -125,9 +205,9 @@ export default function Contact({
       }
     }
 
-    const photoUrls = uploads
-      .filter((u) => u.status === "done" && u.publicUrl)
-      .map((u) => u.publicUrl!);
+    const photoKeys = uploads
+      .filter((u) => u.status === "done" && u.key)
+      .map((u) => u.key!);
 
     setLoading(true);
     try {
@@ -139,7 +219,8 @@ export default function Contact({
           sectionId,
           values,
           services: [...checkedServices],
-          photoUrls,
+          photoKeys,
+          sessionId: sessionIdRef.current ?? "",
           turnstileToken,
           _honeypot: "",
         }),
@@ -273,7 +354,7 @@ export default function Contact({
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
@@ -284,12 +365,15 @@ export default function Contact({
             >
               Choose files…
             </button>
-            <p className="mt-2 text-xs text-[var(--color-text-primary)]">Accepted: JPEG, PNG, WebP, GIF — up to 10MB per file.</p>
+            <p className="mt-2 text-xs text-[var(--color-text-primary)]">Accepted: JPEG, PNG, WebP, HEIC — up to 10 MB per file.</p>
             {uploads.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {uploads.map((u) => (
                   <li key={u.id} className="text-xs flex items-center gap-2">
                     <span className="truncate max-w-[200px]">{u.file.name}</span>
+                    {u.status === "converting" && (
+                      <span className="text-gray-500">Converting…</span>
+                    )}
                     {u.status === "uploading" && (
                       <span className="text-gray-500">{u.progress}%</span>
                     )}
@@ -351,3 +435,4 @@ export default function Contact({
     </section>
   );
 }
+
