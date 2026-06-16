@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import type { ContactFormField, ContactSection } from "@/types/sections";
+import type { ContactFormField } from "@/types/sections";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ type ValidatedSection = {
 type ValidatedSubmissionContext = {
   values: Record<string, string>;
   services: string[];
-  photoUrls: string[];
+  photoKeys: string[];
 };
 
 type ResolvedRecipients = { id: number; email: string; name: string | null }[];
@@ -72,11 +72,13 @@ function validateCmsSection(section: RawSection): { ok: true; value: ValidatedSe
 // ── Submission validator ───────────────────────────────────────────────────
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CONTACT_KEY_REGEX = /^contact-uploads\/[0-9a-f-]{36}\/\d+-[^/]+$/;
+const CONTACT_UPLOAD_MAX_FILES = 5;
 
 function validateSubmission(
   values: Record<string, string>,
   services: string[],
-  photoUrls: string[],
+  photoKeys: string[],
   section: ValidatedSection,
 ): { ok: true; value: ValidatedSubmissionContext } | { ok: false; error: string } {
   // Field rules
@@ -98,24 +100,17 @@ function validateSubmission(
     }
   }
 
-  // URL rules
-  const r2BaseUrl = process.env.R2_BASE_URL;
-  if (!r2BaseUrl) throw new Error("R2_BASE_URL not configured");
-  const r2Origin = new URL(r2BaseUrl).origin.toLowerCase();
-
-  for (const rawUrl of photoUrls) {
-    let parsed: URL;
-    try {
-      parsed = new URL(rawUrl);
-    } catch {
-      return { ok: false, error: "SUB_INVALID_PHOTO_URL" };
-    }
-    const normalizedOrigin = `${parsed.protocol.toLowerCase()}//${parsed.host.toLowerCase()}`;
-    if (normalizedOrigin !== r2Origin) return { ok: false, error: "SUB_PHOTO_URL_ORIGIN_MISMATCH" };
-    if (!parsed.pathname.startsWith("/contact-uploads/")) return { ok: false, error: "SUB_PHOTO_URL_PATH_INVALID" };
+  // Photo key count guard
+  if (photoKeys.length > CONTACT_UPLOAD_MAX_FILES) {
+    return { ok: false, error: "SUB_TOO_MANY_PHOTOS" };
   }
 
-  return { ok: true, value: { values, services, photoUrls } };
+  // Key format validation (structural defense-in-depth)
+  for (const key of photoKeys) {
+    if (!CONTACT_KEY_REGEX.test(key)) return { ok: false, error: "SUB_INVALID_KEY_FORMAT" };
+  }
+
+  return { ok: true, value: { values, services, photoKeys } };
 }
 
 // ── Email serializer ───────────────────────────────────────────────────────
@@ -133,8 +128,9 @@ function serializeEmailContent(ctx: {
   section: ValidatedSection;
   submission: ValidatedSubmissionContext;
   recipients: ResolvedRecipients;
+  photoUrls: string[];
 }): { subject: string; html: string; to: string[] } {
-  const { section, submission } = ctx;
+  const { section, submission, photoUrls } = ctx;
 
   const subject = "New contact form submission";
 
@@ -152,8 +148,8 @@ function serializeEmailContent(ctx: {
       : "";
 
   const photosBlock =
-    submission.photoUrls.length > 0
-      ? `<div style="margin-top:16px"><strong>Attached photos:</strong><br>${submission.photoUrls
+    photoUrls.length > 0
+      ? `<div style="margin-top:16px"><strong>Attached photos:</strong><br>${photoUrls
         .map((u) => `<img src="${escapeHtml(u)}" style="max-width:400px;max-height:300px;display:block;margin:8px 0" alt="">`)
         .join("")}</div>`
       : "";
@@ -185,7 +181,7 @@ export async function POST(request: Request) {
   }
 
   const raw = body as Record<string, unknown>;
-  const ALLOWED_KEYS = new Set(["pageSlug", "sectionId", "values", "services", "photoUrls", "turnstileToken", "_honeypot"]);
+  const ALLOWED_KEYS = new Set(["pageSlug", "sectionId", "values", "services", "photoKeys", "sessionId", "turnstileToken", "_honeypot"]);
   for (const key of Object.keys(raw)) {
     if (!ALLOWED_KEYS.has(key)) return NextResponse.json({ error: "UNKNOWN_FIELD" }, { status: 400 });
   }
@@ -193,10 +189,11 @@ export async function POST(request: Request) {
     if (!(key in raw)) return NextResponse.json({ error: "MISSING_FIELD" }, { status: 400 });
   }
 
-  const { pageSlug, sectionId, values, services, photoUrls, turnstileToken, _honeypot } = raw;
+  const { pageSlug, sectionId, values, services, photoKeys, sessionId, turnstileToken, _honeypot } = raw;
 
   if (typeof pageSlug !== "string") return NextResponse.json({ error: "INVALID_PAGE_SLUG" }, { status: 400 });
   if (typeof sectionId !== "string") return NextResponse.json({ error: "INVALID_SECTION_ID" }, { status: 400 });
+  if (typeof sessionId !== "string") return NextResponse.json({ error: "INVALID_SESSION_ID" }, { status: 400 });
   if (typeof turnstileToken !== "string") return NextResponse.json({ error: "INVALID_TURNSTILE_TOKEN" }, { status: 400 });
   if (typeof _honeypot !== "string") return NextResponse.json({ error: "INVALID_HONEYPOT" }, { status: 400 });
 
@@ -212,14 +209,15 @@ export async function POST(request: Request) {
     if (typeof s !== "string") return NextResponse.json({ error: "INVALID_SERVICES_ENTRY" }, { status: 400 });
   }
 
-  if (!Array.isArray(photoUrls)) return NextResponse.json({ error: "INVALID_PHOTO_URLS" }, { status: 400 });
-  for (const u of photoUrls) {
-    if (typeof u !== "string") return NextResponse.json({ error: "INVALID_PHOTO_URL_ENTRY" }, { status: 400 });
+  if (!Array.isArray(photoKeys)) return NextResponse.json({ error: "INVALID_PHOTO_KEYS" }, { status: 400 });
+  for (const k of photoKeys) {
+    if (typeof k !== "string") return NextResponse.json({ error: "INVALID_PHOTO_KEY_ENTRY" }, { status: 400 });
   }
 
   const typedValues = values as Record<string, string>;
   const typedServices = services as string[];
-  const typedPhotoUrls = photoUrls as string[];
+  const typedPhotoKeys = photoKeys as string[];
+  const typedSessionId = sessionId as string;
 
   // Step 1 — Honeypot
   if (_honeypot !== "") {
@@ -317,14 +315,14 @@ export async function POST(request: Request) {
   }
   const validatedSection = cmsResult.value;
 
-  // Step 6 — Submission validation
-  const subResult = validateSubmission(typedValues, typedServices, typedPhotoUrls, validatedSection);
+  // Step 6 — Submission validation (fields + services + key format)
+  const subResult = validateSubmission(typedValues, typedServices, typedPhotoKeys, validatedSection);
   if (!subResult.ok) {
     return NextResponse.json({ error: subResult.error }, { status: 400 });
   }
   const validatedSubmission = subResult.value;
 
-  // Step 7 — Referential integrity (DB only)
+  // Step 7 — Recipient referential integrity
   const uniqueIds = [...new Set(validatedSection.recipientIds)];
   let resolvedRecipients: ResolvedRecipients;
   try {
@@ -341,11 +339,67 @@ export async function POST(request: Request) {
     if (!foundIds.has(id)) return NextResponse.json({ error: "RECIPIENT_NOT_FOUND" }, { status: 400 });
   }
 
+  // Step 7a — Photo session + key ownership validation
+  let photoUrls: string[] = [];
+
+  if (typedPhotoKeys.length > 0) {
+    if (!typedSessionId) {
+      return NextResponse.json({ error: "SESSION_REQUIRED_FOR_PHOTOS" }, { status: 400 });
+    }
+
+    const r2Base = process.env.R2_BASE_URL;
+    if (!r2Base) {
+      return NextResponse.json({ error: "SERVER_MISCONFIGURED" }, { status: 500 });
+    }
+
+    let uploadSession: { sectionId: string; expiresAt: Date } | null;
+    try {
+      uploadSession = await prisma.contactUploadSession.findUnique({
+        where: { id: typedSessionId },
+        select: { sectionId: true, expiresAt: true },
+      });
+    } catch {
+      return NextResponse.json({ error: "DB_ERROR" }, { status: 500 });
+    }
+
+    if (!uploadSession) {
+      return NextResponse.json({ error: "SESSION_NOT_FOUND" }, { status: 400 });
+    }
+    if (uploadSession.expiresAt <= new Date()) {
+      return NextResponse.json({ error: "SESSION_EXPIRED" }, { status: 400 });
+    }
+    if (uploadSession.sectionId !== sectionId) {
+      return NextResponse.json({ error: "SESSION_MISMATCH" }, { status: 400 });
+    }
+
+    // Step 7b — Verify all keys are uploaded and owned by this session
+    let uploadedSlots: { key: string }[];
+    try {
+      uploadedSlots = await prisma.contactUpload.findMany({
+        where: {
+          sessionId: typedSessionId,
+          key: { in: typedPhotoKeys },
+          status: "uploaded",
+        },
+        select: { key: true },
+      });
+    } catch {
+      return NextResponse.json({ error: "DB_ERROR" }, { status: 500 });
+    }
+
+    if (uploadedSlots.length !== typedPhotoKeys.length) {
+      return NextResponse.json({ error: "PHOTO_KEY_INVALID" }, { status: 400 });
+    }
+
+    photoUrls = typedPhotoKeys.map((k) => `${r2Base.replace(/\/$/, "")}/${k}`);
+  }
+
   // Step 8 — Serialize and send
   const { subject, html, to } = serializeEmailContent({
     section: validatedSection,
     submission: validatedSubmission,
     recipients: resolvedRecipients,
+    photoUrls,
   });
 
   const resendKey = process.env.RESEND_API_KEY;
@@ -360,7 +414,7 @@ export async function POST(request: Request) {
   // Fetch uploaded photos as attachments (failures are non-fatal)
   const attachments: { filename: string; content: string; content_type: string }[] = [];
   await Promise.all(
-    validatedSubmission.photoUrls.map(async (url) => {
+    photoUrls.map(async (url) => {
       try {
         const fetchRes = await fetch(url, { signal: AbortSignal.timeout(10_000) });
         if (!fetchRes.ok) return;
@@ -386,6 +440,16 @@ export async function POST(request: Request) {
   if (resendError) {
     console.error("[contact] Resend error:", resendError);
     return NextResponse.json({ error: "EMAIL_SEND_FAILED" }, { status: 500 });
+  }
+
+  // Step 9 — Mark keys as used (replay prevention)
+  if (typedPhotoKeys.length > 0) {
+    await prisma.contactUpload
+      .updateMany({
+        where: { key: { in: typedPhotoKeys } },
+        data: { status: "used" },
+      })
+      .catch((err: unknown) => console.error("[contact] Failed to mark keys as used:", err));
   }
 
   return NextResponse.json({ ok: true });
