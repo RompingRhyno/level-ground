@@ -81,6 +81,26 @@ model ContactRecipient {
   name      String?
   createdAt DateTime @default(now())
 }
+
+model ContactUploadSession {
+  id        String          @id
+  sectionId String
+  createdAt DateTime        @default(now())
+  expiresAt DateTime
+  uploads   ContactUpload[]
+}
+
+model ContactUpload {
+  id              Int                  @id @default(autoincrement())
+  session         ContactUploadSession @relation(fields: [sessionId], references: [id])
+  sessionId       String
+  key             String               @unique
+  createdAt       DateTime             @default(now())
+  status          String               @default("pending")
+  cleanupAttempts Int                  @default(0)
+
+  @@index([sessionId])
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
