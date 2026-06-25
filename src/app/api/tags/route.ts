@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 
+const TAG_NAME_MAX_LENGTH = 100;
+
 export async function GET() {
   const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });
   return NextResponse.json(tags);
@@ -11,9 +13,30 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { name, description } = body;
-    if (!name?.trim()) return NextResponse.json({ error: "missing name" }, { status: 400 });
-    const slug = name.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
-    const tag = await prisma.tag.create({ data: { name: name.trim(), slug, description: description ?? null } });
+
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+
+    if (!trimmedName) {
+      return NextResponse.json({ error: "missing name" }, { status: 400 });
+    }
+
+    if (trimmedName.length > TAG_NAME_MAX_LENGTH) {
+      return NextResponse.json({ error: "name too long" }, { status: 400 });
+    }
+
+    const slug = trimmedName
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const tag = await prisma.tag.create({
+      data: {
+        name: trimmedName,
+        slug,
+        description: description ?? null,
+      },
+    });
+
     revalidateTag("tags", {});
     return NextResponse.json(tag);
   } catch (err: any) {
