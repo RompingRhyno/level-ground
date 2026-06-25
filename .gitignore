@@ -46,3 +46,11 @@ next-env.d.ts
 /src/generated/prisma
 temp/gallery-implementation-notes-2026-04-24.md
 .aider*
+ 
+# local tools and generated graphs
+/tools/
+
+# Cloudflare worker
+workers/upload-worker/node_modules/
+workers/upload-worker/.wrangler/
+workers/upload-worker/.devvars

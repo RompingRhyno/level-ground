@@ -1,0 +1,10 @@
+name = "level-ground-upload-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "level-ground"
+
+[vars]
+ALLOWED_ORIGIN = "http://localhost:3000"

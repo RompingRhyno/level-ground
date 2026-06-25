@@ -1,0 +1,15 @@
+{
+  "name": "level-ground-upload-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240725.0",
+    "typescript": "^5",
+    "wrangler": "^4.98.0"
+  }
+}
