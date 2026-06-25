@@ -74,6 +74,9 @@ function validateCmsSection(section: RawSection): { ok: true; value: ValidatedSe
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CONTACT_KEY_REGEX = /^contact-uploads\/[0-9a-f-]{36}\/\d+-[^/]+$/;
 const CONTACT_UPLOAD_MAX_FILES = 5;
+const EMAIL_MAX_LENGTH = 254;
+const TEXT_MAX_LENGTH = 1000;
+const TEXTAREA_MAX_LENGTH = 5000;
 
 function validateSubmission(
   values: Record<string, string>,
@@ -84,10 +87,28 @@ function validateSubmission(
   // Field rules
   for (const field of section.fields) {
     const val = values[field.id] ?? "";
-    if (field.required && !val) return { ok: false, error: "SUB_REQUIRED_FIELD_MISSING" };
-    if (field.type === "email" && val && !EMAIL_REGEX.test(val)) return { ok: false, error: "SUB_INVALID_EMAIL_FORMAT" };
-    const limit = field.type === "textarea" ? 5000 : 1000;
-    if (val.length > limit) return { ok: false, error: "SUB_VALUE_TOO_LONG" };
+    if (field.required && !val) {
+      return { ok: false, error: "SUB_REQUIRED_FIELD_MISSING" };
+    }
+    let limit = TEXT_MAX_LENGTH;
+
+    if (field.type === "textarea") {
+      limit = TEXTAREA_MAX_LENGTH;
+    } else if (field.type === "email") {
+      limit = EMAIL_MAX_LENGTH;
+    }
+    if (val.length > limit) {
+      return { ok: false, error: "SUB_VALUE_TOO_LONG" };
+    }
+    if (
+      field.type === "email" &&
+      val &&
+      (val.includes("\r") ||
+        val.includes("\n") ||
+        !EMAIL_REGEX.test(val))
+    ) {
+      return { ok: false, error: "SUB_INVALID_EMAIL_FORMAT" };
+    }
   }
 
   // Services rules
