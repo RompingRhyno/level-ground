@@ -45,6 +45,7 @@ export default function SectionEditor({
   const [collectionFolders, setCollectionFolders] = useState<{ slug: string; name: string }[]>([]);
   const [collectionTags, setCollectionTags] = useState<{ slug: string; name: string }[]>([]);
   const [collectionDefaultImages, setCollectionDefaultImages] = useState<Record<string, string>>({});
+  const [pagesList, setPagesList] = useState<{ slug: string; label: string; type?: string }[]>([]);
 
   const collectionSource: string = (section as any).source ?? "folders";
 
@@ -62,6 +63,18 @@ export default function SectionEditor({
         .catch(() => {});
     }
   }, [type, collectionSource]);
+
+  useEffect(() => {
+    // fetch available pages for link dropdowns
+    let cancelled = false;
+    fetch("/api/pages")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setPagesList(data as any);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (type !== "collection-index") return;
@@ -138,8 +151,17 @@ export default function SectionEditor({
               </div>
 
               <div className="space-y-1">
-                <label className="block text-sm">Button href</label>
-                <input value={(section as any).buttonHref || ""} onChange={(e) => update("buttonHref", e.target.value)} className="w-full rounded border px-2 py-1" />
+                <label className="block text-sm">Button link</label>
+                <select
+                  value={(section as any).buttonHref || ""}
+                  onChange={(e) => update("buttonHref", e.target.value)}
+                  className="w-full rounded border px-2 py-1"
+                >
+                  <option value="">(none)</option>
+                  {pagesList.filter(p => p.type === undefined || p.type === 'page').map((p) => (
+                    <option key={p.slug} value={`/${p.slug}`}>{p.label || p.slug}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">
@@ -232,11 +254,16 @@ export default function SectionEditor({
                         services[si] = { ...services[si], title: e.target.value };
                         update("services", services);
                       }} className="rounded border px-2 py-1 flex-1" placeholder="Title" />
-                      <input value={s.href} onChange={(e) => {
+                      <select value={s.href || ""} onChange={(e) => {
                         const services = [...(section as any).services];
                         services[si] = { ...services[si], href: e.target.value };
                         update("services", services);
-                      }} className="rounded border px-2 py-1 flex-1" placeholder="href" />
+                      }} className="rounded border px-2 py-1 flex-1">
+                        <option value="">(none)</option>
+                        {pagesList.filter(p => p.type === undefined || p.type === 'page').map((p) => (
+                          <option key={p.slug} value={`/${p.slug}`}>{p.label || p.slug}</option>
+                        ))}
+                      </select>
                       <button onClick={() => {
                         const services = [...(section as any).services];
                         services.splice(si, 1);
