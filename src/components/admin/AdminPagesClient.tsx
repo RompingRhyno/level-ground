@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "@/components/admin/useConfirm";
 import type { PageConfig } from "@/types/sections";
-import type { PageRow, TemplateRow } from "@/app/admin/pages/page";
+import type { PageRow, TemplateRow } from "@/app/admin/(protected)/pages/page";
 
 function slugify(label: string) {
   return label

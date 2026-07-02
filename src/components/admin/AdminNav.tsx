@@ -1,19 +1,36 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "@/lib/auth-client";
 
-const navItems = [
+const BASE_NAV = [
   { label: "Pages", href: "/admin/pages" },
   { label: "Media", href: "/admin/files" },
 ];
 
-export default function AdminNav() {
+interface AdminNavProps {
+  role?: "owner" | "admin";
+}
+
+export default function AdminNav({ role }: AdminNavProps) {
   const pathname = usePathname() ?? "";
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const navItems = [
+    ...BASE_NAV,
+    ...(role === "owner" ? [{ label: "Users", href: "/admin/users" }] : []),
+    { label: "Settings", href: "/admin/settings" },
+  ];
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/admin/login");
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
@@ -49,7 +66,7 @@ export default function AdminNav() {
         Admin Dashboard
       </Link>
 
-      {/* Desktop nav items */}
+      {/* Desktop nav items + sign out */}
       <div className="hidden md:flex gap-0 items-stretch">
         {navItems.map(({ label, href }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
@@ -64,6 +81,13 @@ export default function AdminNav() {
             </Link>
           );
         })}
+        <button
+          onClick={handleSignOut}
+          style={{ color: "var(--color-text-heading)" }}
+          className="font-medium uppercase px-4 flex items-center border-b-[3px] border-transparent hover:border-(--color-brand-logo) transition-colors duration-150 ml-2"
+        >
+          Sign out
+        </button>
       </div>
 
       {/* Mobile hamburger */}
@@ -111,6 +135,13 @@ export default function AdminNav() {
                   </Link>
                 );
               })}
+              <button
+                onClick={() => { setOpen(false); handleSignOut(); }}
+                style={{ color: "var(--color-text-heading)" }}
+                className="block w-full px-4 py-3 text-base font-medium uppercase rounded-md hover:bg-black/10 text-left"
+              >
+                Sign out
+              </button>
             </div>
           </div>
         )}
