@@ -1,25 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SiteHeader from "@/components/SiteHeader";
-import { getNavPages } from "@/lib/pages";
 
 export const metadata: Metadata = {
   title: "Level Ground Landscaping",
   description: "Custom landscaping and maintenance services",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const navPages = (await getNavPages()).filter((p) => p.slug !== "home");
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-dvh flex flex-col">
-        <SiteHeader navPages={navPages} />
-        <main className="flex-1">{children}</main>
-        <footer className="bg-(--color-bg-secondary) px-6 py-4">
-          © {new Date().getFullYear()} Level Ground Landscaping
-        </footer>
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
