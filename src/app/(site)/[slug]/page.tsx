@@ -2,7 +2,7 @@ import RenderSections from "@/components/RenderSections";
 import { getPageBySlug } from "@/lib/pages";
 import { notFound } from "next/navigation";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
@@ -12,4 +12,4 @@ export default async function Page({ params }: Props) {
   if (!page) return notFound();
 
   return <RenderSections sections={page.sections} pageSlug={slug} />;
-}   
+}
