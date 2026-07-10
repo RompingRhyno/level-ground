@@ -6,6 +6,7 @@ import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
 import Contact from "@/components/sections/Contact";
+import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import type {
   PageSection,
   HeroSection,
@@ -77,6 +78,91 @@ function GalleryPreview({ section }: { section: GallerySection }) {
       )}
       <GalleryClient assets={assets} layoutMode={section.layout ?? "grid"} />
     </>
+  );
+}
+
+function CollectionItemPreview({ section }: { section: CollectionItemSection }) {
+  const { source = "folders", layout = "grid", lightbox = true } = section;
+  type Entity = { name: string; description: string | null; displayTags: string[]; assets: AssetRow[] };
+  const [entity, setEntity] = useState<Entity | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const endpoint = source === "folders" ? "/api/folders" : "/api/tags";
+        const items: any[] = await fetch(endpoint).then((r) => r.json());
+        const first = items[0];
+        if (!first) {
+          if (!cancelled) setEntity(null);
+          return;
+        }
+
+        const param = source === "folders" ? "folder" : "tag";
+        const [assetsData, tagsData] = await Promise.all([
+          fetch(`/api/assets?${param}=${encodeURIComponent(first.slug)}`).then((r) => r.json()),
+          source === "folders" && Array.isArray(first.tags) && first.tags.length
+            ? fetch("/api/tags").then((r) => r.json())
+            : Promise.resolve([]),
+        ]);
+
+        if (cancelled) return;
+
+        const assets: AssetRow[] = (assetsData as any[])
+          .filter((a: any) => a.publicUrl && (!a.mime || a.mime.startsWith("image/")))
+          .map((a: any) => ({ id: a.id, publicUrl: a.publicUrl, alt: a.alt ?? null }));
+
+        let displayTags: string[] = [];
+        if (source === "folders" && Array.isArray(first.tags)) {
+          const tagNameMap = Object.fromEntries((tagsData as any[]).map((t: any) => [t.slug, t.name]));
+          displayTags = (first.tags as string[])
+            .filter((t) => t !== "before" && t !== "after")
+            .map((s: string) => tagNameMap[s] ?? s);
+        }
+
+        setEntity({ name: first.name, description: first.description ?? null, displayTags, assets });
+      } catch {
+        if (!cancelled) setEntity(null);
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source]);
+
+  if (entity === undefined) return null;
+
+  if (entity === null) {
+    return (
+      <div
+        className="rounded border border-dashed p-8 text-center space-y-2"
+        style={{ borderColor: "var(--color-brand-dark)", color: "var(--color-text-muted)" }}
+      >
+        <div className="text-lg font-light" style={{ color: "var(--color-text-heading)" }}>
+          Collection Item
+        </div>
+        <p className="text-sm">
+          Heading, tags, description and gallery load dynamically from the collection entity.
+        </p>
+        <p className="text-xs">
+          Layout: <strong>{layout}</strong> · Lightbox:{" "}
+          <strong>{lightbox ? "on" : "off"}</strong>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <CollectionItemClient
+      name={entity.name}
+      description={entity.description}
+      displayTags={entity.displayTags}
+      assets={entity.assets}
+      layout={layout}
+      lightbox={lightbox}
+    />
   );
 }
 
@@ -270,21 +356,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as CollectionItemSection;
     return (
       <div style={{ backgroundColor: bg }} className="mx-auto max-w-7xl px-6 py-20">
-        <div
-          className="rounded border border-dashed p-8 text-center space-y-2"
-          style={{ borderColor: "var(--color-brand-dark)", color: "var(--color-text-muted)" }}
-        >
-          <div className="text-lg font-light" style={{ color: "var(--color-text-heading)" }}>
-            Collection Item
-          </div>
-          <p className="text-sm">
-            Heading, tags, description and gallery load dynamically from the collection entity.
-          </p>
-          <p className="text-xs">
-            Layout: <strong>{s.layout ?? "grid"}</strong> · Lightbox:{" "}
-            <strong>{s.lightbox ? "on" : "off"}</strong>
-          </p>
-        </div>
+        <CollectionItemPreview section={s} />
       </div>
     );
   }
