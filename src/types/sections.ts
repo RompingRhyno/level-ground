@@ -109,6 +109,8 @@ export type CollectionIndexSection = {
   entitySlugField?: string;
   cardComponent?: string;
   entityImages?: Record<string, string>;
+  entityOrder?: string[];
+  sortMode?: "custom" | "latest" | "earliest" | "alphabetical";
   query?: {
     filter?: string;
   };

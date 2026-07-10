@@ -6,7 +6,7 @@ type Asset = { id: string; publicUrl: string | null; filename: string | null; al
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
 
-function ImagePickerModal({
+export function ImagePickerModal({
   onPick,
   onClose,
   defaultFolder,

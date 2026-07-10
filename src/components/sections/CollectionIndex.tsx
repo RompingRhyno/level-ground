@@ -8,7 +8,7 @@ import type { CollectionIndexSection } from "@/types/sections";
 type Item = { slug: string; name: string };
 
 export default async function CollectionIndex(props: CollectionIndexSection) {
-  const { source, routeBase, heading, entityImages } = props;
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder } = props;
 
   let items: Item[] = [];
   let firstAssets: Record<string, string> = {};
@@ -17,7 +17,28 @@ export default async function CollectionIndex(props: CollectionIndexSection) {
 
   if (source === "folders") {
     const folders = await getFolders();
-    items = folders.map((f) => ({ slug: f.slug, name: f.name }));
+
+    let sorted = [...folders];
+    if (sortMode === "custom" && entityOrder?.length) {
+      const orderMap = new Map(entityOrder.map((s, i) => [s, i]));
+      sorted.sort(
+        (a, b) =>
+          (orderMap.get(a.slug) ?? folders.length) - (orderMap.get(b.slug) ?? folders.length)
+      );
+    } else if (sortMode === "latest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime()
+      );
+    } else if (sortMode === "earliest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime()
+      );
+    }
+    // alphabetical (default): getFolders() returns name ASC
+
+    items = sorted.map((f) => ({ slug: f.slug, name: f.name }));
     const slugs = items.map((i) => i.slug);
     [firstAssets, folderTags] = await Promise.all([
       getFirstAssetUrlsByFolderSlugs(slugs),
@@ -27,7 +48,27 @@ export default async function CollectionIndex(props: CollectionIndexSection) {
     tagNameBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.name]));
   } else if (source === "tags") {
     const tags = await getTags();
-    items = tags.map((t) => ({ slug: t.slug, name: t.name }));
+
+    let sorted = [...tags];
+    if (sortMode === "custom" && entityOrder?.length) {
+      const orderMap = new Map(entityOrder.map((s, i) => [s, i]));
+      sorted.sort(
+        (a, b) =>
+          (orderMap.get(a.slug) ?? tags.length) - (orderMap.get(b.slug) ?? tags.length)
+      );
+    } else if (sortMode === "latest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.createdAt as any).getTime() - new Date(a.createdAt as any).getTime()
+      );
+    } else if (sortMode === "earliest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime()
+      );
+    }
+
+    items = sorted.map((t) => ({ slug: t.slug, name: t.name }));
     firstAssets = await getFirstAssetUrlsByTagSlugs(items.map((i) => i.slug));
   }
 

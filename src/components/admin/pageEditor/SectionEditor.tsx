@@ -1,14 +1,198 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
 import ContactEditor from "./ContactEditor";
 import SectionPreview from "./SectionPreview";
-import ImagePicker from "../ImagePicker";
+import ImagePicker, { ImagePickerModal } from "../ImagePicker";
 import VideoPicker from "../VideoPicker";
 import RichContentEditable from "./RichContentEditable";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+type EntityItem = { slug: string; name: string; createdAt?: string };
+
+const SORT_MODES = [
+  { label: "Custom", value: "custom" },
+  { label: "Latest", value: "latest" },
+  { label: "Earliest", value: "earliest" },
+  { label: "A\u2013Z", value: "alphabetical" },
+] as const;
+
+type SortMode = typeof SORT_MODES[number]["value"];
+
+function sortItems(items: EntityItem[], mode: string, entityOrder?: string[]): EntityItem[] {
+  const arr = [...items];
+  if (mode === "custom" && entityOrder?.length) {
+    const orderMap = new Map(entityOrder.map((s, i) => [s, i]));
+    arr.sort((a, b) => (orderMap.get(a.slug) ?? arr.length) - (orderMap.get(b.slug) ?? arr.length));
+  } else if (mode === "latest") {
+    arr.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+  } else if (mode === "earliest") {
+    arr.sort((a, b) => new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime());
+  }
+  return arr;
+}
+
+function SortableEntityCard({
+  item,
+  imageUrl,
+  defaultImage,
+  onChangeImage,
+  collectionSource,
+}: {
+  item: EntityItem;
+  imageUrl?: string;
+  defaultImage?: string;
+  onChangeImage: (url: string) => void;
+  collectionSource: string;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.slug });
+
+  const displayImage = imageUrl || defaultImage;
+  const isCustom = !!imageUrl;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.3 : 1,
+      }}
+      className="border rounded-lg overflow-hidden flex flex-col"
+    >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center py-1.5 cursor-grab active:cursor-grabbing select-none"
+        style={{ backgroundColor: "var(--color-bg-secondary)", borderBottom: "1px solid var(--color-border)" }}
+        title="Drag to reorder"
+      >
+        <svg width="16" height="10" viewBox="0 0 16 10" fill="none" aria-hidden={true}>
+          <rect y="0" width="16" height="2" rx="1" fill="currentColor" opacity="0.35" />
+          <rect y="4" width="16" height="2" rx="1" fill="currentColor" opacity="0.35" />
+          <rect y="8" width="16" height="2" rx="1" fill="currentColor" opacity="0.35" />
+        </svg>
+      </div>
+
+      {/* Image area – click to change */}
+      <div
+        className="relative w-full group cursor-pointer"
+        style={{ aspectRatio: "16/9" }}
+        onClick={() => setPickerOpen(true)}
+      >
+        {displayImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={displayImage}
+            alt={item.name}
+            className={`absolute inset-0 w-full h-full object-cover${!isCustom ? " opacity-70" : ""}`}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center text-xs"
+            style={{ backgroundColor: "var(--color-bg-secondary)", color: "var(--color-text-muted)" }}
+          >
+            No image
+          </div>
+        )}
+        {!isCustom && displayImage && (
+          <div className="absolute inset-x-0 bottom-0 bg-black/40 text-white text-[10px] text-center py-0.5 leading-none">
+            auto
+          </div>
+        )}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+          <span className="text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 px-2 py-1 rounded">
+            Change
+          </span>
+        </div>
+      </div>
+
+      {/* Name bar */}
+      <div
+        className="px-2 py-1.5 flex items-center justify-between bg-white"
+        style={{ borderTop: "1px solid var(--color-border)" }}
+      >
+        <span className="text-xs font-medium truncate" style={{ color: "var(--color-text-heading)" }}>
+          {item.name}
+        </span>
+        {isCustom && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onChangeImage(""); }}
+            className="ml-1 text-xs shrink-0"
+            style={{ color: "var(--color-text-muted)" }}
+            title="Reset to auto"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {pickerOpen && (
+        <ImagePickerModal
+          onPick={(url: string) => { onChangeImage(url); setPickerOpen(false); }}
+          onClose={() => setPickerOpen(false)}
+          defaultFolder={collectionSource === "folders" ? item.slug : undefined}
+          defaultTag={collectionSource === "tags" ? item.slug : undefined}
+        />
+      )}
+    </div>
+  );
+}
+
+function EntityCardOverlay({
+  imageUrl,
+  defaultImage,
+  name,
+}: {
+  imageUrl?: string;
+  defaultImage?: string;
+  name: string;
+}) {
+  const displayImage = imageUrl || defaultImage;
+  return (
+    <div
+      className="border rounded-lg overflow-hidden shadow-xl"
+      style={{ borderColor: "var(--color-brand-dark)" }}
+    >
+      <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+        {displayImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={displayImage} alt={name} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0" style={{ backgroundColor: "var(--color-bg-secondary)" }} />
+        )}
+      </div>
+      <div
+        className="px-2 py-1.5"
+        style={{ backgroundColor: "white", borderTop: "1px solid var(--color-brand-dark)" }}
+      >
+        <span className="text-xs font-medium" style={{ color: "var(--color-text-heading)" }}>{name}</span>
+      </div>
+    </div>
+  );
+}
 
 const SECTION_LABELS: Record<string, string> = {
   hero: "Hero",
@@ -42,8 +226,11 @@ export default function SectionEditor({
   const { confirm, dialogProps } = useConfirm();
   const type = section.type;
 
-  const [collectionFolders, setCollectionFolders] = useState<{ slug: string; name: string }[]>([]);
-  const [collectionTags, setCollectionTags] = useState<{ slug: string; name: string }[]>([]);
+  const [collectionFolders, setCollectionFolders] = useState<EntityItem[]>([]);
+  const [collectionTags, setCollectionTags] = useState<EntityItem[]>([]);
+  const [displayItems, setDisplayItems] = useState<EntityItem[]>([]);
+  const [activeEntitySlug, setActiveEntitySlug] = useState<string | null>(null);
+  const entityInitialized = useRef(false);
   const [collectionDefaultImages, setCollectionDefaultImages] = useState<Record<string, string>>({});
   const [pagesList, setPagesList] = useState<{ slug: string; label: string; type?: string }[]>([]);
 
@@ -103,6 +290,53 @@ export default function SectionEditor({
     });
     return () => { cancelled = true; };
   }, [type, collectionSource, collectionFolders, collectionTags]);
+
+  // Initialize display order once when folder/tag list first loads
+  useEffect(() => {
+    if (type !== "collection-index") return;
+    const items = collectionSource === "folders" ? collectionFolders : collectionTags;
+    if (!items.length) return;
+    if (entityInitialized.current) return;
+    entityInitialized.current = true;
+    const mode = (section as any).sortMode ?? "alphabetical";
+    const order = (section as any).entityOrder as string[] | undefined;
+    setDisplayItems(sortItems(items, mode, order));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, collectionSource, collectionFolders, collectionTags]);
+
+  const entitySensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  function handleSortModeChange(newMode: SortMode) {
+    const rawItems = collectionSource === "folders" ? collectionFolders : collectionTags;
+    if (newMode === "custom") {
+      const currentSlugs = displayItems.map((i) => i.slug);
+      onChange({ ...section, sortMode: "custom", entityOrder: currentSlugs } as unknown as PageSection, index);
+    } else {
+      const newItems = sortItems(rawItems, newMode, undefined);
+      setDisplayItems(newItems);
+      const { entityOrder: _drop, ...rest } = section as any;
+      onChange({ ...rest, sortMode: newMode } as unknown as PageSection, index);
+    }
+  }
+
+  function handleEntityDragStart(event: DragStartEvent) {
+    setActiveEntitySlug(event.active.id as string);
+  }
+
+  function handleEntityDragEnd(event: DragEndEvent) {
+    setActiveEntitySlug(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = displayItems.findIndex((i) => i.slug === active.id);
+    const newIndex = displayItems.findIndex((i) => i.slug === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newItems = arrayMove(displayItems, oldIndex, newIndex);
+    setDisplayItems(newItems);
+    onChange(
+      { ...section, sortMode: "custom", entityOrder: newItems.map((i) => i.slug) } as unknown as PageSection,
+      index
+    );
+  }
 
   function update(key: string, value: any) {
     onChange({ ...section, [key]: value } as PageSection, index);
@@ -336,35 +570,76 @@ export default function SectionEditor({
                 />
               </div>
 
-              {(() => {
-                const items = collectionSource === "folders" ? collectionFolders : collectionTags;
-                if (!items.length) return null;
-                const label = collectionSource === "folders" ? "Folder images" : "Tag images";
-                const autoHint = collectionSource === "folders"
-                  ? "(auto: first image in folder)"
-                  : "(auto: first image with tag)";
+              {displayItems.length > 0 && (() => {
+                const currentSortMode: SortMode = (section as any).sortMode ?? "alphabetical";
+                const sectionLabel = collectionSource === "folders" ? "Folder images" : "Tag images";
                 return (
-                  <div className="field-group">
-                    <div className="font-medium text-sm mb-1">{label}</div>
-                    {items.map((item) => (
-                      <div key={item.slug} className="mt-3 rounded border p-2 space-y-2" style={{ backgroundColor: "var(--color-editor-bg)" }}>
-                        <div className="text-sm font-medium mb-1">{item.name}</div>
-                        <ImagePicker
-                          value={(section as any).entityImages?.[item.slug] || ""}
-                          onChange={(url) => {
-                            const entityImages = { ...((section as any).entityImages || {}), [item.slug]: url || undefined };
-                            if (!url) delete entityImages[item.slug];
-                            update("entityImages", entityImages);
-                          }}
-                          defaultFolder={collectionSource === "folders" ? item.slug : undefined}
-                          defaultTag={collectionSource === "tags" ? item.slug : undefined}
-                          defaultImage={collectionDefaultImages[item.slug]}
-                        />
-                        {!(section as any).entityImages?.[item.slug] && (
-                          <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>{autoHint}</span>
-                        )}
+                  <div className="field-group space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="font-medium text-sm">{sectionLabel}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sort by:</span>
+                        {SORT_MODES.map((m) => (
+                          <button
+                            key={m.value}
+                            type="button"
+                            onClick={() => handleSortModeChange(m.value)}
+                            className="px-2 py-0.5 text-xs rounded border transition-colors"
+                            style={{
+                              backgroundColor: currentSortMode === m.value ? "var(--color-brand-dark)" : "white",
+                              color: currentSortMode === m.value ? "white" : "var(--color-brand-dark)",
+                              borderColor: "var(--color-brand-dark)",
+                            }}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+
+                    <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                      Drag cards to reorder · click an image to change it
+                    </p>
+
+                    <DndContext
+                      sensors={entitySensors}
+                      onDragStart={handleEntityDragStart}
+                      onDragEnd={handleEntityDragEnd}
+                    >
+                      <SortableContext
+                        items={displayItems.map((i) => i.slug)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid grid-cols-3 gap-3">
+                          {displayItems.map((item) => (
+                            <SortableEntityCard
+                              key={item.slug}
+                              item={item}
+                              imageUrl={(section as any).entityImages?.[item.slug]}
+                              defaultImage={collectionDefaultImages[item.slug]}
+                              onChangeImage={(url) => {
+                                const entityImages = {
+                                  ...((section as any).entityImages || {}),
+                                  [item.slug]: url || undefined,
+                                };
+                                if (!url) delete entityImages[item.slug];
+                                update("entityImages", entityImages);
+                              }}
+                              collectionSource={collectionSource}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                      <DragOverlay>
+                        {activeEntitySlug ? (
+                          <EntityCardOverlay
+                            imageUrl={(section as any).entityImages?.[activeEntitySlug]}
+                            defaultImage={collectionDefaultImages[activeEntitySlug]}
+                            name={displayItems.find((i) => i.slug === activeEntitySlug)?.name ?? ""}
+                          />
+                        ) : null}
+                      </DragOverlay>
+                    </DndContext>
                   </div>
                 );
               })()}

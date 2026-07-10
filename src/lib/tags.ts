@@ -6,6 +6,7 @@ export type TagRecord = {
   slug: string;
   name: string;
   description: string | null;
+  createdAt: Date;
 };
 
 /** Returns all registered tags from the Tag table, sorted alphabetically. */

@@ -8,6 +8,7 @@ export type FolderRecord = {
   description: string | null;
   parentId: number | null;
   tags: string[];
+  createdAt: Date;
 };
 
 export function getFolders(): Promise<FolderRecord[]> {
