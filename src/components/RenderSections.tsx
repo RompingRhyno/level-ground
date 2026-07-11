@@ -17,9 +17,10 @@ type Props = {
   sections: PageSection[];
   pageSlug: string;
   entityContext?: EntityContext;
+  filterTag?: string;
 };
 
-export default function RenderSections({ sections, pageSlug, entityContext }: Props) {
+export default function RenderSections({ sections, pageSlug, entityContext, filterTag }: Props) {
   return (
     <>
       {sections.map((section, index) => {
@@ -67,7 +68,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
             return (
               <section key={index} className={backgroundClass}>
                 <div className="mx-auto max-w-7xl px-6 py-20">
-                  <CollectionIndex {...section} />
+                  <CollectionIndex {...section} filterTag={filterTag} />
                 </div>
               </section>
             );

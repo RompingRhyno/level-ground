@@ -171,12 +171,21 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   const [items, setItems] = useState<{ slug: string; name: string }[]>([]);
   const [firstAssets, setFirstAssets] = useState<Record<string, string>>({});
   const [folderTags, setFolderTags] = useState<Record<string, string[]>>({});
+  const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
+  const [activePreviewTag, setActivePreviewTag] = useState<string | null>(null);
 
   useEffect(() => {
     const endpoint = source === "folders" ? "/api/folders" : "/api/tags";
     fetch(endpoint)
       .then((r) => r.json())
-      .then((data: any[]) => setItems(data || []))
+      .then((data: any[]) => {
+        setItems((data || []).map((d: any) => ({ slug: d.slug, name: d.name })));
+        if (source === "folders") {
+          setFolderTags(
+            Object.fromEntries((data || []).map((f: any) => [f.slug, f.tags ?? []]))
+          );
+        }
+      })
       .catch(() => {});
   }, [source]);
 
@@ -192,23 +201,31 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
             const first = assets.find(
               (a: any) => a.publicUrl && (!a.mime || a.mime.startsWith("image/"))
             );
-            const tags = source === "folders"
-              ? [...new Set<string>(assets.flatMap((a: any) => a.tags ?? []))].sort()
-              : [];
-            return { slug: item.slug, url: first?.publicUrl as string | undefined, tags };
+            return { slug: item.slug, url: first?.publicUrl as string | undefined };
           })
-          .catch(() => ({ slug: item.slug, url: undefined, tags: [] }))
+          .catch(() => ({ slug: item.slug, url: undefined }))
       )
     ).then((results) => {
       if (cancelled) return;
       setFirstAssets(Object.fromEntries(results.filter((r) => r.url).map((r) => [r.slug, r.url!])));
-      if (source === "folders") {
-        setFolderTags(Object.fromEntries(results.map((r) => [r.slug, r.tags])));
-      }
     });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(items), source]);
+
+  useEffect(() => {
+    if (source !== "folders") return;
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((d: any[]) => setAllTags(d || []))
+      .catch(() => {});
+  }, [source]);
+
+  const usedTagSlugs = new Set(Object.values(folderTags).flat());
+  const filterTags = allTags.filter((t) => usedTagSlugs.has(t.slug));
+  const visibleItems = activePreviewTag
+    ? items.filter((item) => (folderTags[item.slug] ?? []).includes(activePreviewTag))
+    : items;
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
@@ -219,11 +236,28 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
           style={{ color: "var(--color-text-heading)" }}
         />
       )}
-      {items.length === 0 ? (
+      {filterTags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8">
+          {filterTags.map((t) => {
+            const isActive = activePreviewTag === t.slug;
+            return (
+              <button
+                key={t.slug}
+                type="button"
+                onClick={() => setActivePreviewTag(isActive ? null : t.slug)}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${isActive ? "btn-selected" : "admin-btn"}`}
+              >
+                {t.name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {visibleItems.length === 0 ? (
         <p className="text-sm text-gray-400">No items found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
             const tags = source === "folders" ? (folderTags[item.slug] ?? []) : [];
             return (

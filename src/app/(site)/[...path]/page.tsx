@@ -5,17 +5,18 @@ import { getFolderBySlug } from "@/lib/folders";
 import { getTagBySlug } from "@/lib/tags";
 import type { CollectionIndexSection } from "@/types/sections";
 
-type Props = { params: Promise<{ path: string[] }> };
+type Props = { params: Promise<{ path: string[] }>; searchParams: Promise<{ tag?: string }> };
 
-export default async function CatchAllPage({ params }: Props) {
+export default async function CatchAllPage({ params, searchParams }: Props) {
   const { path } = await params;
+  const { tag } = await searchParams;
 
   // Single-segment: page resolution
   if (path.length === 1) {
     const [slug] = path;
     const page = await getPageBySlug(slug);
     if (!page) return notFound();
-    return <RenderSections sections={page.sections} pageSlug={slug} />;
+    return <RenderSections sections={page.sections} pageSlug={slug} filterTag={tag} />;
   }
 
   // Two-segment: entity detail resolution
