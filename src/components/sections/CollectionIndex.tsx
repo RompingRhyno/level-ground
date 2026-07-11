@@ -7,13 +7,14 @@ import type { CollectionIndexSection } from "@/types/sections";
 
 type Item = { slug: string; name: string };
 
-export default async function CollectionIndex(props: CollectionIndexSection) {
-  const { source, routeBase, heading, entityImages, sortMode, entityOrder } = props;
+export default async function CollectionIndex(props: CollectionIndexSection & { filterTag?: string }) {
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder, filterTag } = props;
 
   let items: Item[] = [];
   let firstAssets: Record<string, string> = {};
   let folderTags: Record<string, string[]> = {};
   let tagNameBySlug: Record<string, string> = {};
+  let allTagsForFilter: { slug: string; name: string }[] = [];
 
   if (source === "folders") {
     const folders = await getFolders();
@@ -38,14 +39,24 @@ export default async function CollectionIndex(props: CollectionIndexSection) {
     }
     // alphabetical (default): getFolders() returns name ASC
 
-    items = sorted.map((f) => ({ slug: f.slug, name: f.name }));
+    // Filter by tag if one is selected
+    const filteredFolders = filterTag
+      ? sorted.filter((f) => f.tags.includes(filterTag))
+      : sorted;
+
+    items = filteredFolders.map((f) => ({ slug: f.slug, name: f.name }));
     const slugs = items.map((i) => i.slug);
+    const allSlugs = sorted.map((f) => f.slug);
     [firstAssets, folderTags] = await Promise.all([
       getFirstAssetUrlsByFolderSlugs(slugs),
-      getTagsByFolderSlugs(slugs),
+      getTagsByFolderSlugs(allSlugs),
     ]);
     const allTags = await getTags();
     tagNameBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.name]));
+
+    // Build tag list: only tags that appear on at least one folder
+    const usedTagSlugs = new Set(sorted.flatMap((f) => f.tags));
+    allTagsForFilter = allTags.filter((t) => usedTagSlugs.has(t.slug));
   } else if (source === "tags") {
     const tags = await getTags();
 
@@ -80,6 +91,22 @@ export default async function CollectionIndex(props: CollectionIndexSection) {
           dangerouslySetInnerHTML={{ __html: heading }}
           style={{ color: "var(--color-text-heading)" }}
         />
+      )}
+      {allTagsForFilter.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8">
+          {allTagsForFilter.map((t) => {
+            const isActive = filterTag === t.slug;
+            return (
+              <Link
+                key={t.slug}
+                href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
+                className={`px-3 py-1 rounded-full text-sm transition-colors ${isActive ? "btn-selected" : "admin-btn"}`}
+              >
+                {t.name}
+              </Link>
+            );
+          })}
+        </div>
       )}
       {items.length === 0 ? (
         <p className="text-(--color-text-muted)">No items found.</p>
