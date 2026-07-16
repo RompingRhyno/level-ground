@@ -1,15 +1,19 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import GalleryClient from "./GalleryClient";
 import type { GalleryLayout } from "@/types/sections";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
+type TagRow = { slug: string; name: string };
+
 type Props = {
   name: string;
   description?: string | null;
-  displayTags: string[];
+  displayTags: TagRow[];
+  collectionSlug?: string | null;
   assets: Asset[];
   layout: GalleryLayout;
   lightbox: boolean;
@@ -49,6 +53,7 @@ export default function CollectionItemClient({
   name,
   description,
   displayTags,
+  collectionSlug,
   assets,
   layout,
   lightbox,
@@ -64,11 +69,21 @@ export default function CollectionItemClient({
 
       {displayTags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
-          {displayTags.map((tag) => (
-            <span key={tag} className="admin-btn text-xs px-2 py-0.5 rounded-full">
-              {tag}
-            </span>
-          ))}
+          {displayTags.map((tag) =>
+            collectionSlug ? (
+              <Link
+                key={tag.slug}
+                href={`/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}`}
+                className="admin-btn text-sm px-3 py-1 rounded-full"
+              >
+                {tag.name}
+              </Link>
+            ) : (
+              <span key={tag.slug} className="admin-btn text-sm px-3 py-1 rounded-full">
+                {tag.name}
+              </span>
+            )
+          )}
         </div>
       )}
 
