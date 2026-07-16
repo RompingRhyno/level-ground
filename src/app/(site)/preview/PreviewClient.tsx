@@ -23,6 +23,7 @@ type AssetRow = { id: string; publicUrl: string; alt: string | null };
 
 function GalleryPreview({ section }: { section: GallerySection }) {
   const [assets, setAssets] = useState<AssetRow[]>([]);
+  const [displayTags, setDisplayTags] = useState<{ slug: string; name: string }[]>([]);
 
   useEffect(() => {
     const folder = section.mode === "dynamic" ? section.filters?.folder : undefined;
@@ -56,6 +57,55 @@ function GalleryPreview({ section }: { section: GallerySection }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(section)]);
 
+  // Resolve display tags for preview (best-effort, non-clickable)
+  useEffect(() => {
+    const td = section.tagDisplay;
+    if (!td?.enabled) { setDisplayTags([]); return; }
+
+    if (td.mode === "manual" && td.tags?.length) {
+      fetch("/api/tags")
+        .then((r) => r.json())
+        .then((all: { slug: string; name: string }[]) => {
+          const selected = all.filter((t) => td.tags!.includes(t.slug));
+          selected.sort((a, b) => a.name.localeCompare(b.name));
+          setDisplayTags(selected);
+        })
+        .catch(() => setDisplayTags([]));
+      return;
+    }
+
+    if (td.mode === "auto") {
+      // Best-effort: fetch assets, derive folders, union tags
+      const folder = section.mode === "dynamic" ? (section as any).filters?.folder : undefined;
+      const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
+      fetch(`/api/assets${q}`)
+        .then((r) => r.json())
+        .then((data: any[]) => {
+          const folderSlugs = [...new Set(data.map((a: any) => a.folder).filter(Boolean))] as string[];
+          if (!folderSlugs.length) { setDisplayTags([]); return; }
+          return fetch("/api/folders")
+            .then((r) => r.json())
+            .then((folders: { slug: string; tags: string[] }[]) => {
+              const relevant = folders.filter((f) => folderSlugs.includes(f.slug));
+              const tagSlugs = [...new Set(relevant.flatMap((f) => f.tags))];
+              if (!tagSlugs.length) { setDisplayTags([]); return; }
+              return fetch("/api/tags")
+                .then((r) => r.json())
+                .then((all: { slug: string; name: string }[]) => {
+                  const resolved = all.filter((t) => tagSlugs.includes(t.slug));
+                  resolved.sort((a, b) => a.name.localeCompare(b.name));
+                  setDisplayTags(resolved);
+                });
+            });
+        })
+        .catch(() => setDisplayTags([]));
+      return;
+    }
+
+    setDisplayTags([]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(section.tagDisplay), section.mode, (section as any).filters?.folder]);
+
   if (assets.length === 0) return <div className="py-12 text-center text-sm text-gray-400">No images</div>;
 
   return (
@@ -76,6 +126,15 @@ function GalleryPreview({ section }: { section: GallerySection }) {
           )}
         </div>
       )}
+      {displayTags.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 mb-6 flex flex-wrap gap-2">
+          {displayTags.map((tag) => (
+            <span key={tag.slug} className="admin-btn text-sm px-3 py-1 rounded-full">
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
       <GalleryClient assets={assets} layoutMode={section.layout ?? "grid"} />
     </>
   );
@@ -83,7 +142,7 @@ function GalleryPreview({ section }: { section: GallerySection }) {
 
 function CollectionItemPreview({ section }: { section: CollectionItemSection }) {
   const { source = "folders", layout = "grid", lightbox = true } = section;
-  type Entity = { name: string; description: string | null; displayTags: string[]; assets: AssetRow[] };
+  type Entity = { name: string; description: string | null; displayTags: { slug: string; name: string }[]; assets: AssetRow[] };
   const [entity, setEntity] = useState<Entity | null | undefined>(undefined);
 
   useEffect(() => {
@@ -113,12 +172,12 @@ function CollectionItemPreview({ section }: { section: CollectionItemSection }) 
           .filter((a: any) => a.publicUrl && (!a.mime || a.mime.startsWith("image/")))
           .map((a: any) => ({ id: a.id, publicUrl: a.publicUrl, alt: a.alt ?? null }));
 
-        let displayTags: string[] = [];
+        let displayTags: { slug: string; name: string }[] = [];
         if (source === "folders" && Array.isArray(first.tags)) {
           const tagNameMap = Object.fromEntries((tagsData as any[]).map((t: any) => [t.slug, t.name]));
           displayTags = (first.tags as string[])
             .filter((t) => t !== "before" && t !== "after")
-            .map((s: string) => tagNameMap[s] ?? s);
+            .map((s: string) => ({ slug: s, name: tagNameMap[s] ?? s }));
         }
 
         setEntity({ name: first.name, description: first.description ?? null, displayTags, assets });
