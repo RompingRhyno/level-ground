@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
 type TagRecord = { id: number; slug: string; name: string };
 
 // ── Static picker ─────────────────────────────────────────────────────────────
@@ -21,7 +22,7 @@ function StaticPicker({
   const [tag, setTag] = useState<string>("");
   const [allTags, setAllTags] = useState<TagRecord[]>([]);
 
-  const filteredAssets = assets;
+  const filteredAssets = assets.filter((a) => !a.mime?.startsWith("video/"));
 
   useEffect(() => {
     Promise.all([
@@ -343,7 +344,7 @@ export default function GalleryPicker({
     onClose();
   }
 
-  return (
+  const modal = (
     <div
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -365,7 +366,7 @@ export default function GalleryPicker({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
           {mode === "static" ? (
             <StaticPicker selected={localIds} onChange={setLocalIds} />
           ) : (
@@ -393,4 +394,7 @@ export default function GalleryPicker({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
 }
