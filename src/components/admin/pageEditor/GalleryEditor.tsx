@@ -20,8 +20,9 @@ import { CSS } from "@dnd-kit/utilities";
 import type { PageSection } from "@/types/sections";
 import GalleryPicker from "../GalleryPicker";
 import RichContentEditable from "./RichContentEditable";
+import TagDisplayModal from "./TagDisplayModal";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; folder?: string | null; mime?: string | null };
 
 function SortableThumbnail({
   id,
@@ -96,6 +97,8 @@ export default function GalleryEditor({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [assetMap, setAssetMap] = useState<Record<string, Asset>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [tagModalOpen, setTagModalOpen] = useState(false);
+  const [suggestedTagSlugs, setSuggestedTagSlugs] = useState<string[]>([]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -109,6 +112,62 @@ export default function GalleryEditor({
       })
       .catch(() => {});
   }, []);
+
+  // Compute suggested tags from folders relevant to current gallery config
+  useEffect(() => {
+    let folderSlugs: string[] = [];
+
+    if (gs.mode === "static") {
+      const ids: string[] = gs.assetIds ?? [];
+      if (!ids.length) { setSuggestedTagSlugs([]); return; }
+      folderSlugs = [...new Set(
+        ids.map((id: string) => assetMap[id]?.folder).filter(Boolean)
+      )] as string[];
+    } else {
+      // Dynamic: derive folders from current filters
+      const filterFolder = gs.filters?.folder;
+      const filterTags = gs.filters?.tags ?? [];
+      if (filterFolder) {
+        folderSlugs = [filterFolder];
+      } else if (filterTags.length) {
+        // Need to fetch folders matching these tags
+        fetch("/api/folders")
+          .then((r) => r.json())
+          .then((folders: { slug: string; tags: string[] }[]) => {
+            const matching = folders.filter((f) =>
+              filterTags.some((t: string) => f.tags.includes(t))
+            );
+            const slugs = [...new Set(matching.map((f) => f.slug))];
+            if (!slugs.length) { setSuggestedTagSlugs([]); return; }
+            const tagSlugs = [...new Set(matching.flatMap((f) => f.tags))];
+            setSuggestedTagSlugs(tagSlugs);
+          })
+          .catch(() => setSuggestedTagSlugs([]));
+        return;
+      } else {
+        // No filters — fetch all folders
+        fetch("/api/folders")
+          .then((r) => r.json())
+          .then((folders: { slug: string; tags: string[] }[]) => {
+            const tagSlugs = [...new Set(folders.flatMap((f) => f.tags))];
+            setSuggestedTagSlugs(tagSlugs);
+          })
+          .catch(() => setSuggestedTagSlugs([]));
+        return;
+      }
+    }
+
+    if (!folderSlugs.length) { setSuggestedTagSlugs([]); return; }
+
+    fetch("/api/folders")
+      .then((r) => r.json())
+      .then((folders: { slug: string; tags: string[] }[]) => {
+        const relevant = folders.filter((f) => folderSlugs.includes(f.slug));
+        const tagSlugs = [...new Set(relevant.flatMap((f) => f.tags))];
+        setSuggestedTagSlugs(tagSlugs);
+      })
+      .catch(() => setSuggestedTagSlugs([]));
+  }, [gs.mode, gs.assetIds, gs.filters?.folder, JSON.stringify(gs.filters?.tags), assetMap]);
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
@@ -139,6 +198,9 @@ export default function GalleryEditor({
   const activeFolder = gs.mode === "dynamic" ? (gs.filters?.folder ?? null) : null;
   const assetIds: string[] = gs.assetIds ?? [];
 
+  const tagDisplay = gs.tagDisplay ?? { enabled: false, mode: "manual" as const, tags: [] };
+  const isStatic = gs.mode === "static";
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -158,9 +220,9 @@ export default function GalleryEditor({
           onChange={(e) => {
             const mode = e.target.value;
             if (mode === "static") {
-              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, assetIds: [] }, index);
+              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, assetIds: [], tagDisplay: gs.tagDisplay }, index);
             } else {
-              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, filters: { tags: [], folder: undefined } }, index);
+              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
             }
           }}
           className="rounded border px-2 py-1"
@@ -264,6 +326,82 @@ export default function GalleryEditor({
           Enable lightbox
         </label>
       </div>
+
+      {/* ── Tag Display ─────────────────────────────────────────────── */}
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={tagDisplay.enabled}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              if (enabled) {
+                update("tagDisplay", { enabled: true, mode: isStatic ? "manual" : "auto", tags: [] });
+              } else {
+                update("tagDisplay", undefined);
+              }
+            }}
+          />
+          Display tags
+        </label>
+
+        {tagDisplay.enabled && (
+          <div className="ml-6 space-y-3">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="radio"
+                  name="tagDisplayMode"
+                  checked={tagDisplay.mode === "auto"}
+                  disabled={isStatic}
+                  onChange={() => update("tagDisplay", { ...tagDisplay, mode: "auto", tags: [] })}
+                />
+                Auto
+              </label>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input
+                  type="radio"
+                  name="tagDisplayMode"
+                  checked={tagDisplay.mode === "manual"}
+                  onChange={() => update("tagDisplay", { ...tagDisplay, mode: "manual" })}
+                />
+                Manually select…
+              </label>
+            </div>
+
+            {tagDisplay.mode === "manual" && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">
+                  {(tagDisplay.tags?.length ?? 0) === 0
+                    ? <span className="italic text-gray-400">No tags selected</span>
+                    : <span>{tagDisplay.tags!.length} tag{tagDisplay.tags!.length !== 1 ? "s" : ""} selected</span>
+                  }
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTagModalOpen(true)}
+                  className="rounded border px-3 py-1 text-sm transition-colors"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  Choose tags…
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {tagModalOpen && (
+        <TagDisplayModal
+          selected={tagDisplay.tags ?? []}
+          suggestedSlugs={suggestedTagSlugs}
+          onSave={(tags) => {
+            update("tagDisplay", { ...tagDisplay, tags });
+            setTagModalOpen(false);
+          }}
+          onClose={() => setTagModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
