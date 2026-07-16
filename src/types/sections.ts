@@ -31,6 +31,12 @@ export type GalleryFilters = {
   folder?: string;
 };
 
+export type GalleryTagDisplay = {
+  enabled: boolean;
+  mode: "auto" | "manual";
+  tags?: string[];
+};
+
 export type GallerySection = {
   type: "gallery";
   mode: "static" | "dynamic";
@@ -38,6 +44,7 @@ export type GallerySection = {
   lightbox?: boolean;
   heading?: string;
   body?: string;
+  tagDisplay?: GalleryTagDisplay;
 } & (
   | { mode: "static"; assetIds: string[] }
   | { mode: "dynamic"; filters: GalleryFilters }
