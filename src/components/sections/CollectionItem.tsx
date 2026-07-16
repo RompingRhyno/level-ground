@@ -9,6 +9,17 @@ type EntityContext = { entitySlug: string; source: "folders" | "tags" };
 
 type Props = CollectionItemSection & { entityContext?: EntityContext };
 
+async function findCollectionIndexPageSlug(): Promise<string | null> {
+  const pages = await prisma.page.findMany({ select: { slug: true, sections: true } });
+  for (const page of pages) {
+    const sections = page.sections as any[];
+    if (sections.some((s) => s.type === "collection-index")) {
+      return page.slug;
+    }
+  }
+  return null;
+}
+
 export default async function CollectionItem({ layout, lightbox, source: sectionSource, entityContext }: Props) {
   if (!entityContext?.entitySlug) {
     return (
@@ -78,13 +89,16 @@ export default async function CollectionItem({ layout, lightbox, source: section
 
   const displayTags = folderTags
     .filter((t) => t !== "before" && t !== "after")
-    .map((s) => tagNameBySlug[s] ?? s);
+    .map((s) => ({ slug: s, name: tagNameBySlug[s] ?? s }));
+
+  const collectionSlug = await findCollectionIndexPageSlug();
 
   return (
     <CollectionItemClient
       name={name}
       description={description}
       displayTags={displayTags}
+      collectionSlug={collectionSlug}
       assets={assets}
       layout={layout ?? "grid"}
       lightbox={lightbox ?? true}
