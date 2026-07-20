@@ -17,20 +17,23 @@
   --color-brand-primary-hover: #435921;  /* hover CTA button */
   --color-brand-accent: #597772;         /* accents, highlights */
   --color-brand-dark: #304C50;           /* reused for headings if needed */
-  --color-brand-logo: #6c9d30;           /* logo green / nav active underline */
+  --color-brand-logo: #687a52;           /* logo green / nav active underline */
 
   /* Admin button colors (shared) */
-  --btn-primary-bg: lab(34.2% 10.84 -44.13);
-  --btn-primary-text: #ffffff;
-  --btn-primary-hover-bg: lab(52.71% 24.22 -68.6);
+  --btn-primary-bg: #ffffff;
+  --btn-primary-text: #000000;
+  --btn-primary-hover-bg: #90a873;
 
   /* Selected state shorthand (controls selected tags/folders) */
-  --btn-select: #F6C84C; /* fallback yellow */
-  --btn-select-text: #0f172a;
+  --btn-select: #304C50;
+  --btn-select-text: #ffffff;
 
   /* Tag badge colors (count background + text) */
   --tag-badge-bg: lab(90% -0.52 -4.6); /* emerald-600 */
   --tag-badge-text: #393d47;
+
+  /* Tag border color */
+  --tag-border-color: rgba(0, 0, 0, 0.25);
 
   /* Thumbnail selection highlight color (used for inset ring/shadow) */
   --thumbnail-select-color: lab(67.38% 42.13 -5.37);

@@ -121,12 +121,12 @@ function TagPills({ tags, collectionSlug }: { tags: TagRow[]; collectionSlug: st
           <Link
             key={tag.slug}
             href={`/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}`}
-            className="admin-btn text-sm px-3 py-1 rounded-full"
+            className="text-sm px-3 py-1 rounded-full border border-[var(--tag-border-color)] bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
           >
             {tag.name}
           </Link>
         ) : (
-          <span key={tag.slug} className="admin-btn text-sm px-3 py-1 rounded-full">
+          <span key={tag.slug} className="text-sm px-3 py-1 rounded-full border border-[var(--tag-border-color)] bg-(--btn-primary-bg) text-(--btn-primary-text)">
             {tag.name}
           </span>
         )
