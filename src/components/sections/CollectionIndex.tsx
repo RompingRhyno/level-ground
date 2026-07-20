@@ -100,7 +100,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
               <Link
                 key={t.slug}
                 href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${isActive ? "btn-selected" : "admin-btn"}`}
+                className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
               >
                 {t.name}
               </Link>
@@ -119,7 +119,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
               <Link
                 key={item.slug}
                 href={`${routeBase}/${item.slug}`}
-                className="block border border-(--color-border) rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                className="group block border border-(--color-border) rounded-lg overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div className="relative aspect-video w-full">
                   {image ? (
@@ -130,15 +130,15 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
                   {tags.length > 0 && (
                     <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
                       {tags.map((tagSlug) => (
-                        <span key={tagSlug} className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full">
+                        <span key={tagSlug} className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full border border-(--tag-border-color)">
                           {tagNameBySlug[tagSlug] ?? tagSlug}
                         </span>
                       ))}
                     </div>
                   )}
                 </div>
-                <div className="p-4 bg-white">
-                  <h3 className="text-lg font-medium">{item.name}</h3>
+                <div className="p-4 bg-white transition-colors duration-200 group-hover:bg-(--color-brand-dark)">
+                  <h3 className="text-lg font-medium transition-colors duration-200 group-hover:text-white">{item.name}</h3>
                 </div>
               </Link>
             );
