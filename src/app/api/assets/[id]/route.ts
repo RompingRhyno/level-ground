@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
@@ -60,6 +60,7 @@ export async function DELETE(request: NextRequest, context: any) {
     ]);
     for (const slug of allSlugs) {
       revalidateTag(`page:${slug}`, {});
+      revalidatePath(`/${slug}`);
     }
 
     return NextResponse.json({ success: true });
@@ -120,6 +121,7 @@ export async function PATCH(request: NextRequest, context: any) {
       const dynamicSlugs = await resolveDynamicAffectedPages();
       for (const slug of dynamicSlugs) {
         revalidateTag(`page:${slug}`, {});
+        revalidatePath(`/${slug}`);
       }
     }
 

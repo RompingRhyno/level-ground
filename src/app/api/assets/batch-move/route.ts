@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
 
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     const dynamicSlugs = await resolveDynamicAffectedPages();
     for (const slug of dynamicSlugs) {
       revalidateTag(`page:${slug}`, {});
+      revalidatePath(`/${slug}`);
     }
 
     return NextResponse.json({ ok: true });
