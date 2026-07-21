@@ -83,8 +83,9 @@ export async function getCollectionRouteConfig(
 export async function getAllPageSlugs(): Promise<string[]> {
   const dbPages = await prisma.page.findMany({
     where: { type: "page" },
-    select: { slug: true },
+    select: { slug: true, type: true },
   });
+  console.log("[getAllPageSlugs]", JSON.stringify(dbPages));
   return dbPages.map((p) => p.slug);
 }
 
