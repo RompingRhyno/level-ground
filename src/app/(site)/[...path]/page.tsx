@@ -27,9 +27,10 @@ export default async function CatchAllPage({ params, searchParams }: Props) {
     const collectionPage = await getPageBySlug(collectionName);
     if (!collectionPage) return notFound();
 
-    // Locate the collection-index section
+    // Locate the primary collection-index section (only primary owns routing)
     const indexSection = collectionPage.sections.find(
-      (s): s is CollectionIndexSection => s.type === "collection-index"
+      (s): s is CollectionIndexSection =>
+        s.type === "collection-index" && ((s as any).mode ?? "primary") === "primary"
     );
     if (!indexSection) return notFound();
 

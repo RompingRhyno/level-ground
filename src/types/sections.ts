@@ -109,6 +109,7 @@ export type ContactSection = {
 
 export type CollectionIndexSection = {
   type: "collection-index";
+  mode?: "primary" | "reference";
   source: "folders" | "tags";
   routeBase: string;
   detailTemplateSlug: string;
@@ -118,6 +119,8 @@ export type CollectionIndexSection = {
   entityImages?: Record<string, string>;
   entityOrder?: string[];
   sortMode?: "custom" | "latest" | "earliest" | "alphabetical";
+  showTagFilter?: boolean;
+  maxItems?: number;
   query?: {
     filter?: string;
   };

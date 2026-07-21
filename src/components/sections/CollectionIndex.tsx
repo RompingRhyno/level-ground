@@ -1,14 +1,14 @@
-import Link from "next/link";
-import Image from "next/image";
 import { getFolders, getFirstAssetUrlsByFolderSlugs, getTagsByFolderSlugs } from "@/lib/folders";
 import { getTags, getFirstAssetUrlsByTagSlugs } from "@/lib/tags";
+import CollectionIndexPresentation from "./CollectionIndexPresentation";
 
 import type { CollectionIndexSection } from "@/types/sections";
 
 type Item = { slug: string; name: string };
 
-export default async function CollectionIndex(props: CollectionIndexSection & { filterTag?: string }) {
-  const { source, routeBase, heading, entityImages, sortMode, entityOrder, filterTag } = props;
+export default async function CollectionIndex(props: CollectionIndexSection & { filterTag?: string; resolvedRouteBase?: string }) {
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder, filterTag, resolvedRouteBase, showTagFilter, maxItems } = props;
+  const effectiveRouteBase = routeBase || resolvedRouteBase || "";
 
   let items: Item[] = [];
   let firstAssets: Record<string, string> = {};
@@ -44,7 +44,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       ? sorted.filter((f) => f.tags.includes(filterTag))
       : sorted;
 
-    items = filteredFolders.map((f) => ({ slug: f.slug, name: f.name }));
+    items = filteredFolders.slice(0, maxItems || filteredFolders.length).map((f) => ({ slug: f.slug, name: f.name }));
     const slugs = items.map((i) => i.slug);
     const allSlugs = sorted.map((f) => f.slug);
     [firstAssets, folderTags] = await Promise.all([
@@ -79,72 +79,22 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       );
     }
 
-    items = sorted.map((t) => ({ slug: t.slug, name: t.name }));
+    items = sorted.slice(0, maxItems || sorted.length).map((t) => ({ slug: t.slug, name: t.name }));
     firstAssets = await getFirstAssetUrlsByTagSlugs(items.map((i) => i.slug));
   }
 
   return (
-    <div>
-      {heading && (
-        <h2
-          className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-          dangerouslySetInnerHTML={{ __html: heading }}
-          style={{ color: "var(--color-text-heading)" }}
-        />
-      )}
-      {allTagsForFilter.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          {allTagsForFilter.map((t) => {
-            const isActive = filterTag === t.slug;
-            return (
-              <Link
-                key={t.slug}
-                href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
-                className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
-              >
-                {t.name}
-              </Link>
-            );
-          })}
-        </div>
-      )}
-      {items.length === 0 ? (
-        <p className="text-(--color-text-muted)">No items found.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => {
-            const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
-            const tags = source === "folders" ? (folderTags[item.slug] ?? []) : [];
-            return (
-              <Link
-                key={item.slug}
-                href={`${routeBase}/${item.slug}`}
-                className="group block border border-(--color-border) rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-              >
-                <div className="relative aspect-video w-full">
-                  {image ? (
-                    <Image src={image} alt={item.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 bg-(--color-bg-secondary)" />
-                  )}
-                  {tags.length > 0 && (
-                    <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-                      {tags.map((tagSlug) => (
-                        <span key={tagSlug} className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full border border-(--tag-border-color)">
-                          {tagNameBySlug[tagSlug] ?? tagSlug}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="p-4 bg-white transition-colors duration-200 group-hover:bg-(--color-brand-dark)">
-                  <h3 className="text-lg font-medium transition-colors duration-200 group-hover:text-white">{item.name}</h3>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <CollectionIndexPresentation
+      heading={heading}
+      items={items}
+      firstAssets={firstAssets}
+      entityImages={entityImages}
+      source={source}
+      folderTags={folderTags}
+      tagNameBySlug={tagNameBySlug}
+      allTagsForFilter={allTagsForFilter}
+      showTagFilter={showTagFilter}
+      effectiveRouteBase={effectiveRouteBase}
+    />
   );
 }

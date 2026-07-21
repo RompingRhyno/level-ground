@@ -7,6 +7,7 @@ import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
 import Contact from "@/components/sections/Contact";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
+import CollectionIndexPresentation from "@/components/sections/CollectionIndexPresentation";
 import type {
   PageSection,
   HeroSection,
@@ -226,7 +227,7 @@ function CollectionItemPreview({ section }: { section: CollectionItemSection }) 
 }
 
 function CollectionIndexPreview({ section }: { section: CollectionIndexSection }) {
-  const { source, heading, entityImages } = section;
+  const { source, heading, entityImages, showTagFilter, maxItems } = section as any;
   const [items, setItems] = useState<{ slug: string; name: string }[]>([]);
   const [firstAssets, setFirstAssets] = useState<Record<string, string>>({});
   const [folderTags, setFolderTags] = useState<Record<string, string[]>>({});
@@ -282,70 +283,28 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
 
   const usedTagSlugs = new Set(Object.values(folderTags).flat());
   const filterTags = allTags.filter((t) => usedTagSlugs.has(t.slug));
-  const visibleItems = activePreviewTag
+  const tagNameBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.name]));
+  const filteredItems = activePreviewTag
     ? items.filter((item) => (folderTags[item.slug] ?? []).includes(activePreviewTag))
     : items;
+  const visibleItems = maxItems ? filteredItems.slice(0, maxItems) : filteredItems;
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
-      {heading && (
-        <h2
-          className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-          dangerouslySetInnerHTML={{ __html: heading }}
-          style={{ color: "var(--color-text-heading)" }}
-        />
-      )}
-      {filterTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          {filterTags.map((t) => {
-            const isActive = activePreviewTag === t.slug;
-            return (
-              <button
-                key={t.slug}
-                type="button"
-                onClick={() => setActivePreviewTag(isActive ? null : t.slug)}
-                className={`px-3 py-1 rounded-full text-sm transition-colors ${isActive ? "btn-selected" : "admin-btn"}`}
-              >
-                {t.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {visibleItems.length === 0 ? (
-        <p className="text-sm text-gray-400">No items found.</p>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {visibleItems.map((item) => {
-            const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
-            const tags = source === "folders" ? (folderTags[item.slug] ?? []) : [];
-            return (
-              <div key={item.slug} className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="relative aspect-video w-full">
-                  {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={item.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 bg-gray-100" />
-                  )}
-                  {tags.length > 0 && (
-                    <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-                      {tags.map((tag) => (
-                        <span key={tag} className="text-xs text-white bg-black/60 px-1.5 py-0.5 rounded-full">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-medium">{item.name}</h3>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <CollectionIndexPresentation
+        heading={heading}
+        items={visibleItems}
+        firstAssets={firstAssets}
+        entityImages={entityImages}
+        source={source}
+        folderTags={folderTags}
+        tagNameBySlug={tagNameBySlug}
+        allTagsForFilter={filterTags}
+        showTagFilter={showTagFilter}
+        effectiveRouteBase=""
+        activeTag={activePreviewTag}
+        onTagClick={(slug) => setActivePreviewTag(slug)}
+      />
     </div>
   );
 }
