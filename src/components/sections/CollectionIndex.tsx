@@ -6,8 +6,8 @@ import type { CollectionIndexSection } from "@/types/sections";
 
 type Item = { slug: string; name: string };
 
-export default async function CollectionIndex(props: CollectionIndexSection & { filterTag?: string; resolvedRouteBase?: string }) {
-  const { source, routeBase, heading, entityImages, sortMode, entityOrder, filterTag, resolvedRouteBase, showTagFilter, maxItems } = props;
+export default async function CollectionIndex(props: CollectionIndexSection & { resolvedRouteBase?: string }) {
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems } = props;
   const effectiveRouteBase = routeBase || resolvedRouteBase || "";
 
   let items: Item[] = [];
@@ -39,12 +39,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
     }
     // alphabetical (default): getFolders() returns name ASC
 
-    // Filter by tag if one is selected
-    const filteredFolders = filterTag
-      ? sorted.filter((f) => f.tags.includes(filterTag))
-      : sorted;
-
-    items = filteredFolders.slice(0, maxItems || filteredFolders.length).map((f) => ({ slug: f.slug, name: f.name }));
+    items = sorted.slice(0, maxItems || sorted.length).map((f) => ({ slug: f.slug, name: f.name }));
     const slugs = items.map((i) => i.slug);
     const allSlugs = sorted.map((f) => f.slug);
     [firstAssets, folderTags] = await Promise.all([

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 type Item = { slug: string; name: string };
 
@@ -20,7 +22,8 @@ export type CollectionIndexPresentationProps = {
   onTagClick?: (slug: string | null) => void;
 };
 
-export default function CollectionIndexPresentation({
+/** Pure presentational component — renders heading + item grid. No hooks. */
+function ItemGrid({
   heading,
   items,
   firstAssets,
@@ -28,13 +31,8 @@ export default function CollectionIndexPresentation({
   source,
   folderTags,
   tagNameBySlug,
-  allTagsForFilter,
-  showTagFilter,
   effectiveRouteBase,
-  activeTag,
-  onTagClick,
 }: CollectionIndexPresentationProps) {
-  const isPreview = !!onTagClick;
   return (
     <div>
       {heading && (
@@ -43,34 +41,6 @@ export default function CollectionIndexPresentation({
           dangerouslySetInnerHTML={{ __html: heading }}
           style={{ color: "var(--color-text-heading)" }}
         />
-      )}
-      {showTagFilter && allTagsForFilter.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          {allTagsForFilter.map((t) => {
-            const isActive = (activeTag ?? null) === t.slug;
-            if (isPreview) {
-              return (
-                <button
-                  key={t.slug}
-                  type="button"
-                  onClick={() => onTagClick?.(isActive ? null : t.slug)}
-                  className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
-                >
-                  {t.name}
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={t.slug}
-                href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
-                className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
-              >
-                {t.name}
-              </Link>
-            );
-          })}
-        </div>
       )}
       {items.length === 0 ? (
         <p className="text-(--color-text-muted)">No items found.</p>
@@ -110,5 +80,72 @@ export default function CollectionIndexPresentation({
         </div>
       )}
     </div>
+  );
+}
+
+/** Inner component — uses client hook for tag filtering, renders tag filter + ItemGrid. */
+function CollectionIndexPresentationInner(props: CollectionIndexPresentationProps) {
+  const {
+    allTagsForFilter,
+    showTagFilter,
+    folderTags,
+    activeTag: activeTagProp,
+    onTagClick,
+  } = props;
+
+  const isPreview = !!onTagClick;
+  const searchParams = useSearchParams();
+  const activeTag = activeTagProp ?? searchParams.get("tag");
+
+  // Client-side tag filtering
+  const filteredItems = activeTag
+    ? props.items.filter((item) => (folderTags[item.slug] ?? []).includes(activeTag))
+    : props.items;
+
+  return (
+    <div>
+      {showTagFilter && allTagsForFilter.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8">
+          {allTagsForFilter.map((t) => {
+            const isActive = (activeTag ?? null) === t.slug;
+            if (isPreview) {
+              return (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() => onTagClick?.(isActive ? null : t.slug)}
+                  className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
+                >
+                  {t.name}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={t.slug}
+                href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
+                className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
+              >
+                {t.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+      <ItemGrid {...props} items={filteredItems} />
+    </div>
+  );
+}
+
+/**
+ * Default export — wraps inner in Suspense (required for useSearchParams in
+ * static rendering). Fallback renders unfiltered ItemGrid so static HTML
+ * includes all items for SEO and no layout shift on initial load.
+ */
+export default function CollectionIndexPresentation(props: CollectionIndexPresentationProps) {
+  return (
+    <Suspense fallback={<ItemGrid {...props} />}>
+      <CollectionIndexPresentationInner {...props} />
+    </Suspense>
   );
 }
