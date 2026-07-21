@@ -65,7 +65,7 @@ export async function getCollectionRouteConfig(
   for (const page of pages) {
     const sections = page.sections as any[];
     for (const section of sections) {
-      if (section.type === "collection-index" && section.detailTemplateSlug) {
+      if (section.type === "collection-index" && section.detailTemplateSlug && (section.mode ?? "primary") === "primary") {
         const routeBase = (section.routeBase as string ?? "").replace(/^\//, "");
         if (routeBase === collectionSlug) {
           return {

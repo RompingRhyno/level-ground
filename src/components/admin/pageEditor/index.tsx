@@ -36,6 +36,20 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
   function updateSection(s: PageSection, i: number) {
     const arr = [...sections];
+    // If this section is becoming primary, demote any other primary collection-index
+    if (
+      s.type === "collection-index" &&
+      ((s as any).mode ?? "primary") === "primary"
+    ) {
+      for (let j = 0; j < arr.length; j++) {
+        if (j !== i && arr[j].type === "collection-index") {
+          const existing = arr[j] as any;
+          if ((existing.mode ?? "primary") === "primary") {
+            arr[j] = { ...existing, mode: "reference" };
+          }
+        }
+      }
+    }
     arr[i] = s;
     setSections(arr);
   }
@@ -70,10 +84,21 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },
       video: { type: "video", heading: "", subheading: "", videoUrl: "" },
       contact: { id: crypto.randomUUID(), type: "contact", heading: "", fields: [], recipientIds: [] },
-      "collection-index": { type: "collection-index", source: "folders", routeBase: "", detailTemplateSlug: "", heading: "" },
+      "collection-index": { type: "collection-index", mode: "primary", source: "folders", routeBase: "", detailTemplateSlug: "", heading: "" },
       "collection-item": { type: "collection-item", layout: "grid", lightbox: true },
     };
-    if (defaults[type]) setSections([...sections, defaults[type]]);
+    if (defaults[type]) {
+      // Auto-set mode: first collection-index gets primary, rest get reference
+      if (type === "collection-index") {
+        const hasPrimary = sections.some(
+          (s) => s.type === "collection-index" && ((s as any).mode ?? "primary") === "primary"
+        );
+        if (hasPrimary) {
+          defaults[type] = { ...defaults[type], mode: "reference" };
+        }
+      }
+      setSections([...sections, defaults[type]]);
+    }
   }
 
   async function save() {
@@ -173,6 +198,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
                   key={i}
                   section={s}
                   index={i}
+                  allSections={sections}
                   onChange={updateSection}
                   onRemove={removeSection}
                   onMoveUp={moveUp}

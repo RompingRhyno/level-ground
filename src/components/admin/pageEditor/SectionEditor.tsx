@@ -210,6 +210,7 @@ const SECTION_LABELS: Record<string, string> = {
 export default function SectionEditor({
   section,
   index,
+  allSections,
   onChange,
   onRemove,
   onMoveUp,
@@ -217,6 +218,7 @@ export default function SectionEditor({
 }: {
   section: PageSection;
   index: number;
+  allSections?: PageSection[];
   onChange: (s: PageSection, i: number) => void;
   onRemove: (i: number) => void;
   onMoveUp: (i: number) => void;
@@ -540,6 +542,23 @@ export default function SectionEditor({
                 />
               </div>
               <div className="space-y-1">
+                <label className="block text-sm">Mode</label>
+                <select
+                  value={(section as any).mode || "primary"}
+                  onChange={(e) => update("mode", e.target.value)}
+                  className="rounded border px-2 py-1"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  <option value="primary">Primary — owns routing</option>
+                  <option value="reference">Reference — display only</option>
+                </select>
+                {((section as any).mode ?? "primary") === "reference" && (
+                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+                    Uses routing from primary collection index on this page.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1">
                 <label className="block text-sm">Source</label>
                 <select
                   value={(section as any).source || "folders"}
@@ -551,24 +570,40 @@ export default function SectionEditor({
                   <option value="tags">Tags (Services)</option>
                 </select>
               </div>
-              <div className="space-y-1">
-                <label className="block text-sm">Route base</label>
-                <input
-                  value={(section as any).routeBase || ""}
-                  onChange={(e) => update("routeBase", e.target.value)}
-                  className="w-full rounded border px-2 py-1"
-                  placeholder="e.g. /projects"
-                />
+              <div className="field-group">
+                <div className="font-medium text-sm mb-1">Tag filter</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`show-tags-${index}`}
+                    checked={!!(section as any).showTagFilter}
+                    onChange={(e) => update("showTagFilter", e.target.checked)}
+                  />
+                  <label htmlFor={`show-tags-${index}`} className="text-sm">Show tag filter pills</label>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="block text-sm">Detail template slug</label>
-                <input
-                  value={(section as any).detailTemplateSlug || ""}
-                  onChange={(e) => update("detailTemplateSlug", e.target.value)}
-                  className="w-full rounded border px-2 py-1"
-                  placeholder="e.g. projects-detail"
-                />
-              </div>
+              {((section as any).mode ?? "primary") === "primary" && (
+                <>
+                  <div className="space-y-1">
+                    <label className="block text-sm">Route base</label>
+                    <input
+                      value={(section as any).routeBase || ""}
+                      onChange={(e) => update("routeBase", e.target.value)}
+                      className="w-full rounded border px-2 py-1"
+                      placeholder="e.g. /projects"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm">Detail template slug</label>
+                    <input
+                      value={(section as any).detailTemplateSlug || ""}
+                      onChange={(e) => update("detailTemplateSlug", e.target.value)}
+                      className="w-full rounded border px-2 py-1"
+                      placeholder="e.g. projects-detail"
+                    />
+                  </div>
+                </>
+              )}
 
               {displayItems.length > 0 && (() => {
                 const currentSortMode: SortMode = (section as any).sortMode ?? "alphabetical";
@@ -577,6 +612,18 @@ export default function SectionEditor({
                   <div className="field-group space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="font-medium text-sm">{sectionLabel}</div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs" style={{ color: "var(--color-text-muted)" }}>Limit:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={(section as any).maxItems ?? ""}
+                          onChange={(e) => update("maxItems", e.target.value ? Number(e.target.value) : undefined)}
+                          className="w-16 rounded border px-1 py-0.5 text-xs text-center"
+                          style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                          placeholder="All"
+                        />
+                      </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>Sort by:</span>
                         {SORT_MODES.map((m) => (
@@ -611,7 +658,7 @@ export default function SectionEditor({
                         strategy={rectSortingStrategy}
                       >
                         <div className="grid grid-cols-3 gap-3">
-                          {displayItems.map((item) => (
+                          {(displayItems as EntityItem[]).slice(0, (section as any).maxItems || displayItems.length).map((item) => (
                             <SortableEntityCard
                               key={item.slug}
                               item={item}

@@ -20,7 +20,16 @@ type Props = {
   filterTag?: string;
 };
 
+function resolveCollectionRouteBase(sections: PageSection[]): string | undefined {
+  const primary = sections.find(
+    (s): s is PageSection & { type: "collection-index"; mode?: "primary" | "reference" } =>
+      s.type === "collection-index" && ((s as any).mode ?? "primary") === "primary"
+  );
+  return (primary as any)?.routeBase || undefined;
+}
+
 export default function RenderSections({ sections, pageSlug, entityContext, filterTag }: Props) {
+  const collectionRouteBase = resolveCollectionRouteBase(sections);
   return (
     <>
       {sections.map((section, index) => {
@@ -68,7 +77,7 @@ export default function RenderSections({ sections, pageSlug, entityContext, filt
             return (
               <section key={index} className={backgroundClass}>
                 <div className="mx-auto max-w-7xl px-6 py-20">
-                  <CollectionIndex {...section} filterTag={filterTag} />
+                  <CollectionIndex {...section} filterTag={filterTag} resolvedRouteBase={collectionRouteBase} />
                 </div>
               </section>
             );
