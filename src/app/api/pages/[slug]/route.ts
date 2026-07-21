@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { getPageBySlug, upsertPage, ensureCollectionTemplates } from "@/lib/pages";
 import { reconcileMediaUsage } from "@/lib/gallery-utils";
 import { prisma } from "@/lib/prisma";
@@ -24,17 +24,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
     const saved = await upsertPage(body);
     await reconcileMediaUsage(saved.slug, saved.sections);
     const newTemplates = await ensureCollectionTemplates(saved.sections);
-    for (const s of newTemplates) revalidateTag(`page:${s}`, {});
+    for (const s of newTemplates) {
+      revalidateTag(`page:${s}`, {});
+      revalidatePath(`/${s}`);
+    }
 
     // Revalidate old slug if it changed
     if (slug !== saved.slug) {
       revalidateTag(`page:${slug}`, {});
+      revalidatePath(`/${slug}`);
     }
     revalidateTag(`page:${saved.slug}`, {});
+    revalidatePath(`/${saved.slug}`);
 
     // Label or slug changes affect nav
     if (slug !== saved.slug || body.label !== undefined) {
       revalidateTag("global:nav", {});
+      revalidatePath("/");
     }
 
     return NextResponse.json(saved);
@@ -59,6 +65,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     revalidateTag(`page:${slug}`, {});
     revalidateTag("global:nav", {});
+
+    revalidatePath(`/${slug}`);
+    revalidatePath("/");
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

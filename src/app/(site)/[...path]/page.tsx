@@ -1,11 +1,17 @@
 import { notFound } from "next/navigation";
 import RenderSections from "@/components/RenderSections";
-import { getPageBySlug } from "@/lib/pages";
+import { getPageBySlug, getAllCollectionRoutes } from "@/lib/pages";
 import { getFolderBySlug } from "@/lib/folders";
 import { getTagBySlug } from "@/lib/tags";
 import type { CollectionIndexSection } from "@/types/sections";
 
 type Props = { params: Promise<{ path: string[] }>; searchParams: Promise<{ tag?: string }> };
+
+export async function generateStaticParams() {
+  return getAllCollectionRoutes();
+}
+
+export const dynamicParams = true;
 
 export default async function CatchAllPage({ params, searchParams }: Props) {
   const { path } = await params;
