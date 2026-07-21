@@ -79,6 +79,59 @@ export async function getCollectionRouteConfig(
   return null;
 }
 
+/** Returns all non-template page slugs for generateStaticParams. */
+export async function getAllPageSlugs(): Promise<string[]> {
+  const dbPages = await prisma.page.findMany({
+    where: { type: "page" },
+    select: { slug: true },
+  });
+  return dbPages.map((p) => p.slug);
+}
+
+/** Returns all 2-segment collection detail paths for generateStaticParams. */
+export async function getAllCollectionRoutes(): Promise<{ path: [string, string] }[]> {
+  const pages = await prisma.page.findMany({
+    where: { type: "page" },
+    select: { sections: true },
+  });
+
+  const routes: { path: [string, string] }[] = [];
+
+  for (const page of pages) {
+    const sections = page.sections as any[];
+    for (const section of sections) {
+      if (
+        section.type === "collection-index" &&
+        section.detailTemplateSlug &&
+        ((section.mode ?? "primary") === "primary")
+      ) {
+        const routeBase = (section.routeBase as string ?? "").replace(/^\//, "");
+        const source: "folders" | "tags" = section.source ?? "folders";
+
+        if (source === "folders") {
+          const folders = await prisma.folder.findMany({
+            select: { slug: true },
+            where: { slug: { not: "" } },
+          });
+          for (const f of folders) {
+            routes.push({ path: [routeBase, f.slug] });
+          }
+        } else {
+          const tags = await prisma.tag.findMany({
+            select: { slug: true },
+            where: { slug: { not: "" } },
+          });
+          for (const t of tags) {
+            routes.push({ path: [routeBase, t.slug] });
+          }
+        }
+      }
+    }
+  }
+
+  return routes;
+}
+
 export async function upsertPage(page: PageConfig) {
 
   // sections stored as JSON
