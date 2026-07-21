@@ -17,7 +17,6 @@ type Props = {
   sections: PageSection[];
   pageSlug: string;
   entityContext?: EntityContext;
-  filterTag?: string;
 };
 
 function resolveCollectionRouteBase(sections: PageSection[]): string | undefined {
@@ -28,7 +27,7 @@ function resolveCollectionRouteBase(sections: PageSection[]): string | undefined
   return (primary as any)?.routeBase || undefined;
 }
 
-export default function RenderSections({ sections, pageSlug, entityContext, filterTag }: Props) {
+export default function RenderSections({ sections, pageSlug, entityContext }: Props) {
   const collectionRouteBase = resolveCollectionRouteBase(sections);
   return (
     <>
@@ -77,7 +76,7 @@ export default function RenderSections({ sections, pageSlug, entityContext, filt
             return (
               <section key={index} className={backgroundClass}>
                 <div className="mx-auto max-w-7xl px-6 py-20">
-                  <CollectionIndex {...section} filterTag={filterTag} resolvedRouteBase={collectionRouteBase} />
+                  <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
                 </div>
               </section>
             );
