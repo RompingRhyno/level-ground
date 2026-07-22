@@ -171,7 +171,7 @@ export default function ContactEditor({
               <input
                 value={field.label}
                 onChange={(e) => updateField(fi, { label: e.target.value })}
-                className="rounded border px-2 py-1 flex-1 min-w-[100px]"
+                className="rounded border px-2 py-1 flex-1 min-w-25"
                 placeholder="Label"
               />
               <select
