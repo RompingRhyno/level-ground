@@ -128,13 +128,13 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   }
 
   return (
-    <section className="max-w-[2000px] mx-auto px-4 space-y-4">
+    <section className="max-w-500 mx-auto px-4 space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700">Label</label>
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="mt-1 block w-full max-w-[360px] rounded border px-3 py-2"
+          className="mt-1 block w-full max-w-90 rounded border px-3 py-2"
           style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
         />
       </div>

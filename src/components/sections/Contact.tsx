@@ -283,7 +283,7 @@ export default function Contact({
 
       <div className={`grid items-start gap-12${image ? " md:grid-cols-[1fr_auto]" : ""}`}>
         {/* Form column */}
-        <div className="max-w-full md:max-w-[560px]">
+        <div className="max-w-full md:max-w-140">
       <form onSubmit={handleSubmit} className="space-y-4" style={{ color: "var(--color-text-heading)" }} noValidate>
         {/* Honeypot */}
         <input
@@ -365,12 +365,12 @@ export default function Contact({
             >
               Choose files…
             </button>
-            <p className="mt-2 text-xs text-[var(--color-text-primary)]">Accepted: JPEG, PNG, WebP, HEIC — up to 10 MB per file.</p>
+            <p className="mt-2 text-xs text-(--color-text-primary)">Accepted: JPEG, PNG, WebP, HEIC — up to 10 MB per file.</p>
             {uploads.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {uploads.map((u) => (
                   <li key={u.id} className="text-xs flex items-center gap-2">
-                    <span className="truncate max-w-[200px]">{u.file.name}</span>
+                    <span className="truncate max-w-50">{u.file.name}</span>
                     {u.status === "converting" && (
                       <span className="text-gray-500">Converting…</span>
                     )}
@@ -418,7 +418,7 @@ export default function Contact({
         {image && (
           <div className="order-last flex justify-center md:order-0 md:justify-start">
             <div
-              className="relative aspect-square w-80 sm:w-96 md:w-[480px] rounded-full shadow-xl"
+              className="relative aspect-square w-80 sm:w-96 md:w-120 rounded-full shadow-xl"
               style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}
             >
               <Image

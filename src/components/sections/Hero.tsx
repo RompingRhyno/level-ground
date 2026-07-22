@@ -26,8 +26,8 @@ export default function Hero({
               relative
               aspect-square
               w-[min(320px,100%)]
-              sm:w-[380px]
-              md:w-[440px]
+              sm:w-95
+              md:w-110
               max-w-full
               rounded-full
               shadow-xl

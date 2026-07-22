@@ -114,7 +114,7 @@ function CollectionIndexPresentationInner(props: CollectionIndexPresentationProp
                   key={t.slug}
                   type="button"
                   onClick={() => onTagClick?.(isActive ? null : t.slug)}
-                  className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
+                  className={`px-4 py-1 rounded-full text-base transition-colors border border-(--tag-border-color) ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
                 >
                   {t.name}
                 </button>
@@ -124,7 +124,7 @@ function CollectionIndexPresentationInner(props: CollectionIndexPresentationProp
               <Link
                 key={t.slug}
                 href={isActive ? "?" : `?tag=${encodeURIComponent(t.slug)}`}
-                className={`px-4 py-1 rounded-full text-base transition-colors border border-[var(--tag-border-color)] ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
+                className={`px-4 py-1 rounded-full text-base transition-colors border border-(--tag-border-color) ${isActive ? "btn-selected" : "bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"}`}
               >
                 {t.name}
               </Link>
