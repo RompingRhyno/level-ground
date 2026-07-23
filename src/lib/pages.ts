@@ -79,6 +79,27 @@ export async function getCollectionRouteConfig(
   return null;
 }
 
+/** Returns routeBase of the first primary collection-index found across all pages. */
+export function getPrimaryCollectionRouteBase(): Promise<string | null> {
+  return unstable_cache(
+    async () => {
+      const pages = await prisma.page.findMany({ select: { sections: true } });
+      for (const page of pages) {
+        const sections = page.sections as any[];
+        for (const section of sections) {
+          if (section.type === "collection-index" && (section.mode ?? "primary") === "primary") {
+            const base = (section.routeBase as string ?? "").replace(/^\//, "");
+            if (base) return `/${base}`;
+          }
+        }
+      }
+      return null;
+    },
+    ["primary-collection-route-base"],
+    { tags: ["global:pages"] }
+  )();
+}
+
 /** Returns all non-template page slugs for generateStaticParams. */
 export async function getAllPageSlugs(): Promise<string[]> {
   const dbPages = await prisma.page.findMany({

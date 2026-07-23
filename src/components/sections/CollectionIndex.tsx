@@ -1,5 +1,6 @@
 import { getFolders, getFirstAssetUrlsByFolderSlugs, getTagsByFolderSlugs } from "@/lib/folders";
 import { getTags, getFirstAssetUrlsByTagSlugs } from "@/lib/tags";
+import { getPrimaryCollectionRouteBase } from "@/lib/pages";
 import CollectionIndexPresentation from "./CollectionIndexPresentation";
 
 import type { CollectionIndexSection } from "@/types/sections";
@@ -8,7 +9,13 @@ type Item = { slug: string; name: string };
 
 export default async function CollectionIndex(props: CollectionIndexSection & { resolvedRouteBase?: string }) {
   const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems } = props;
-  const effectiveRouteBase = routeBase || resolvedRouteBase || "";
+  let effectiveRouteBase = routeBase || resolvedRouteBase || "";
+  // Cross-page fallback: if this is a reference collection-index on a page
+  // without a sibling primary, look up the primary across all pages.
+  if (!effectiveRouteBase) {
+    const crossPageBase = await getPrimaryCollectionRouteBase();
+    if (crossPageBase) effectiveRouteBase = crossPageBase;
+  }
 
   let items: Item[] = [];
   let firstAssets: Record<string, string> = {};
