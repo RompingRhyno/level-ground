@@ -193,12 +193,14 @@ export default function AdminPagesClient({ initialPages }: { initialPages: PageR
                       title="Move down"
                     >↓</button>
                   </div>
-                  <button
-                    onClick={(e) => handleDelete(e, page.slug, page.label)}
-                    className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
-                  >
-                    Delete
-                  </button>
+                  {page.slug !== "home" && (
+                    <button
+                      onClick={(e) => handleDelete(e, page.slug, page.label)}
+                      className="px-2 py-1 rounded text-sm btn-negative justify-self-end"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
 
                 {/* ── Template sub-rows ── */}
