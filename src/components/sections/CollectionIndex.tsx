@@ -8,7 +8,7 @@ import type { CollectionIndexSection } from "@/types/sections";
 type Item = { slug: string; name: string };
 
 export default async function CollectionIndex(props: CollectionIndexSection & { resolvedRouteBase?: string }) {
-  const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems } = props;
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems, mode } = props;
   let effectiveRouteBase = routeBase || resolvedRouteBase || "";
   // Cross-page fallback: if this is a reference collection-index on a page
   // without a sibling primary, look up the primary across all pages.
@@ -97,6 +97,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       allTagsForFilter={allTagsForFilter}
       showTagFilter={showTagFilter}
       effectiveRouteBase={effectiveRouteBase}
+      mode={mode}
     />
   );
 }
