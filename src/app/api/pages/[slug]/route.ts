@@ -56,7 +56,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const { slug } = await params;
+      const { slug } = await params;
+
+    if (slug === "home") {
+      return NextResponse.json({ error: "cannot delete home page" }, { status: 400 });
+    }
 
     await prisma.$transaction([
       prisma.mediaUsage.deleteMany({ where: { pageSlug: slug } }),

@@ -392,13 +392,15 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
                   View
                 </a>
               )}
-              <button
-                type="button"
-                onClick={() => removeItem(it.id)}
-                className="ml-2 rounded px-2 py-1 text-sm btn-negative"
-              >
-                Remove
-              </button>
+              {it.status !== "done" && (
+                <button
+                  type="button"
+                  onClick={() => removeItem(it.id)}
+                  className="ml-2 rounded px-2 py-1 text-sm btn-negative"
+                >
+                  Remove
+                </button>
+              )}
             </div>
           </div>
         ))}
