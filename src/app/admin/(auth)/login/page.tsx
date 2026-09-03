@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +25,13 @@ export default function LoginPage() {
       if (res.ok) {
         router.push("/admin");
         router.refresh();
+      } else if (res.status === 423) {
+        const data = await res.json().catch(() => ({}));
+        setError(
+          data.emailSent === false
+            ? "Too many failed attempts — your account is locked, but the unlock email could not be sent. Try again later or use forgot password."
+            : "Account locked. Check your email for the unlock link — it expires in 1 hour. You can also use forgot password below."
+        );
       } else {
         setError("Invalid credentials or account locked.");
       }
@@ -111,6 +119,15 @@ export default function LoginPage() {
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
+
+      <p
+        className="text-sm mt-4 text-center"
+        style={{ color: "var(--color-text-primary)" }}
+      >
+        <Link href="/admin/forgot-password" className="underline hover:opacity-80">
+          Forgot password?
+        </Link>
+      </p>
     </div>
   );
 }
