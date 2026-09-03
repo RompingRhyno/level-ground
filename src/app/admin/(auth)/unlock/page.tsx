@@ -20,7 +20,14 @@ export default async function UnlockPage({ searchParams }: PageProps) {
     include: { user: { select: { email: true } } },
   });
 
-  if (!record || record.usedAt || record.expiresAt < new Date()) {
+  const isReset = record?.type === "reset";
+
+  if (
+    !record ||
+    record.usedAt ||
+    record.expiresAt < new Date() ||
+    (record.type !== "unlock" && record.type !== "reset")
+  ) {
     return <TokenError message="This link is invalid or has expired." />;
   }
 
@@ -80,10 +87,18 @@ export default async function UnlockPage({ searchParams }: PageProps) {
         className="text-xl font-semibold mb-2"
         style={{ color: "var(--color-text-heading)" }}
       >
-        Account locked
+        {isReset ? "Reset password" : "Account locked"}
       </h1>
       <p className="text-sm mb-6" style={{ color: "var(--color-text-primary)" }}>
-        Account: <strong>{record.user.email}</strong>
+        {isReset ? (
+          <>
+            Choose a new password for <strong>{record.user.email}</strong>
+          </>
+        ) : (
+          <>
+            Account: <strong>{record.user.email}</strong>
+          </>
+        )}
       </p>
 
       <form action={doUnlock} className="flex flex-col gap-4">
@@ -116,24 +131,30 @@ export default async function UnlockPage({ searchParams }: PageProps) {
         </div>
 
         <div className="flex gap-3 mt-2">
-          <button
-            type="submit"
-            name="action"
-            value="unlock"
-            className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
-          >
-            Unlock only
-          </button>
+          {!isReset && (
+            <button
+              type="submit"
+              name="action"
+              value="unlock"
+              className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+            >
+              Unlock only
+            </button>
+          )}
           <button
             type="submit"
             name="action"
             value="reset"
-            className="flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{
-              borderColor: "var(--color-border)",
-              color: "var(--color-text-heading)",
-            }}
+            className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+            style={
+              isReset
+                ? { backgroundColor: "var(--color-brand-logo)", color: "#fff" }
+                : {
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-text-heading)",
+                  }
+            }
           >
             Reset password
           </button>

@@ -15,6 +15,17 @@ function unauthorized() {
   )
 }
 
+/** 423 Locked — account is locked out. Safe to reveal for a private admin panel. */
+function locked(emailSent?: boolean) {
+  return NextResponse.json(
+    {
+      error: 'Account locked. Check your email for the unlock link.',
+      ...(emailSent === false ? { emailSent: false } : {}),
+    },
+    { status: 423 },
+  )
+}
+
 export async function POST(request: NextRequest) {
   let body: { email?: unknown; password?: unknown }
   try {
@@ -29,15 +40,11 @@ export async function POST(request: NextRequest) {
 
   const user = await prisma.user.findUnique({ where: { email } })
   if (!user) return unauthorized()
-  if (user.lockedAt) return unauthorized()
+  if (user.lockedAt) return locked()
   if (!user.passwordHash) return unauthorized()
 
   const valid = await compare(password, user.passwordHash)
-  console.log('email received:', email)
-  console.log('password length:', password.length)
-  console.log('passwordHash in db:', user.passwordHash)
-  console.log('bcrypt result:', valid)
-  
+
   if (!valid) {
     const attempts = user.failedAttempts + 1
 
@@ -60,8 +67,10 @@ export async function POST(request: NextRequest) {
           },
         }),
       ])
-      // Fire-and-forget — don't let email errors expose timing info
-      void sendUnlockEmail(user.email, raw, attempts)
+      const emailSent = await sendUnlockEmail(user.email, raw, attempts)
+      // Surface send failure so the UI can tell the user the email never went
+      // out instead of leaving them waiting on an inbox that stays empty.
+      return locked(emailSent)
     } else {
       await prisma.user.update({
         where: { id: user.id },

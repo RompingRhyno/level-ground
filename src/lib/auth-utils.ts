@@ -20,24 +20,73 @@ export function isStrongPassword(password: string): boolean {
   return /[\d!@#$%^&*()\-_=+[\]{};':",.<>/?\\|`~]/.test(password)
 }
 
+/**
+ * Sends the lockout email with an unlock/reset link. Resolves to false when
+ * Resend rejects or errors so callers can surface the failure in the UI
+ * instead of failing silently.
+ */
 export async function sendUnlockEmail(
   email: string,
   rawToken: string,
   failedAttempts: number,
-): Promise<void> {
+): Promise<boolean> {
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
   const url = `${base}/admin/unlock?token=${rawToken}`
-  void resend.emails.send({
-    from: process.env.AUTH_EMAIL_FROM!,
-    to: email,
-    subject: 'Admin account locked — action required',
-    html: `
-      <p>Your admin account was locked after ${failedAttempts} failed sign-in attempts.</p>
-      <p><a href="${url}">Unlock your account or reset your password</a></p>
-      <p>This link expires in 1 hour. If you did not trigger this, someone may be
-         attempting to access your account.</p>
-    `,
-  })
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.AUTH_EMAIL_FROM!,
+      to: email,
+      subject: 'Admin account locked — action required',
+      html: `
+        <p>Your admin account was locked after ${failedAttempts} failed sign-in attempts.</p>
+        <p><a href="${url}">Unlock your account or reset your password</a></p>
+        <p>This link expires in 1 hour. If you did not trigger this, someone may be
+           attempting to access your account.</p>
+      `,
+    })
+    if (error) {
+      console.error('[auth] unlock email rejected by Resend:', error)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('[auth] unlock email send failed:', err)
+    return false
+  }
+}
+
+/**
+ * Sends the self-serve password reset email (forgot-password flow). Uses a
+ * `reset` token that the shared unlock page accepts. Resolves to false when
+ * Resend rejects or errors.
+ */
+export async function sendPasswordResetEmail(
+  email: string,
+  rawToken: string,
+): Promise<boolean> {
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const url = `${base}/admin/unlock?token=${rawToken}`
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.AUTH_EMAIL_FROM!,
+      to: email,
+      subject: 'Reset your admin password',
+      html: `
+        <p>A password reset was requested for your admin account.</p>
+        <p><a href="${url}">Choose a new password</a></p>
+        <p>This link expires in 1 hour. If you did not request this, you can
+           safely ignore this email — your password is unchanged.</p>
+      `,
+    })
+    if (error) {
+      console.error('[auth] password reset email rejected by Resend:', error)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('[auth] password reset email send failed:', err)
+    return false
+  }
 }
 
 export async function sendInviteEmail(
