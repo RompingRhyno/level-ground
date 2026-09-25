@@ -77,7 +77,8 @@ export async function GET(request: Request) {
     }
   })();
 
-  const rows = await prisma.asset.findMany({ where, orderBy: orderBy as any, take: limit, offset });
+  const args = { where, orderBy, take: limit, offset } as any;
+  const rows = await prisma.asset.findMany(args);
 
   if (!includeUsage) return NextResponse.json(rows);
 
