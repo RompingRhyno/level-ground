@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { revalidateTag, revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
-import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
+import { revalidateFor } from "@/lib/revalidate";
 
 export async function POST(request: Request) {
   try {
@@ -48,11 +47,10 @@ export async function POST(request: Request) {
       }
     });
 
-    const dynamicSlugs = await resolveDynamicAffectedPages();
-    for (const slug of dynamicSlugs) {
-      revalidateTag(`page:${slug}`, {});
-      revalidatePath(`/${slug}`);
-    }
+    await revalidateFor(
+      { kind: "asset:updated", assetId: ids[0], folderChanged: true },
+      `asset:batch-move:${ids.length}->${folder}`,
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

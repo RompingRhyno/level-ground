@@ -1,104 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag, revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
-import { resolveDynamicAffectedPages } from "@/lib/gallery-utils";
+import { deleteR2Objects } from "@/lib/r2";
+import { usageForAssets } from "@/lib/media-refs";
+import { revalidateFor } from "@/lib/revalidate";
 
-export async function DELETE(request: NextRequest, context: any) {
+/** assetId → page slugs that display it (used for delete warnings and card badges). */
+export async function GET(_request: NextRequest, context: any) {
+  let params: any = context?.params as any;
+  if (params && typeof params.then === "function") params = await params;
+  const id = params?.id as string | undefined;
+  if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
+
+  const usage = await usageForAssets([id]);
+  return NextResponse.json({ assetId: id, usedOn: usage[id] ?? [] });
+}
+
+/**
+ * Update an asset: rename, move between folders, change alt text or merge metadata.
+ * Moving assigns the next `orderIndex` in the target folder.
+ */
+export async function PATCH(request: NextRequest, context: any) {
   try {
-    let p: any = context?.params as any;
-    if (p && typeof p.then === "function") p = await p;
-    const id = p?.id;
-
+    let params: any = context?.params as any;
+    if (params && typeof params.then === "function") params = await params;
+    const id = params?.id as string | undefined;
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
 
-    const asset = await prisma.asset.findUnique({ where: { id } });
-    if (!asset) return NextResponse.json({ error: "not found" }, { status: 404 });
+    const body = await request.json().catch(() => null);
+    if (!body) return NextResponse.json({ error: "invalid JSON body" }, { status: 400 });
 
-    console.info(`/api/assets/${id} DELETE asset:`, { id, provider: asset.provider, storageKey: asset.storageKey });
+    const { filename, folder, alt, meta } = body;
+    const current = await prisma.asset.findUnique({ where: { id } });
+    if (!current) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-    // Collect static dependents before deletion
-    const staticUsage = (await prisma.mediaUsage.findMany({
-      where: { assetId: id },
-      select: { pageSlug: true },
-    })) as { pageSlug: string }[];
+    const data: any = {};
+    if (typeof filename === "string" && filename.trim()) data.filename = filename.trim();
+    if (typeof alt !== "undefined") data.alt = alt;
+    if (meta && typeof meta === "object") data.meta = { ...(current.meta as object ?? {}), ...meta };
 
-    // Attempt to delete from R2 if provider is r2
-    if (asset.provider === "r2" && asset.storageKey) {
-      try {
-        const { S3Client, DeleteObjectCommand } = await import("@aws-sdk/client-s3");
-
-        const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-        const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-        const accountId = process.env.R2_ACCOUNT_ID;
-        const bucket = process.env.R2_BUCKET_NAME;
-        const endpoint = accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined;
-
-        if (accessKeyId && secretAccessKey && accountId && bucket) {
-          const client = new S3Client({ region: "auto", endpoint, credentials: { accessKeyId, secretAccessKey } });
-          const cmd = new DeleteObjectCommand({ Bucket: bucket, Key: asset.storageKey });
-          await client.send(cmd as any);
-          console.info('Deleted object from R2', asset.storageKey);
-        } else {
-          console.warn('R2 delete skipped - missing R2 credentials or config', { accessKeyId: !!accessKeyId, secretAccessKey: !!secretAccessKey, accountId: !!accountId, bucket: !!bucket });
-        }
-      } catch (err) {
-        console.warn("failed to delete from r2", err);
+    const folderChanging = typeof folder !== "undefined" && folder !== current.folder;
+    if (folderChanging && folder) {
+      const target = await prisma.folder.findUnique({ where: { slug: folder }, select: { id: true } });
+      if (!target) {
+        return NextResponse.json({ error: "UNKNOWN_FOLDER", message: `No folder with slug "${folder}".` }, { status: 400 });
       }
     }
 
-    // Delete MediaUsage rows then the asset
-    await prisma.$transaction([
-      prisma.mediaUsage.deleteMany({ where: { assetId: id } }),
-      prisma.asset.delete({ where: { id } }),
-    ]);
-
-    // Resolve dynamic pages and merge with static set for invalidation
-    const dynamicSlugs = await resolveDynamicAffectedPages();
-    const allSlugs = new Set([
-      ...staticUsage.map((u) => u.pageSlug),
-      ...dynamicSlugs,
-    ]);
-    for (const slug of allSlugs) {
-      revalidateTag(`page:${slug}`, {});
-      revalidatePath(`/${slug}`);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error(`/api/assets/[id] DELETE error:`, err);
-    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: NextRequest, context: any) {
-  try {
-    // unwrap params if framework provides a promise
-    let p: any = context?.params as any;
-    if (p && typeof p.then === "function") p = await p;
-    const id = p?.id;
-
-    const body = await request.json().catch((e) => {
-      console.error("/api/assets/[id] invalid JSON body", e);
-      return null;
-    });
-
-    console.info(`/api/assets/${id} PATCH body:`, body);
-
-    if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
-
-    const { filename, folder, alt } = body || {};
-    const data: any = {};
-    if (filename) data.filename = filename;
-    if (typeof alt !== "undefined") data.alt = alt;
-
     let updated: any;
     if (typeof folder !== "undefined") {
-      const current = await prisma.asset.findUnique({ where: { id }, select: { folder: true } });
-      const folderChanging = current?.folder !== folder;
-
       if (folderChanging) {
         if (folder) {
-          updated = await prisma.$transaction(async (tx) => {
+          updated = await prisma.$transaction(async (tx: any) => {
             const agg = await tx.asset.aggregate({
               where: { folder, NOT: { id } },
               _max: { orderIndex: true },
@@ -107,6 +59,7 @@ export async function PATCH(request: NextRequest, context: any) {
             return tx.asset.update({ where: { id }, data: { ...data, folder, orderIndex: nextIndex } });
           });
         } else {
+          // Removing a folder assignment (legacy files only — new uploads always have one).
           updated = await prisma.asset.update({ where: { id }, data: { ...data, folder: null, orderIndex: null } });
         }
       } else {
@@ -116,19 +69,53 @@ export async function PATCH(request: NextRequest, context: any) {
       updated = await prisma.asset.update({ where: { id }, data });
     }
 
-    // Folder changes affect dynamic gallery queries — revalidate those pages
-    if (typeof folder !== "undefined") {
-      const dynamicSlugs = await resolveDynamicAffectedPages();
-      for (const slug of dynamicSlugs) {
-        revalidateTag(`page:${slug}`, {});
-        revalidatePath(`/${slug}`);
-      }
-    }
+    await revalidateFor(
+      { kind: "asset:updated", assetId: id, folderChanged: folderChanging },
+      `asset:update:${id}${folderChanging ? ":moved" : ""}`,
+    );
 
-    return NextResponse.json(updated);
+    const usage = await usageForAssets([id]);
+    return NextResponse.json({ ...updated, usedOn: usage[id] ?? [] });
   } catch (err: any) {
-    console.error(`/api/assets/[id] PATCH error:`, err);
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
   }
 }
 
+/**
+ * Delete an asset: R2 object, MediaUsage rows and the asset row.
+ * Returns `usedOn` so callers can report (or warn about) static references — deletion is not
+ * blocked, only reported; the admin UI asks first.
+ */
+export async function DELETE(request: NextRequest, context: any) {
+  try {
+    let params: any = context?.params as any;
+    if (params && typeof params.then === "function") params = await params;
+    const id = params?.id as string | undefined;
+    if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
+
+    const asset = await prisma.asset.findUnique({ where: { id } });
+    if (!asset) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+    const usage = await usageForAssets([id]);
+    const usedOn = usage[id] ?? [];
+
+    const r2 = asset.provider === "r2" && asset.storageKey
+      ? await deleteR2Objects([asset.storageKey])
+      : { deleted: 0, failed: [] as string[] };
+
+    await prisma.$transaction([
+      prisma.mediaUsage.deleteMany({ where: { assetId: id } }),
+      prisma.asset.delete({ where: { id } }),
+    ]);
+
+    await revalidateFor({ kind: "asset:deleted", pageSlugs: usedOn }, `asset:delete:${id}`);
+
+    return NextResponse.json({
+      success: true,
+      usedOn,
+      r2: { deleted: r2.deleted, failed: r2.failed.length },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
+  }
+}

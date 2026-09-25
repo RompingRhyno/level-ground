@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma } from "./prisma";
+import { pickCover } from "./folders";
 
 export type TagRecord = {
   id: number;
@@ -32,8 +33,8 @@ export function getTagBySlug(slug: string): Promise<TagRecord | null> {
 }
 
 /**
- * Returns a map of tag slug → first asset publicUrl for each tag,
- * by finding folders tagged with each slug and taking their first image.
+ * Returns a map of tag slug → cover URL for each tag, by finding folders tagged with each slug
+ * and taking the first usable cover (image, else a video's captured poster frame).
  */
 export async function getFirstAssetUrlsByTagSlugs(
   slugs: string[]
@@ -57,25 +58,28 @@ export async function getFirstAssetUrlsByTagSlugs(
 
   const allFolderSlugs = [...new Set(folders.map((f) => f.slug))];
   const assets = await prisma.asset.findMany({
-    where: { folder: { in: allFolderSlugs }, publicUrl: { not: null } },
+    where: { folder: { in: allFolderSlugs } },
     orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-    select: { folder: true, publicUrl: true, mime: true },
+    select: { folder: true, publicUrl: true, mime: true, meta: true },
   });
 
-  const folderFirstImage: Record<string, string> = {};
+  const assetsByFolder: Record<string, typeof assets> = {};
   for (const a of assets) {
-    if (!a.folder || folderFirstImage[a.folder] || !a.publicUrl) continue;
-    if (a.mime && !a.mime.startsWith("image/")) continue;
-    folderFirstImage[a.folder] = a.publicUrl;
+    if (!a.folder) continue;
+    (assetsByFolder[a.folder] ??= []).push(a);
+  }
+
+  const folderCover: Record<string, string> = {};
+  for (const [slug, list] of Object.entries(assetsByFolder)) {
+    const cover = pickCover(list);
+    if (cover) folderCover[slug] = cover;
   }
 
   const result: Record<string, string> = {};
   for (const [tag, fSlugs] of Object.entries(tagToFolders)) {
     for (const fSlug of fSlugs) {
-      if (folderFirstImage[fSlug]) { result[tag] = folderFirstImage[fSlug]; break; }
+      if (folderCover[fSlug]) { result[tag] = folderCover[fSlug]; break; }
     }
   }
   return result;
 }
-
-

@@ -1,4 +1,4 @@
-import { getFolders, getFirstAssetUrlsByFolderSlugs, getTagsByFolderSlugs } from "@/lib/folders";
+import { getVisibleFolders, getFolderCovers, getTagsByFolderSlugs } from "@/lib/folders";
 import { getTags, getFirstAssetUrlsByTagSlugs } from "@/lib/tags";
 import { getPrimaryCollectionRouteBase } from "@/lib/pages";
 import CollectionIndexPresentation from "./CollectionIndexPresentation";
@@ -24,7 +24,8 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
   let allTagsForFilter: { slug: string; name: string }[] = [];
 
   if (source === "folders") {
-    const folders = await getFolders();
+    // Manual order from the media admin (Folder.order); hidden folders are excluded.
+    const folders = await getVisibleFolders();
 
     let sorted = [...folders];
     if (sortMode === "custom" && entityOrder?.length) {
@@ -44,13 +45,13 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
           new Date(a.createdAt as any).getTime() - new Date(b.createdAt as any).getTime()
       );
     }
-    // alphabetical (default): getFolders() returns name ASC
+    // default: keep the manual order returned by getVisibleFolders()
 
     items = sorted.slice(0, maxItems || sorted.length).map((f) => ({ slug: f.slug, name: f.name }));
     const slugs = items.map((i) => i.slug);
     const allSlugs = sorted.map((f) => f.slug);
     [firstAssets, folderTags] = await Promise.all([
-      getFirstAssetUrlsByFolderSlugs(slugs),
+      getFolderCovers(slugs),
       getTagsByFolderSlugs(allSlugs),
     ]);
     const allTags = await getTags();
