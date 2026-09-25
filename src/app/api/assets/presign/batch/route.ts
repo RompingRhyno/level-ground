@@ -1,57 +1,69 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { r2Client, r2PublicUrlFor } from "@/lib/r2";
+import { ALLOWED_UPLOAD_MIME_TYPES, isAllowedUploadMime, isClientConvertedMime, storageKeyFor } from "@/lib/mime";
 
+/**
+ * Batch presign for admin uploads. One request per upload batch; each file gets a
+ * `media/<folderSlug>/<timestamp>-<filename>` key.
+ *
+ * The folder is required: every asset in the library belongs to a project folder.
+ */
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { files, folder = "" } = body;
+  const body = await request.json().catch(() => null);
+  const { files, folder } = (body ?? {}) as { files?: any[]; folder?: string };
 
   if (!Array.isArray(files) || files.length === 0) {
     return NextResponse.json({ error: "missing files array" }, { status: 400 });
   }
 
-  const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  const folderSlug = typeof folder === "string" ? folder.trim() : "";
+  if (!folderSlug) {
+    return NextResponse.json({ error: "FOLDER_REQUIRED", message: "Choose a folder before uploading." }, { status: 400 });
+  }
 
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-  const accountId = process.env.R2_ACCOUNT_ID;
-  const bucket = process.env.R2_BUCKET_NAME;
-  const endpoint = accountId
-    ? `https://${accountId}.r2.cloudflarestorage.com`
-    : undefined;
+  const folderRow = await prisma.folder.findUnique({ where: { slug: folderSlug }, select: { id: true } });
+  if (!folderRow) {
+    return NextResponse.json({ error: "UNKNOWN_FOLDER", message: `No folder with slug "${folderSlug}".` }, { status: 400 });
+  }
 
-  if (!accessKeyId || !secretAccessKey || !accountId || !bucket) {
+  const target = r2Client();
+  if (!target) {
     return NextResponse.json({ error: "R2 credentials not configured" }, { status: 500 });
   }
 
-  const s3 = new S3Client({
-    region: "auto",
-    endpoint,
-    credentials: { accessKeyId, secretAccessKey },
-    forcePathStyle: false,
-  });
+  const results: Array<{ filename: string; key: string; url: string; publicUrl: string | null }> = [];
 
-  const base = process.env.R2_BASE_URL;
-  if (!base) {
-    return NextResponse.json({ error: "R2_BASE_URL not configured" }, { status: 500 });
-  }
-
-  const results: Array<{ filename: string; key: string; url: string; publicUrl: string }> = [];
-
-  for (const f of files) {
-    const { filename, contentType } = f as { filename: string; contentType?: string };
+  for (const file of files) {
+    const filename = typeof file?.filename === "string" ? file.filename : "";
+    const contentType = typeof file?.contentType === "string" ? file.contentType : "";
     if (!filename) continue;
-    const key = `${folder ? folder.replace(/\/$/, "") + "/" : ""}${Date.now()}-${filename}`;
 
+    if (isClientConvertedMime(contentType)) {
+      return NextResponse.json(
+        { error: "CONVERT_IN_BROWSER", message: `${filename}: HEIC/HEIF must be converted to JPEG before upload.` },
+        { status: 400 },
+      );
+    }
+    if (contentType && !isAllowedUploadMime(contentType)) {
+      return NextResponse.json(
+        { error: "UNSUPPORTED_MEDIA_TYPE", message: `${filename}: ${contentType || "unknown type"} is not supported. Allowed: ${ALLOWED_UPLOAD_MIME_TYPES.join(", ")}` },
+        { status: 415 },
+      );
+    }
+
+    const key = storageKeyFor(folderSlug, filename);
     const cmd = new PutObjectCommand({
-      Bucket: bucket,
+      Bucket: target.bucket,
       Key: key,
       ContentType: contentType || "application/octet-stream",
     });
+    const url = await getSignedUrl(target.client as any, cmd as any, { expiresIn: 3600 });
 
-    const uploadUrl = await getSignedUrl(s3 as any, cmd as any, { expiresIn: 3600 });
-
-    results.push({ filename, key, url: uploadUrl, publicUrl: `${base.replace(/\/$/, "")}/${key}` });
+    results.push({ filename, key, url, publicUrl: r2PublicUrlFor(key) });
   }
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ folder: folderSlug, results });
 }

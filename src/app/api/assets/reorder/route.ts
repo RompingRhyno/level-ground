@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { revalidateFor } from "@/lib/revalidate";
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
         });
       }
     });
+
+    await revalidateFor({ kind: "asset:reordered", folder: null }, `asset:reorder:${orderedIds.length}`);
 
     return NextResponse.json({ ok: true });
   } catch (err: any) {

@@ -132,7 +132,7 @@ export async function getAllCollectionRoutes(): Promise<{ path: [string, string]
         if (source === "folders") {
           const folders = await prisma.folder.findMany({
             select: { slug: true },
-            where: { slug: { not: "" } },
+            where: { slug: { not: "" }, hidden: false },
           });
           for (const f of folders) {
             routes.push({ path: [routeBase, f.slug] });
