@@ -15,6 +15,8 @@ const FolderIcon = () => (
  * Project folder card — the /projects listing card treatment (bordered card, 16:9 cover,
  * label bar that inverts on hover) plus admin affordances: asset count, hidden badge,
  * drop-to-upload, kebab actions and a reorder drag handle.
+ *
+ * The whole card opens the folder; nested controls stop propagation so they act locally.
  */
 export default function FolderCard({
   folder,
@@ -55,6 +57,11 @@ export default function FolderCard({
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  function open() {
+    if (editing) return;
+    onOpen();
+  }
+
   async function save() {
     const next = name.trim();
     if (!next || next === folder.name) {
@@ -81,7 +88,18 @@ export default function FolderCard({
       }}
       onDragEnd={onReorderDragEnd}
       data-folder-slug={folder.slug}
-      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow ${
+      onClick={open}
+      onKeyDown={(event) => {
+        if (editing) return;
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          open();
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open folder ${folder.name}`}
+      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-(--btn-select) ${
         dropTarget ? "ring-2 ring-(--btn-select)" : "border-(--color-border) hover:shadow-md"
       } ${dragging ? "opacity-50" : ""} ${fileDragOver ? "ring-2 ring-(--btn-positive-bg)" : ""}`}
       onDragEnter={(event) => {
@@ -102,7 +120,7 @@ export default function FolderCard({
         onDropFiles(Array.from(event.dataTransfer.files));
       }}
     >
-      <div className="relative aspect-video w-full cursor-pointer" onClick={() => !editing && onOpen()}>
+      <div className="relative aspect-video w-full">
         {folder.coverUrl ? (
           <Image
             src={folder.coverUrl}
@@ -118,7 +136,7 @@ export default function FolderCard({
         )}
 
         {/* Controls / status */}
-        <div className="absolute inset-0 flex flex-col justify-between p-2" onClick={(event) => event.stopPropagation()}>
+        <div className="absolute inset-0 flex flex-col justify-between p-2">
           <div className="flex items-start justify-between gap-1">
             <span className="inline-flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[11px] text-white">
               <FolderIcon />
@@ -146,7 +164,11 @@ export default function FolderCard({
             <span className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
               <button
                 type="button"
-                onClick={onAddFiles}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onAddFiles();
+                }}
                 className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/75"
               >
                 ＋ Add files
@@ -154,7 +176,6 @@ export default function FolderCard({
               <Menu
                 buttonClassName="rounded bg-black/60 px-1.5 py-1 text-white hover:bg-black/75"
                 items={[
-                  { label: "Open folder", onSelect: onOpen },
                   {
                     label: "Rename",
                     onSelect: () => {
@@ -162,7 +183,10 @@ export default function FolderCard({
                       setEditing(true);
                     },
                   },
-                  { label: folder.hidden ? "Show on /projects" : "Hide from /projects", onSelect: () => void onToggleHidden() },
+                  {
+                    label: folder.hidden ? "Show on /projects" : "Hide from /projects",
+                    onSelect: () => void onToggleHidden(),
+                  },
                   { label: "Delete folder…", danger: true, onSelect: onDelete },
                 ]}
               />
@@ -171,17 +195,16 @@ export default function FolderCard({
         </div>
       </div>
 
-      <div
-        className="px-4 py-3 bg-white transition-colors duration-200 group-hover:bg-(--color-brand-dark)"
-        onClick={() => !editing && onOpen()}
-      >
+      <div className="px-4 py-3 bg-white transition-colors duration-200 group-hover:bg-(--color-brand-dark)">
         {editing ? (
-          <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-center gap-2">
             <input
               ref={inputRef}
               value={name}
               onChange={(event) => setName(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
               onKeyDown={(event) => {
+                event.stopPropagation();
                 if (event.key === "Enter") void save();
                 if (event.key === "Escape") setEditing(false);
               }}
@@ -190,19 +213,32 @@ export default function FolderCard({
             />
             <button
               type="button"
-              onClick={save}
+              onClick={(event) => {
+                event.stopPropagation();
+                void save();
+              }}
               disabled={saving}
               className={`rounded px-2 py-1 text-xs text-white ${saving ? "bg-gray-500" : "btn-positive"}`}
             >
               {saving ? "…" : "Save"}
             </button>
-            <button type="button" onClick={() => setEditing(false)} className="rounded px-2 py-1 text-xs admin-btn">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setEditing(false);
+              }}
+              className="rounded px-2 py-1 text-xs admin-btn"
+            >
               Cancel
             </button>
-            <span className="text-[11px] text-gray-500 hidden sm:block">Renaming updates the project URL</span>
+            <span className="hidden text-[11px] text-gray-500 sm:block">Renaming updates the project URL</span>
           </div>
         ) : (
-          <h3 className="text-lg font-medium truncate transition-colors duration-200 group-hover:text-white" title={folder.name}>
+          <h3
+            className="truncate text-lg font-medium transition-colors duration-200 group-hover:text-white"
+            title={folder.name}
+          >
             {folder.name}
           </h3>
         )}
