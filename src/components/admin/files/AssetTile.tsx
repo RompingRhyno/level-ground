@@ -105,23 +105,6 @@ export default function AssetTile({
 
         {selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-(--btn-select)" />}
 
-        {/* Selection checkbox */}
-        <label
-          className={`absolute left-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded bg-white/90 shadow ${
-            selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"
-          }`}
-          onClick={(event) => event.stopPropagation()}
-          title="Select"
-        >
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelect}
-            className="h-4 w-4 accent-(--btn-select)"
-            aria-label={`Select ${asset.filename ?? "file"}`}
-          />
-        </label>
-
         {/* Actions */}
         <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
           <Menu
@@ -145,15 +128,32 @@ export default function AssetTile({
         )}
       </div>
 
-      <div className="px-3 py-2">
-        <div className="text-sm font-medium truncate text-(--color-brand-dark)" title={asset.filename ?? ""}>
-          {filenameStem(asset) || asset.filename}
-          <span className="text-gray-400">{filenameExt(asset)}</span>
-        </div>
-        <div className="text-[11px] text-gray-500">
-          {formatBytes(asset.size)}
-          {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
-          {video ? " · video" : ""}
+      {/* Footer: selection checkbox sits beside the name rather than over the thumbnail,
+          where it would compete with "click to preview". */}
+      <div className="flex items-start gap-2 px-3 py-2">
+        <label
+          className="mt-0.5 flex cursor-pointer items-center"
+          onClick={(event) => event.stopPropagation()}
+          title={selected ? "Deselect" : "Select"}
+        >
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onToggleSelect}
+            className="h-4 w-4 accent-(--btn-select)"
+            aria-label={`Select ${asset.filename ?? "file"}`}
+          />
+        </label>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium truncate text-(--color-brand-dark)" title={asset.filename ?? ""}>
+            {filenameStem(asset) || asset.filename}
+            <span className="text-gray-400">{filenameExt(asset)}</span>
+          </div>
+          <div className="text-[11px] text-gray-500">
+            {formatBytes(asset.size)}
+            {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
+            {video ? " · video" : ""}
+          </div>
         </div>
       </div>
     </div>
