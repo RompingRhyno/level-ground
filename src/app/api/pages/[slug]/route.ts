@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { revalidateTag, revalidatePath } from "next/cache";
 import { getPageBySlug, upsertPage, ensureCollectionTemplates } from "@/lib/pages";
-import { reconcileMediaUsage } from "@/lib/gallery-utils";
+import { reconcileMediaUsage } from "@/lib/media-refs";
+import { applyRevalidationPlan, pathForSlug, revalidateFor } from "@/lib/revalidate";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -25,22 +25,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
     await reconcileMediaUsage(saved.slug, saved.sections);
     const newTemplates = await ensureCollectionTemplates(saved.sections);
     for (const s of newTemplates) {
-      revalidateTag(`page:${s}`, {});
-      revalidatePath(`/${s}`);
+      applyRevalidationPlan({ tags: [`page:${s}`], paths: [pathForSlug(s)] }, `template:${s}`);
     }
 
-    // Revalidate old slug if it changed
+    // Page save invalidates the page itself, the nav, the collection-page set, the home route.
+    await revalidateFor({ kind: "page:saved", slug: saved.slug });
+
+    // Revalidate the previous slug's route if it changed
     if (slug !== saved.slug) {
-      revalidateTag(`page:${slug}`, {});
-      revalidatePath(`/${slug}`);
-    }
-    revalidateTag(`page:${saved.slug}`, {});
-    revalidatePath(`/${saved.slug}`);
-
-    // Label or slug changes affect nav
-    if (slug !== saved.slug || body.label !== undefined) {
-      revalidateTag("global:nav", {});
-      revalidatePath("/");
+      applyRevalidationPlan(
+        { tags: [`page:${slug}`], paths: [pathForSlug(slug)] },
+        `page:renamed:${slug}->${saved.slug}`,
+      );
     }
 
     return NextResponse.json(saved);
@@ -56,7 +52,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-      const { slug } = await params;
+    const { slug } = await params;
 
     if (slug === "home") {
       return NextResponse.json({ error: "cannot delete home page" }, { status: 400 });
@@ -67,15 +63,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       prisma.page.delete({ where: { slug } }),
     ]);
 
-    revalidateTag(`page:${slug}`, {});
-    revalidateTag("global:nav", {});
-
-    revalidatePath(`/${slug}`);
-    revalidatePath("/");
+    await revalidateFor({ kind: "page:deleted", slug });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
   }
 }
-

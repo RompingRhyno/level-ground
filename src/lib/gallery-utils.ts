@@ -43,25 +43,3 @@ export async function resolveDynamicAffectedPages(): Promise<string[]> {
     .map((p) => p.slug);
 }
 
-/**
- * Fully rebuild MediaUsage for a page after a create or update.
- * Deletes all existing rows for the page, then reinserts based on
- * current static gallery assetIds. No incremental append logic.
- *
- * MUST only record static gallery dependencies — never dynamic filters.
- */
-export async function reconcileMediaUsage(
-  pageSlug: string,
-  sections: PageSection[]
-): Promise<void> {
-  const assetIds = extractStaticAssetIds(sections);
-  await prisma.$transaction(async (tx: any) => {
-    await tx.mediaUsage.deleteMany({ where: { pageSlug } });
-    if (assetIds.length > 0) {
-      await tx.mediaUsage.createMany({
-        data: assetIds.map((assetId) => ({ assetId, pageSlug })),
-        skipDuplicates: true,
-      });
-    }
-  });
-}
