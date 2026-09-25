@@ -143,7 +143,7 @@ export default function FolderCard({
             ) : (
               <span />
             )}
-            <span className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <span className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
               <button
                 type="button"
                 onClick={onAddFiles}

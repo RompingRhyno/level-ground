@@ -118,7 +118,7 @@ export default function AssetTile({
         </label>
 
         {/* Actions */}
-        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
           <Menu
             buttonClassName="rounded bg-white/90 p-1 shadow hover:bg-white"
             items={[
