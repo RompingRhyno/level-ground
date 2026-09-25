@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { revalidateTag, revalidatePath } from "next/cache";
 import { getPages, upsertPage, reorderPages, ensureCollectionTemplates } from "@/lib/pages";
-import { reconcileMediaUsage } from "@/lib/gallery-utils";
+import { reconcileMediaUsage } from "@/lib/media-refs";
+import { revalidateFor } from "@/lib/revalidate";
 
 export async function GET() {
   const pages = await getPages();
@@ -23,11 +24,9 @@ export async function POST(request: Request) {
       revalidateTag(`page:${s}`, {});
       revalidatePath(`/${s}`);
     }
-    revalidateTag(`page:${saved.slug}`, {});
-    revalidateTag("global:nav", {});
 
-    revalidatePath(`/${saved.slug}`);
-    revalidatePath("/");
+    // Page save invalidates the page itself, the nav, the collection-page set, the home route.
+    await revalidateFor({ kind: "page:saved", slug: saved.slug });
 
     return NextResponse.json(saved);
   } catch (err: any) {
@@ -43,10 +42,10 @@ export async function PATCH(request: Request) {
     }
     await reorderPages(body.slugs as string[]);
     revalidateTag("global:nav", {});
+    revalidateTag("global:pages", {});
     revalidatePath("/");
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
   }
 }
-
