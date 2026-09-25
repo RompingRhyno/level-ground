@@ -1,8 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
+import { revalidateFor } from "@/lib/revalidate";
 
 const TAG_NAME_MAX_LENGTH = 100;
+
+/**
+ * Rename a tag or edit its description.
+ *
+ * Deliberately name-only: the tag slug is the public query key (`/projects?tag=<slug>`), so it
+ * stays stable. Folder tag lists and page JSON keep referencing the same slug.
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = Number(searchParams.get("id"));
+    if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
+
+    const body = await request.json().catch(() => null);
+    const { name, description } = (body ?? {}) as { name?: string; description?: string | null };
+
+    const existing = await prisma.tag.findUnique({ where: { id } });
+    if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+    const trimmed = typeof name === "string" ? name.trim() : undefined;
+    if (trimmed !== undefined) {
+      if (!trimmed) return NextResponse.json({ error: "missing name" }, { status: 400 });
+      if (trimmed.length > TAG_NAME_MAX_LENGTH) {
+        return NextResponse.json({ error: "name too long" }, { status: 400 });
+      }
+    }
+
+    const updated = await prisma.tag.update({
+      where: { id },
+      data: {
+        ...(trimmed !== undefined ? { name: trimmed } : {}),
+        ...(typeof description !== "undefined" ? { description } : {}),
+      },
+    });
+
+    revalidateTag("tags", {});
+    // Tag names are rendered on folder cards and project pages.
+    await revalidateFor({ kind: "tag:changed" }, `tag:update:${updated.slug}`);
+
+    return NextResponse.json(updated);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || String(err) }, { status: 500 });
+  }
+}
+
 
 export async function GET() {
   const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });

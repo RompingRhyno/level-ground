@@ -1,20 +1,24 @@
-import AdminFilesPageWrapper from "@/components/admin/AdminFilesPageWrapper";
+import AdminFilesClient from "@/components/admin/files/AdminFilesClient";
+import { getFolderCards } from "@/lib/folders";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminFilesPage() {
+/**
+ * Media library — one card per project folder. Folders can be reordered by drag and dropped on
+ * to upload straight into them; every file belongs to a folder, so there is no loose-file view.
+ */
+export default async function AdminFilesPage() {
+  const folders = await getFolderCards();
 
-  // Render client components that will fetch data themselves
   return (
     <div>
-      <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '2rem' }}>
-        <div className="mx-auto px-6">
-          <h1 className="text-2xl font-semibold">Files</h1>
-          <p className="text-sm text-gray-600">Upload and organise images and files used across the site.</p>
-        </div>
+      <div className="mx-auto max-w-7xl px-1 pb-6">
+        <h1 className="text-2xl font-semibold">Media</h1>
+        <p className="text-sm text-gray-600">
+          Project folders hold the photos and videos used across the site. Create a folder per job.
+        </p>
       </div>
-
-      <AdminFilesPageWrapper />
+      <AdminFilesClient initialFolders={folders} />
     </div>
   );
 }
