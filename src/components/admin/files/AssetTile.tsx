@@ -79,7 +79,11 @@ export default function AssetTile({
       onDragEnd={onReorderDragEnd}
       data-asset-id={asset.id}
       className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow ${
-        dropTarget ? "ring-2 ring-(--btn-select)" : "border-(--color-border) hover:shadow-md"
+        selected
+          ? "border-(--media-select-color) ring-2 ring-(--media-select-color)"
+          : dropTarget
+            ? "ring-2 ring-(--btn-select)"
+            : "border-(--color-border) hover:shadow-md"
       } ${dragging ? "opacity-50" : ""}`}
     >
       {/* Thumbnail — opens the preview */}
@@ -112,8 +116,6 @@ export default function AssetTile({
         )}
 
         {video && <PlayBadge />}
-
-        {selected && <div className="pointer-events-none absolute inset-0 ring-4 ring-inset ring-(--btn-select)" />}
 
         {/* Actions */}
         <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">

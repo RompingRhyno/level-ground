@@ -28,6 +28,9 @@
   --btn-select: #304C50;
   --btn-select-text: #ffffff;
 
+  /* Media admin: whole-card outline for selected files */
+  --media-select-color: #f5c542;
+
   /* Tag badge colors (count background + text) */
   --tag-badge-bg: lab(90% -0.52 -4.6); /* emerald-600 */
   --tag-badge-text: #393d47;
