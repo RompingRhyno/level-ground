@@ -71,7 +71,17 @@ export default function AssetTile({
       onDrop={onReorderDrop}
       onDragEnd={onReorderDragEnd}
       data-asset-id={asset.id}
-      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow ${
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${asset.filename ?? "file"}`}
+      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-(--btn-select) ${
         dropTarget ? "ring-2 ring-(--btn-select)" : "border-(--color-border) hover:shadow-md"
       } ${dragging ? "opacity-50" : ""}`}
     >
@@ -83,17 +93,12 @@ export default function AssetTile({
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
-            onClick={onOpen}
           />
         ) : (
-          <button
-            type="button"
-            onClick={onOpen}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-500"
-          >
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-500">
             <DocumentIcon />
             <span className="text-[11px] uppercase tracking-wide">{(filenameExt(asset) || ".file").replace(".", "")}</span>
-          </button>
+          </div>
         )}
 
         {video && <PlayBadge />}
@@ -122,7 +127,6 @@ export default function AssetTile({
           <Menu
             buttonClassName="rounded bg-white/90 p-1 shadow hover:bg-white"
             items={[
-              { label: "View", onSelect: onOpen },
               { label: "Rename…", onSelect: onRename },
               { label: asset.alt ? "Edit alt text…" : "Set alt text…", onSelect: onSetAlt },
               { label: "Move to folder…", onSelect: onMove },
