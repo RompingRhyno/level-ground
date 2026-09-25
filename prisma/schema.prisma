@@ -147,10 +147,15 @@ model Folder {
   description String?
   parentId    Int?
   tags        String[] @default([])
+  /// Manual display order for the admin grid and /projects (lower first).
+  order       Int      @default(0)
+  /// When true the folder is excluded from /projects (index and detail route).
+  hidden      Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([slug])
+  @@index([order, hidden])
 }
 
 model Tag {
