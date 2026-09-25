@@ -24,8 +24,15 @@ function PlayBadge() {
 }
 
 /**
- * Asset tile. Videos show their captured poster (never a live <video> element — that would
- * fetch video headers for every tile) and are identified by a play badge.
+ * Asset tile.
+ *
+ * Click targets are deliberate:
+ *   - the thumbnail opens the lightbox
+ *   - the footer is a <label>, so clicking the file name (or the checkbox) toggles selection
+ *   - the kebab holds Rename / Alt text / Move / Delete
+ *
+ * Videos show their captured poster (never a live <video> element — that would fetch video
+ * headers for every tile) and are identified by a play badge.
  */
 export default function AssetTile({
   asset,
@@ -71,21 +78,24 @@ export default function AssetTile({
       onDrop={onReorderDrop}
       onDragEnd={onReorderDragEnd}
       data-asset-id={asset.id}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label={`Open ${asset.filename ?? "file"}`}
-      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-(--btn-select) ${
+      className={`group relative rounded-lg overflow-hidden border bg-white transition-shadow ${
         dropTarget ? "ring-2 ring-(--btn-select)" : "border-(--color-border) hover:shadow-md"
       } ${dragging ? "opacity-50" : ""}`}
     >
-      <div className="relative aspect-video w-full bg-(--color-bg-secondary)">
+      {/* Thumbnail — opens the preview */}
+      <div
+        onClick={onOpen}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpen();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Open ${asset.filename ?? "file"}`}
+        className="relative aspect-video w-full cursor-pointer bg-(--color-bg-secondary) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--btn-select)"
+      >
         {thumb ? (
           <Image
             src={thumb}
@@ -128,34 +138,30 @@ export default function AssetTile({
         )}
       </div>
 
-      {/* Footer: selection checkbox sits beside the name rather than over the thumbnail,
-          where it would compete with "click to preview". */}
-      <div className="flex items-start gap-2 px-3 py-2">
-        <label
-          className="mt-0.5 flex cursor-pointer items-center"
-          onClick={(event) => event.stopPropagation()}
-          title={selected ? "Deselect" : "Select"}
-        >
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelect}
-            className="h-4 w-4 accent-(--btn-select)"
-            aria-label={`Select ${asset.filename ?? "file"}`}
-          />
-        </label>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium truncate text-(--color-brand-dark)" title={asset.filename ?? ""}>
+      {/* Footer — a label, so the name, the metadata and the checkbox all toggle selection */}
+      <label
+        className="flex cursor-pointer items-start gap-2 px-3 py-2"
+        title={selected ? "Deselect" : "Select"}
+      >
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          className="mt-0.5 h-4 w-4 accent-(--btn-select)"
+          aria-label={`Select ${asset.filename ?? "file"}`}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-(--color-brand-dark)" title={asset.filename ?? ""}>
             {filenameStem(asset) || asset.filename}
             <span className="text-gray-400">{filenameExt(asset)}</span>
-          </div>
-          <div className="text-[11px] text-gray-500">
+          </span>
+          <span className="block text-[11px] text-gray-500">
             {formatBytes(asset.size)}
             {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
             {video ? " · video" : ""}
-          </div>
-        </div>
-      </div>
+          </span>
+        </span>
+      </label>
     </div>
   );
 }
