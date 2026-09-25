@@ -11,11 +11,8 @@
  * which protects any manual ordering done later in the admin UI.
  *
  * Usage:
- *   node scripts/backfill-folder-order.ts
- *   node scripts/backfill-folder-order.ts --force
- *
- * (Node runs TypeScript directly via native type stripping; the `.ts` extension in the import
- * below is required for ESM resolution.)
+ *   npx tsx scripts/backfill-folder-order.ts
+ *   npx tsx scripts/backfill-folder-order.ts --force
  */
 import { config } from 'dotenv'
 config({ path: '.env.local' })
