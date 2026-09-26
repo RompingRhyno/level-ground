@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "@/lib/auth-client";
 
 const BASE_NAV = [
   { label: "Pages", href: "/admin/pages" },
@@ -28,8 +27,11 @@ export default function AdminNav({ role }: AdminNavProps) {
   ];
 
   async function handleSignOut() {
-    await signOut();
+    // Custom route: it deletes the session row, then clears the cookie. better-auth's client version
+    // cleared only the cookie and left the row valid (see src/app/api/auth/sign-out/route.ts).
+    await fetch("/api/auth/sign-out", { method: "POST" });
     router.push("/admin/login");
+    router.refresh();
   }
 
   useEffect(() => {
