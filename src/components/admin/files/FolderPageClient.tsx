@@ -499,7 +499,7 @@ function FolderPageClientInner({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search files…"
-          className="rounded border px-3 py-1.5 text-sm w-48"
+          className="w-48 rounded border bg-white px-3 py-1.5 text-sm"
           aria-label="Search files"
         />
         <select
