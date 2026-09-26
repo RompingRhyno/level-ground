@@ -14,7 +14,7 @@
  *   node scripts/audit-media-refs.ts --json
  */
 import { config } from 'dotenv'
-config({ path: '.env.local' })
+config({ path: ['.env.local', '.env'] })
 
 async function headOk(url: string): Promise<number> {
   try {
