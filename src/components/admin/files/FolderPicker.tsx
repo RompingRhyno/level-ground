@@ -15,6 +15,8 @@ export default function FolderPicker({
   allowCreate = false,
   onCreate,
   emptyLabel = "No folders yet — create the first one.",
+  columnsClassName = "grid-cols-2 sm:grid-cols-3",
+  maxHeightClassName = "max-h-72 overflow-y-auto",
 }: {
   folders: FolderData[];
   value: string | null;
@@ -22,6 +24,10 @@ export default function FolderPicker({
   allowCreate?: boolean;
   onCreate?: (name: string, hidden: boolean) => Promise<FolderData | null>;
   emptyLabel?: string;
+  /** Tailwind grid-column classes for the card grid (defaults suit the upload modal). */
+  columnsClassName?: string;
+  /** Wrapper scroll cap. Pass "" when the surrounding dialog already scrolls. */
+  maxHeightClassName?: string;
 }) {
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
@@ -101,7 +107,7 @@ export default function FolderPicker({
       {filtered.length === 0 ? (
         <p className="text-sm text-gray-600">{folders.length === 0 ? emptyLabel : "No folders match that search."}</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-72 overflow-y-auto pr-1">
+        <div className={`grid gap-3 pr-1 ${columnsClassName} ${maxHeightClassName}`.trim()}>
           {filtered.map((folder) => {
             const selected = value === folder.slug;
             return (
@@ -116,7 +122,13 @@ export default function FolderPicker({
               >
                 <div className="relative aspect-video w-full bg-(--color-bg-secondary)">
                   {folder.coverUrl ? (
-                    <Image src={folder.coverUrl} alt="" fill sizes="200px" className="object-cover" />
+                    <Image
+                      src={folder.coverUrl}
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 240px"
+                      className="object-cover"
+                    />
                   ) : (
                     <span className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
                       {folder.assetCount === 0 ? "empty" : "no cover"}
