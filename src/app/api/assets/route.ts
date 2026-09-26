@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { isAllowedUploadMime, isClientConvertedMime } from "@/lib/mime";
 import { usageForAssets } from "@/lib/media-refs";
 import { revalidateFor } from "@/lib/revalidate";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
@@ -27,6 +28,9 @@ function clampInt(value: string | null, fallback: number, min: number, max: numb
  *   include=usage          attach `usedOn` (page slugs) per asset
  */
 export async function GET(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const url = new URL(request.url);
   const folder = url.searchParams.get("folder");
   const tag = url.searchParams.get("tag");
@@ -77,8 +81,13 @@ export async function GET(request: Request) {
     }
   })();
 
-  const args = { where, orderBy, take: limit, offset } as any;
-  const rows = await prisma.asset.findMany(args);
+  // Prisma's cursor pagination is `skip`, not `offset` (the public query param stays `offset`).
+  const rows = await prisma.asset.findMany({
+    where,
+    orderBy: orderBy as any,
+    take: limit,
+    skip: offset,
+  });
 
   if (!includeUsage) return NextResponse.json(rows);
 
@@ -88,6 +97,9 @@ export async function GET(request: Request) {
 
 /** Register an uploaded object as an asset. The folder is required. */
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const body = await request.json();
     const { key, filename, mime, size, folder, publicUrl, alt, width, height, meta } = body ?? {};
