@@ -709,6 +709,7 @@ function FolderPageClientInner({
         open={uploadOpen}
         folders={folders}
         initialFolder={folder.slug}
+        lockedFolder
         seedFiles={seedFiles}
         onClose={() => setUploadOpen(false)}
         onFolderCreated={(created) => setFolders((current) => [...current, created])}

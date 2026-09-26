@@ -39,6 +39,7 @@ export default function UploadModal({
   open,
   folders,
   initialFolder,
+  lockedFolder = false,
   seedFiles,
   onClose,
   onFolderCreated,
@@ -47,6 +48,11 @@ export default function UploadModal({
   open: boolean;
   folders: FolderData[];
   initialFolder?: string | null;
+  /**
+   * Opened from a folder page: the destination is fixed, so the folder picker (search + cards)
+   * is not rendered at all.
+   */
+  lockedFolder?: boolean;
   /** Files dropped onto a folder card, queued as soon as the modal opens. */
   seedFiles?: File[] | null;
   onClose: () => void;
@@ -296,13 +302,15 @@ export default function UploadModal({
             )}
           </div>
 
-          <FolderPicker
-            folders={folders}
-            value={folderSlug}
-            onChange={setFolderSlug}
-            allowCreate
-            onCreate={handleCreateFolder}
-          />
+          {!lockedFolder && (
+            <FolderPicker
+              folders={folders}
+              value={folderSlug}
+              onChange={setFolderSlug}
+              allowCreate
+              onCreate={handleCreateFolder}
+            />
+          )}
 
           <div
             onDragOver={(event) => {
