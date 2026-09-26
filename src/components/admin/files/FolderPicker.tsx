@@ -63,7 +63,7 @@ export default function FolderPicker({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search folders…"
-          className="flex-1 rounded border px-2 py-1.5 text-sm"
+          className="flex-1 rounded border bg-white px-2 py-1.5 text-sm"
         />
         {allowCreate && (
           <button

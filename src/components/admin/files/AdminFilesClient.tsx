@@ -255,7 +255,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search folders…"
-          className="rounded border px-3 py-1.5 text-sm w-56"
+          className="w-56 rounded border bg-white px-3 py-1.5 text-sm"
           aria-label="Search folders"
         />
         <button
@@ -323,7 +323,10 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
       ) : (
         <div className="space-y-8">
           {hidden.length > 0 && (
-            <section className="rounded-lg border border-(--color-border) bg-white/70 p-4">
+            <section
+              className="rounded-lg border border-(--color-border) p-4"
+              style={{ backgroundColor: "var(--color-bg-secondary)" }}
+            >
               <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <button
                   type="button"
