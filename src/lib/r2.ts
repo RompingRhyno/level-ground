@@ -2,10 +2,10 @@ import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 /** Cloudflare R2 client built from env, or null when credentials are missing. */
 export function r2Client(): { client: S3Client; bucket: string } | null {
-  const accessKeyId = process.env.CF_R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.CF_R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY;
-  const accountId = process.env.CF_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;
-  const bucket = process.env.CF_R2_BUCKET || process.env.R2_BUCKET_NAME;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const bucket = process.env.R2_BUCKET_NAME;
 
   if (!accessKeyId || !secretAccessKey || !accountId || !bucket) return null;
 
@@ -45,7 +45,7 @@ export async function deleteR2Objects(keys: string[]): Promise<DeleteObjectsResu
 
 /** Public URL for a storage key (used when recording variants/posters). */
 export function r2PublicUrlFor(key: string): string | null {
-  const base = process.env.R2_BASE_URL || process.env.CF_R2_PUBLIC_BASE_URL || process.env.R2_PUBLIC_BASE_URL;
+  const base = process.env.R2_BASE_URL;
   if (!base) return null;
   return `${base.replace(/\/$/, "")}/${key}`;
 }
