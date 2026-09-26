@@ -16,6 +16,8 @@ import { ToastProvider, useToast } from "./Toast";
  * "shown on /projects" and "hidden". Uploads always target a folder — either the button in the
  * toolbar or drag-and-drop onto a card.
  */
+const HIDDEN_SECTION_KEY = "level-ground.admin.hiddenFolders.v1";
+
 function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[] }) {
   const router = useRouter();
   const toast = useToast();
@@ -32,6 +34,18 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
   const [newName, setNewName] = useState("");
   const [hideNew, setHideNew] = useState(false);
   const [savingNew, setSavingNew] = useState(false);
+  const [hiddenOpen, setHiddenOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(HIDDEN_SECTION_KEY) !== "collapsed";
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(HIDDEN_SECTION_KEY, hiddenOpen ? "expanded" : "collapsed");
+    } catch {
+      // ignore unavailable storage
+    }
+  }, [hiddenOpen]);
 
   const reload = useCallback(async () => {
     try {
@@ -292,7 +306,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
 
       <p className="mb-4 text-sm text-gray-600">
         Drag cards to reorder how they appear on <Link href="/projects" className="underline">/projects</Link>. Drop image or
-        video files straight onto a folder to upload into it.
+        video files straight onto a folder to upload into it. Hidden folders keep their own order, above.
       </p>
 
       {filtered.length === 0 ? (
@@ -307,18 +321,37 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
           </p>
         </div>
       ) : (
-        <div className="space-y-10">
-          <section>{renderCards(visible)}</section>
-
+        <div className="space-y-8">
           {hidden.length > 0 && (
-            <section>
-              <div className="mb-4 border-t border-(--color-border) pt-6">
-                <h2 className="text-lg font-medium">Hidden from /projects ({hidden.length})</h2>
-                <p className="text-sm text-gray-600">Kept in the library, not listed on the public portfolio.</p>
+            <section className="rounded-lg border border-(--color-border) bg-white/70 p-4">
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <button
+                  type="button"
+                  onClick={() => setHiddenOpen((open) => !open)}
+                  aria-expanded={hiddenOpen}
+                  aria-controls="hidden-folders"
+                  className="flex items-center gap-2 text-lg font-medium"
+                >
+                  <span
+                    className={`text-xs transition-transform ${hiddenOpen ? "rotate-90" : ""}`}
+                    aria-hidden="true"
+                  >
+                    ▶
+                  </span>
+                  Hidden from /projects ({hidden.length})
+                </button>
+                <p className="text-sm text-gray-600">
+                  Kept in the library, not listed on the public portfolio.
+                </p>
               </div>
-              {renderCards(hidden)}
+              {hiddenOpen && <div id="hidden-folders">{renderCards(hidden)}</div>}
             </section>
           )}
+
+          <section>
+            <h2 className="mb-4 text-lg font-medium">Projects ({visible.length})</h2>
+            {renderCards(visible)}
+          </section>
         </div>
       )}
 
