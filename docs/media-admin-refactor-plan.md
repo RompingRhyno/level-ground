@@ -68,6 +68,29 @@ is deliberately still open.
   which wedged that process (it serves 500s). Restarting `npm run dev` clears it — the same code answers
   200 from `next start`.
 
+## Post-implementation fixes (from real use)
+
+1. **Card kebab menus were clipped** by the card's `overflow-hidden` → `Menu` now portals to
+   `document.body` with fixed positioning, flips near the viewport edge, and the trigger stays
+   visible while its menu is open.
+2. **Card click targets** split by intent: whole folder card opens the folder; on asset tiles the
+   thumbnail opens the lightbox and the footer (name, metadata, checkbox) toggles selection;
+   redundant "Open folder"/"View" entries left the kebab menus.
+3. **Selection outline** wraps the whole tile (`--media-select-color`, bright yellow) instead of an
+   inset ring on the thumbnail.
+4. **Videos had no thumbnail** (no poster for pre-existing uploads) → `scripts/backfill-posters.ts`
+   captures a frame with local ffmpeg, uploads it to R2 and records `poster` + dimensions; tiles
+   also fall back to a `<video preload="metadata">` frame at `#t=1` for anything without a poster.
+5. **`GET /api/assets` returned 500 for every request** — the Prisma args were cast to `any` to
+   silence a type error, hiding `offset` (Prisma needs `skip`). That broke the folder page's
+   refresh after a move: the file appeared to stay put and a "Could not load folder" toast fired.
+6. **The admin API was reachable without a session.** `proxy.ts` sat in the project root, but with
+   the app under `src/` Next only loads it from `src/` — so the proxy never ran. Moved to
+   `src/proxy.ts`. The proxy also only checks that a cookie is *present*, so every admin-facing
+   route now validates the session itself via `requireSession()` (`src/lib/api-auth.ts`):
+   unauthenticated and forged-cookie requests get 401, public contact endpoints stay open.
+   Requires a deploy for production.
+
 ## Still open (deferred by decision)
 
 1. **Player change**: `video` section to render `poster` + `preload="metadata"` and pick the 720p/1080p
