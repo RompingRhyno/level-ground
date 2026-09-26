@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { auth } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/auth";
 import {
   generateToken,
   isStrongPassword,
@@ -9,7 +9,7 @@ import {
   sendEmailChangeNotice,
 } from "@/lib/auth-utils";
 import { compare, hash } from "bcryptjs";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 interface PageProps {
@@ -50,8 +50,14 @@ export default async function SettingsPage({ searchParams }: PageProps) {
     const newHash = await hash(newPwd, 12);
     await prisma.user.update({ where: { id: user!.id }, data: { passwordHash: newHash } });
 
-    // Revoke all other sessions immediately
-    await auth.api.revokeOtherSessions({ headers: await headers() });
+    // Revoke every other session, keeping the one that made this change. Sessions here are rows in
+    // the `session` table (custom auth), so better-auth cannot see this cookie —
+    // `auth.api.revokeOtherSessions()` answers UNAUTHORIZED and used to throw out of this action
+    // *after* the password was written: no success redirect, no notice email, nothing revoked.
+    const currentToken = (await cookies()).get(SESSION_COOKIE)?.value;
+    await prisma.session.deleteMany({
+      where: { userId: user!.id, ...(currentToken ? { token: { not: currentToken } } : {}) },
+    });
 
     void sendPasswordChangedNotice(u.email);
     redirect("/admin/settings?pwdSuccess=1");
