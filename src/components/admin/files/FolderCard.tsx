@@ -225,7 +225,6 @@ export default function FolderCard({
             >
               Cancel
             </button>
-            <span className="hidden text-[11px] text-gray-500 sm:block">Renaming updates the project URL</span>
           </div>
         ) : (
           <h3
