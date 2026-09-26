@@ -54,3 +54,5 @@ temp/gallery-implementation-notes-2026-04-24.md
 workers/upload-worker/node_modules/
 workers/upload-worker/.wrangler/
 workers/upload-worker/.devvars
+# wrangler local secrets for `wrangler dev` — never commit (holds UPLOAD_TOKEN_SECRET)
+workers/upload-worker/.dev.vars
