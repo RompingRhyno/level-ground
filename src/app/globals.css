@@ -29,7 +29,7 @@
   --btn-select-text: #ffffff;
 
   /* Media admin: whole-card outline for selected files */
-  --media-select-color: #f5c542;
+  --media-select-color: #ffd400;
 
   /* Tag badge colors (count background + text) */
   --tag-badge-bg: lab(90% -0.52 -4.6); /* emerald-600 */
