@@ -162,30 +162,23 @@ export default function FolderCard({
               <span />
             )}
             <span className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onAddFiles();
-                }}
-                className="rounded bg-black/60 px-2 py-1 text-xs text-white hover:bg-black/75"
-              >
-                ＋ Add files
-              </button>
               <Menu
                 buttonClassName="rounded bg-black/60 px-1.5 py-1 text-white hover:bg-black/75"
                 items={[
+                  {
+                    label: "Add files…",
+                    onSelect: onAddFiles,
+                  },
+                  {
+                    label: folder.hidden ? "Show on /projects" : "Hide from /projects",
+                    onSelect: () => void onToggleHidden(),
+                  },
                   {
                     label: "Rename",
                     onSelect: () => {
                       setName(folder.name);
                       setEditing(true);
                     },
-                  },
-                  {
-                    label: folder.hidden ? "Show on /projects" : "Hide from /projects",
-                    onSelect: () => void onToggleHidden(),
                   },
                   { label: "Delete folder…", danger: true, onSelect: onDelete },
                 ]}

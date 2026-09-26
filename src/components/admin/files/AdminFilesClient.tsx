@@ -306,7 +306,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
 
       <p className="mb-4 text-sm text-gray-600">
         Drag cards to reorder how they appear on <Link href="/projects" className="underline">/projects</Link>. Drop image or
-        video files straight onto a folder to upload into it. Hidden folders keep their own order, above.
+        video files straight onto a folder to upload into it.
       </p>
 
       {filtered.length === 0 ? (
@@ -314,11 +314,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
           <p className="text-lg font-medium mb-1">
             {folders.length === 0 ? "No project folders yet" : "No folders match that search"}
           </p>
-          <p className="text-sm text-gray-600">
-            {folders.length === 0
-              ? "Create a folder for each job — every file you upload lives inside one."
-              : "Try a different name."}
-          </p>
+          {folders.length > 0 && <p className="text-sm text-gray-600">Try a different name.</p>}
         </div>
       ) : (
         <div className="space-y-8">
