@@ -3,13 +3,20 @@ import { revalidateTag, revalidatePath } from "next/cache";
 import { getPages, upsertPage, reorderPages, ensureCollectionTemplates } from "@/lib/pages";
 import { reconcileMediaUsage } from "@/lib/media-refs";
 import { revalidateFor } from "@/lib/revalidate";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 export async function GET() {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const pages = await getPages();
   return NextResponse.json(pages);
 }
 
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const body = await request.json();
 
@@ -35,6 +42,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const body = await request.json();
     if (!Array.isArray(body?.slugs)) {

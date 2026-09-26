@@ -3,9 +3,13 @@ import prisma from "@/lib/prisma";
 import { deleteR2Objects } from "@/lib/r2";
 import { usageForAssets } from "@/lib/media-refs";
 import { revalidateFor } from "@/lib/revalidate";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 /** assetId → page slugs that display it (used for delete warnings and card badges). */
 export async function GET(_request: NextRequest, context: any) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   let params: any = context?.params as any;
   if (params && typeof params.then === "function") params = await params;
   const id = params?.id as string | undefined;
@@ -20,6 +24,9 @@ export async function GET(_request: NextRequest, context: any) {
  * Moving assigns the next `orderIndex` in the target folder.
  */
 export async function PATCH(request: NextRequest, context: any) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     let params: any = context?.params as any;
     if (params && typeof params.then === "function") params = await params;
@@ -87,6 +94,9 @@ export async function PATCH(request: NextRequest, context: any) {
  * blocked, only reported; the admin UI asks first.
  */
 export async function DELETE(request: NextRequest, context: any) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     let params: any = context?.params as any;
     if (params && typeof params.then === "function") params = await params;

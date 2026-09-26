@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { revalidateFor } from "@/lib/revalidate";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const TAG_NAME_MAX_LENGTH = 100;
 
@@ -12,6 +13,9 @@ const TAG_NAME_MAX_LENGTH = 100;
  * stays stable. Folder tag lists and page JSON keep referencing the same slug.
  */
 export async function PATCH(request: NextRequest) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get("id"));
@@ -51,11 +55,17 @@ export async function PATCH(request: NextRequest) {
 
 
 export async function GET() {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });
   return NextResponse.json(tags);
 }
 
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const body = await request.json();
     const { name, description } = body;
@@ -91,6 +101,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get("id"));

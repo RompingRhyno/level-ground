@@ -4,6 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, r2PublicUrlFor } from "@/lib/r2";
 import { ALLOWED_UPLOAD_MIME_TYPES, isAllowedUploadMime, isClientConvertedMime, storageKeyFor } from "@/lib/mime";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 /**
  * Batch presign for admin uploads. One request per upload batch; each file gets a
@@ -12,6 +13,9 @@ import { ALLOWED_UPLOAD_MIME_TYPES, isAllowedUploadMime, isClientConvertedMime, 
  * The folder is required: every asset in the library belongs to a project folder.
  */
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const body = await request.json().catch(() => null);
   const { files, folder } = (body ?? {}) as { files?: any[]; folder?: string };
 

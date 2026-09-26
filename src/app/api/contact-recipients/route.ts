@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_MAX_LENGTH = 254;
 
 export async function GET() {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const recipients = await prisma.contactRecipient.findMany({
     orderBy: { createdAt: "asc" },
   });
@@ -12,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const body = await request.json();
   const { email, name } = body as { email?: unknown; name?: unknown };
 

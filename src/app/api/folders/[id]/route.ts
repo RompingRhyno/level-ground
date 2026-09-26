@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { resolveUniqueFolderSlug, rewriteFolderSlug, slugifyFolderName } from "@/lib/folders";
 import { revalidateFor } from "@/lib/revalidate";
 import { deleteR2Objects } from "@/lib/r2";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const FOLDER_NAME_MAX_LENGTH = 100;
 
@@ -20,6 +21,9 @@ async function resolveId(context: any): Promise<number> {
  *   - cached data/HTML for both the old and new URLs is invalidated
  */
 export async function PATCH(request: NextRequest, context: any) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const id = await resolveId(context);
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });
@@ -105,6 +109,9 @@ export async function PATCH(request: NextRequest, context: any) {
  * Asset rows) are removed first.
  */
 export async function DELETE(request: NextRequest, context: any) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const id = await resolveId(context);
     if (!id) return NextResponse.json({ error: "missing id" }, { status: 400 });

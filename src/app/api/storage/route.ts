@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 /** Cloudflare R2 free tier: 10 GB-month of standard storage. */
 const FREE_TIER_BYTES = 10 * 1024 * 1024 * 1024;
@@ -10,6 +11,9 @@ const FREE_TIER_BYTES = 10 * 1024 * 1024 * 1024;
  * include contact-form uploads, which live outside the asset library.
  */
 export async function GET() {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const [agg, count, byKind] = await Promise.all([
       prisma.asset.aggregate({ _sum: { size: true } }),
