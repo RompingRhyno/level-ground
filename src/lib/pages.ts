@@ -1,5 +1,6 @@
 import type { PageConfig } from "@/types/sections";
 import { unstable_cache } from "next/cache";
+import { CACHE_REVALIDATE_SECONDS } from "./cache";
 import { prisma } from "./prisma";
 
 /**
@@ -30,7 +31,7 @@ export function getNavPages(): Promise<Pick<PageConfig, "slug" | "label">[]> {
       return dbPages as Pick<PageConfig, "slug" | "label">[];
     },
     ["nav-pages"],
-    { tags: ["global:nav"] }
+    { tags: ["global:nav"], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
@@ -42,7 +43,7 @@ export function getPageBySlug(slug: string): Promise<PageConfig | null> {
       return mapDbPageToConfig(dbPage);
     },
     [`page-${slug}`],
-    { tags: [`page:${slug}`] }
+    { tags: [`page:${slug}`], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
@@ -96,7 +97,7 @@ export function getPrimaryCollectionRouteBase(): Promise<string | null> {
       return null;
     },
     ["primary-collection-route-base"],
-    { tags: ["global:pages"] }
+    { tags: ["global:pages"], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { CACHE_REVALIDATE_SECONDS } from "./cache";
 import { prisma } from "./prisma";
 
 export type FolderRecord = {
@@ -25,7 +26,7 @@ export function getFolders(): Promise<FolderRecord[]> {
       return prisma.folder.findMany({ orderBy: [{ order: "asc" }, { name: "asc" }] });
     },
     ["folders"],
-    { tags: ["folders"] }
+    { tags: ["folders"], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
@@ -39,7 +40,7 @@ export function getVisibleFolders(): Promise<FolderRecord[]> {
       });
     },
     ["visible-folders"],
-    { tags: ["folders"] }
+    { tags: ["folders"], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
@@ -49,7 +50,7 @@ export function getFolderBySlug(slug: string): Promise<FolderRecord | null> {
       return prisma.folder.findUnique({ where: { slug } });
     },
     [`folder-${slug}`],
-    { tags: [`folder:${slug}`] }
+    { tags: [`folder:${slug}`], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { CACHE_REVALIDATE_SECONDS } from "./cache";
 import { prisma } from "./prisma";
 import { pickCover } from "./folders";
 
@@ -17,7 +18,7 @@ export function getTags(): Promise<TagRecord[]> {
       return prisma.tag.findMany({ orderBy: { name: "asc" } });
     },
     ["tags"],
-    { tags: ["tags"] }
+    { tags: ["tags"], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
@@ -28,7 +29,7 @@ export function getTagBySlug(slug: string): Promise<TagRecord | null> {
       return prisma.tag.findUnique({ where: { slug } });
     },
     [`tag-${slug}`],
-    { tags: [`tag:${slug}`] }
+    { tags: [`tag:${slug}`], revalidate: CACHE_REVALIDATE_SECONDS }
   )();
 }
 
