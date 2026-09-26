@@ -108,6 +108,16 @@ export default function AssetTile({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
           />
+        ) : video && asset.publicUrl ? (
+          // Posterless video (e.g. uploaded outside the media admin): let the browser paint a
+          // frame, seeking to 1s via a media fragment where the format supports it.
+          <video
+            src={`${asset.publicUrl}#t=1`}
+            className="absolute inset-0 h-full w-full object-cover"
+            preload="metadata"
+            muted
+            playsInline
+          />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-500">
             <DocumentIcon />
