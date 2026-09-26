@@ -15,7 +15,7 @@
  *   node scripts/reconcile-usage.ts --verbose
  */
 import { config } from 'dotenv'
-config({ path: '.env.local' })
+config({ path: ['.env.local', '.env'] })
 
 async function main() {
   const verbose = process.argv.includes('--verbose')

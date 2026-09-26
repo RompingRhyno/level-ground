@@ -15,7 +15,7 @@
  *   npx tsx scripts/backfill-folder-order.ts --force
  */
 import { config } from 'dotenv'
-config({ path: '.env.local' })
+config({ path: ['.env.local', '.env'] })
 
 async function main() {
   const force = process.argv.includes('--force')

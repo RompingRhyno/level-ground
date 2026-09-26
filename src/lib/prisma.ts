@@ -6,10 +6,9 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefi
 
 const log: Prisma.LogLevel[] = process.env.NODE_ENV === "development" ? ["query"] : [];
 
-const connectionString =
-  process.env.DATABASE_URL_UNPOOLED ??
-  process.env.NEON_DATABASE_URL_UNPOOLED ??
-  process.env.DATABASE_URL;
+// Runtime prefers the pooled endpoint (many short-lived connections); the direct URL is the
+// fallback, and is what migrations use (see prisma.config.ts).
+const connectionString = process.env.DATABASE_URL ?? process.env.DATABASE_URL_UNPOOLED;
 
 function createClient(): PrismaClient {
   if (connectionString) {

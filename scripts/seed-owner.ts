@@ -11,7 +11,7 @@
  *   npx ts-node scripts/hash-password.ts "your-secure-password"
  */
 import { config } from 'dotenv'
-config({ path: '.env.local' })
+config({ path: ['.env.local', '.env'] })
 import { randomBytes } from 'crypto'
 import { hash } from 'bcryptjs'
 

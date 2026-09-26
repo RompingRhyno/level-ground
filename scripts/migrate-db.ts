@@ -6,7 +6,7 @@
  *   npx tsx scripts/migrate-db.ts --verify    # compare source vs target, row by row
  *
  * Connection strings come from .env.local: the live database from DATABASE_URL_UNPOOLED /
- * NEON_DATABASE_URL_UNPOOLED / DATABASE_URL, the destination from MIGRATE_DB_URL_UNPOOLED
+ * DATABASE_URL, the destination from MIGRATE_DB_URL_UNPOOLED
  * (unpooled on purpose — Neon's -pooler endpoint cannot serve dump/restore). They are handed to
  * the binaries through the child process environment, so no password ever reaches argv, a
  * command line, or this script's output.
@@ -22,7 +22,7 @@ import { join } from "node:path";
 const DUMP_DIR = join(process.env.HOME ?? "/tmp", "lg-migration-dumps");
 
 function sourceUrl(): string {
-  const v = process.env.DATABASE_URL_UNPOOLED ?? process.env.NEON_DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+  const v = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
   if (!v) throw new Error("no source database URL in env");
   return v;
 }
@@ -209,7 +209,7 @@ async function resync(confirmed: boolean) {
 async function status() {
   await new Promise<void>((resolve, reject) => {
     const child = spawn("npx", ["prisma", "migrate", "status"], {
-      env: { ...process.env, NEON_DATABASE_URL: targetUrl(), DATABASE_URL: targetUrl() },
+      env: { ...process.env, DATABASE_URL_UNPOOLED: targetUrl(), DATABASE_URL: targetUrl() },
     });
     let out = "";
     child.stdout.on("data", (d) => (out += d));
