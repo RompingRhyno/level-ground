@@ -386,20 +386,17 @@ function FolderPageClientInner({
           <button type="button" onClick={toggleHidden} className="rounded px-3 py-1.5 text-sm admin-btn">
             {folder.hidden ? "Show on /projects" : "Hide from /projects"}
           </button>
-          <Menu
-            buttonClassName="rounded px-3 py-1.5 text-sm btn-negative"
-            buttonContent={<span className="text-sm">Folder actions</span>}
-            items={[
-              { label: "Rename…", onSelect: () => { setNameDraft(folder.name); setRenaming(true); } },
-              { label: folder.hidden ? "Show on /projects" : "Hide from /projects", onSelect: () => void toggleHidden() },
-              { label: "Delete folder…", danger: true, onSelect: () => void deleteFolder() },
-            ]}
-          />
+          <button type="button" onClick={() => void deleteFolder()} className="rounded px-3 py-1.5 text-sm btn-negative">
+            Delete folder…
+          </button>
         </div>
       </div>
 
       {/* Description */}
-      <div className="mb-6 rounded border bg-white p-3">
+      <div
+        className="mb-6 rounded border border-(--color-border) p-3"
+        style={{ backgroundColor: "var(--color-bg-secondary)" }}
+      >
         <label className="mb-1 block text-sm font-medium" htmlFor="folder-description">
           Project description
         </label>
@@ -413,7 +410,7 @@ function FolderPageClientInner({
           }}
           onBlur={() => descriptionDirty && void saveDescription()}
           placeholder="Shown on the project page…"
-          className="w-full rounded border px-2 py-1.5 text-sm"
+          className="w-full rounded border bg-white px-2 py-1.5 text-sm"
         />
         <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
           {descriptionDirty ? (
@@ -435,7 +432,10 @@ function FolderPageClientInner({
       </div>
 
       {/* Tags */}
-      <div className="mb-6 rounded border bg-white p-3">
+      <div
+        className="mb-6 rounded border border-(--color-border) p-3"
+        style={{ backgroundColor: "var(--color-bg-secondary)" }}
+      >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">Tags</span>
           <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ function FolderPageClientInner({
                   value={newTagName}
                   onChange={(event) => setNewTagName(event.target.value)}
                   placeholder="New tag"
-                  className="rounded border px-2 py-1 text-sm"
+                  className="rounded border bg-white px-2 py-1 text-sm"
                   onKeyDown={(event) => {
                     if (event.key === "Enter") void createTag();
                   }}
@@ -505,7 +505,7 @@ function FolderPageClientInner({
         <select
           value={kind}
           onChange={(event) => setKind(event.target.value as "" | "image" | "video")}
-          className="rounded border px-2 py-1.5 text-sm"
+          className="rounded border bg-white px-2 py-1.5 text-sm"
           aria-label="Filter by type"
         >
           <option value="">All types</option>
