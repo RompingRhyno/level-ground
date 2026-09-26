@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getFolderCards, resolveUniqueFolderSlug, slugifyFolderName } from "@/lib/folders";
 import { revalidateFor } from "@/lib/revalidate";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const FOLDER_NAME_MAX_LENGTH = 100;
 
 /** Folder cards for the admin grid: cover, asset count, order, visibility. */
 export async function GET() {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const folders = await getFolderCards();
     return NextResponse.json(folders);
@@ -17,6 +21,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const body = await request.json();
     const { name, slug, parentId, description, hidden } = body ?? {};

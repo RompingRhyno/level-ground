@@ -3,8 +3,12 @@ import { getPageBySlug, upsertPage, ensureCollectionTemplates } from "@/lib/page
 import { reconcileMediaUsage } from "@/lib/media-refs";
 import { applyRevalidationPlan, pathForSlug, revalidateFor } from "@/lib/revalidate";
 import { prisma } from "@/lib/prisma";
+import { requireSession, unauthorized } from "@/lib/api-auth";
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   const { slug } = await params;
   const page = await getPageBySlug(slug);
   if (!page) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -12,6 +16,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const { slug } = await params;
     const body = await request.json();
@@ -46,11 +53,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ slug
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   // alias to PUT for convenience
   return PUT(request, { params });
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const session = await requireSession();
+  if (!session) return unauthorized();
+
   try {
     const { slug } = await params;
 
