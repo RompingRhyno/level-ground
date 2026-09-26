@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
 
-const r2Base =
-  process.env.R2_BASE_URL ||
-  process.env.CF_R2_PUBLIC_BASE_URL ||
-  process.env.R2_PUBLIC_BASE_URL ||
-  process.env.CF_R2_BASE_URL;
+const r2Base = process.env.R2_BASE_URL;
 
 const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [];
 
