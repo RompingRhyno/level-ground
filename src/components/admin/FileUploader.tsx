@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { type UploadItem, uploadWithProgress } from "@/lib/uploadWithProgress";
+import { MEDIA_CACHE_CONTROL } from "@/lib/mime";
 import type { FFmpeg as FFmpegType } from '@ffmpeg/ffmpeg';
 
 // new Function bypasses webpack static analysis — modules are resolved at runtime from CDN
@@ -220,7 +221,8 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
               presigned.url,
               item.file,
               item.file.type,
-              (p) => updateItem(item.id, { progress: p })
+              (p) => updateItem(item.id, { progress: p }),
+              { "Cache-Control": MEDIA_CACHE_CONTROL }
             );
 
             const registerRes = await fetch(`/api/assets`, {

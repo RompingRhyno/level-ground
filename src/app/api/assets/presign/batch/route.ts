@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, r2PublicUrlFor } from "@/lib/r2";
-import { ALLOWED_UPLOAD_MIME_TYPES, isAllowedUploadMime, isClientConvertedMime, storageKeyFor } from "@/lib/mime";
+import { ALLOWED_UPLOAD_MIME_TYPES, MEDIA_CACHE_CONTROL, isAllowedUploadMime, isClientConvertedMime, storageKeyFor } from "@/lib/mime";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
 /**
@@ -63,6 +63,9 @@ export async function POST(request: Request) {
       Bucket: target.bucket,
       Key: key,
       ContentType: contentType || "application/octet-stream",
+      // Not part of the signature — R2 stores it only when the browser actually sends the header,
+      // which the upload clients do via uploadWithProgress's extraHeaders.
+      CacheControl: MEDIA_CACHE_CONTROL,
     });
     const url = await getSignedUrl(target.client as any, cmd as any, { expiresIn: 3600 });
 

@@ -1,7 +1,8 @@
 export interface Env {
   R2_BUCKET: R2Bucket;
   UPLOAD_TOKEN_SECRET: string;
-  ALLOWED_ORIGIN: string;
+  /** Comma-separated list of origins allowed to PUT. `https://*.example.com` matches any subdomain. */
+  ALLOWED_ORIGINS: string;
 }
 
 function base64urlToBuf(s: string): ArrayBuffer {
@@ -74,9 +75,31 @@ async function verifyToken(
   return typed;
 }
 
-function corsHeaders(origin: string): HeadersInit {
+/**
+ * Origin matching for CORS. Exact entries match literally; entries containing `*.` match any
+ * subdomain (`https://*.vercel.app` covers preview deployments and production aliases).
+ */
+function originAllowed(origin: string | null, allowList: string): boolean {
+  if (!origin) return false;
+  return allowList
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .some((entry) => {
+      if (!entry.includes("*.")) return entry === origin;
+      const [schemeAndHost, ...rest] = entry.split("*.");
+      const suffix = rest.join("*.");
+      return origin.startsWith(schemeAndHost) && origin.endsWith(`.${suffix}`);
+    });
+}
+
+function corsHeaders(origin: string | null, allowList: string): HeadersInit {
+  if (!originAllowed(origin, allowList)) {
+    // No Access-Control-Allow-Origin: the browser refuses the request. Vary keeps caches honest.
+    return { Vary: "Origin" };
+  }
   return {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": origin as string,
     "Access-Control-Allow-Methods": "PUT, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Max-Age": "86400",
@@ -84,13 +107,10 @@ function corsHeaders(origin: string): HeadersInit {
   };
 }
 
-function json(env: Env, body: unknown, status: number): Response {
+function json(body: unknown, status: number, headers: HeadersInit): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "Content-Type": "application/json",
-      ...corsHeaders(env.ALLOWED_ORIGIN),
-    },
+    headers: { "Content-Type": "application/json", ...headers },
   });
 }
 
@@ -104,10 +124,16 @@ const ALLOWED_MIME = new Set([
   "image/heif",
 ]);
 
+/**
+ * Customer photos sent through the contact form are public until the lifecycle rule removes them
+ * (60 days), so keep client caches short — nothing here is worth a long-lived copy on a device.
+ */
+const CACHE_CONTROL = "public, max-age=600";
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     try {
-      const cors = corsHeaders(env.ALLOWED_ORIGIN);
+      const cors = corsHeaders(request.headers.get("Origin"), env.ALLOWED_ORIGINS);
       const url = new URL(request.url);
 
       if (request.method === "OPTIONS") {
@@ -115,34 +141,34 @@ export default {
       }
 
       if (url.pathname !== "/upload") {
-        return json(env, { error: "NOT_FOUND" }, 404);
+        return json({ error: "NOT_FOUND" }, 404, cors);
       }
 
       if (request.method !== "PUT") {
-        return json(env, { error: "METHOD_NOT_ALLOWED" }, 405);
+        return json({ error: "METHOD_NOT_ALLOWED" }, 405, cors);
       }
 
       const authHeader = request.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        return json(env, { error: "UNAUTHORIZED" }, 401);
+        return json({ error: "UNAUTHORIZED" }, 401, cors);
       }
 
       const payload = await verifyToken(authHeader.slice(7), env.UPLOAD_TOKEN_SECRET);
       if (!payload) {
-        return json(env, { error: "UNAUTHORIZED" }, 401);
+        return json({ error: "UNAUTHORIZED" }, 401, cors);
       }
 
       const contentType = request.headers.get("Content-Type") ?? "";
       if (!ALLOWED_MIME.has(contentType)) {
-        return json(env, { error: "UNSUPPORTED_MEDIA_TYPE" }, 415);
+        return json({ error: "UNSUPPORTED_MEDIA_TYPE" }, 415, cors);
       }
 
       if (contentType !== payload.contentType) {
-        return json(env, { error: "CONTENT_TYPE_MISMATCH" }, 415);
+        return json({ error: "CONTENT_TYPE_MISMATCH" }, 415, cors);
       }
 
       if (!request.body) {
-        return json(env, { error: "EMPTY_BODY" }, 400);
+        return json({ error: "EMPTY_BODY" }, 400, cors);
       }
 
       const reader = request.body.getReader();
@@ -159,31 +185,31 @@ export default {
 
           if (bytesRead > MAX_BYTES) {
             await reader.cancel();
-            return json(env, { error: "PAYLOAD_TOO_LARGE" }, 413);
+            return json({ error: "PAYLOAD_TOO_LARGE" }, 413, cors);
           }
 
           chunks.push(value);
         }
       } catch (err) {
         console.error("[upload-worker] Body read failed:", err);
-        return json(env, { error: "BODY_READ_FAILED" }, 500);
+        return json({ error: "BODY_READ_FAILED" }, 500, cors);
       }
 
       try {
         const body = new Blob(chunks, { type: contentType });
 
         await env.R2_BUCKET.put(payload.key, body, {
-          httpMetadata: { contentType },
+          httpMetadata: { contentType, cacheControl: CACHE_CONTROL },
         });
       } catch (err) {
         console.error("[upload-worker] R2 put failed:", err);
-        return json(env, { error: "UPLOAD_FAILED" }, 500);
+        return json({ error: "UPLOAD_FAILED" }, 500, cors);
       }
 
-      return json(env, { ok: true }, 200);
+      return json({ ok: true }, 200, cors);
     } catch (err) {
       console.error("[upload-worker] Unhandled error:", err);
-      return json(env, { error: "INTERNAL_ERROR" }, 500);
+      return json({ error: "INTERNAL_ERROR" }, 500, { Vary: "Origin" });
     }
   },
 } satisfies ExportedHandler<Env>;

@@ -7,4 +7,7 @@ binding = "R2_BUCKET"
 bucket_name = "level-ground"
 
 [vars]
-ALLOWED_ORIGIN = "http://localhost:3000"
+# Comma-separated CORS allowlist; `*.` matches any subdomain. Currently: local dev, LAN device
+# testing, the production domain, and any Vercel deployment (previews/aliases).
+# Trim to production-only at handoff — see docs/handoff.md.
+ALLOWED_ORIGINS = "http://localhost:3000,http://192.168.0.101:3000,https://levelgroundlandscape.com,https://www.levelgroundlandscape.com,https://*.vercel.app"

@@ -189,15 +189,31 @@ type + session expiry, 15-minute sessions, max 5 files, slot states with retry-t
 
 ### Recommended config for the new bucket
 
-| Setting | Recommendation |
+| Setting | Decision |
 |---|---|
 | Name | `level-ground` — keeps `R2_BUCKET_NAME` unchanged at cutover |
 | Location | default (automatic); WNAM hint unnecessary |
 | Public access | r2.dev managed domain now (that is `R2_BASE_URL`); custom domain later (r2.dev is rate-limited and documented as non-production) |
-| CORS | explicit rule — methods `PUT, GET, HEAD`, header `content-type`, expose `ETag`, origins: production domain + `http://localhost:3000` |
-| Lifecycle | `contact-uploads/` expire after 90 days |
-| Cache-Control | `media/` immutable 1 year; contact uploads short |
+| CORS | explicit rule — methods `GET, PUT, POST, HEAD` (mirroring the current policy), header `*`, expose `ETag`, max age 3600; origins `http://localhost:3000`, `http://192.168.0.101:3000`, `https://levelgroundlandscape.com`, `https://www.levelgroundlandscape.com`, `https://*.vercel.app` |
+| Lifecycle | `contact-uploads/` expires after **60 days** — the current bucket already carries a "Contact Upload Retention" rule at 60 days, so the new bucket matches it instead of inventing a number |
+| Cache-Control | `media/` immutable 1 year (implemented, verified); contact uploads `public, max-age=600` in the worker |
 | Credentials | dedicated bucket-scoped R2 token for both copy and runtime; the general API token stays tooling-only |
+
+### Decisions taken 2026-09-27
+
+- Bucket name reused. **No API token for the old account is needed** — the two settings that mattered
+  (CORS policy, the 60-day retention rule) were read from the dashboard and are recorded above.
+- **Worker CORS fixed in code**: `ALLOWED_ORIGIN` → `ALLOWED_ORIGINS`, a comma-separated allowlist with
+  `*.` subdomain support; an unmatched origin now gets *no* `Access-Control-Allow-Origin` instead of a
+  wrong one. Production and Vercel origins are included, so the contact-form uploader can work outside
+  localhost for the first time.
+- **Immutable caching for media uploads**: the presign route sets `CacheControl`, both browser call
+  sites send it, and contact uploads set theirs in the worker. Verified against the live bucket — with
+  the header the object stores `cache-control: public, max-age=31536000, immutable`; without it the
+  object gets none, *silently* (the presigned URL signs only `host`, so nothing enforces the value).
+- **Handoff trim**: remove the localhost/LAN/Vercel origins from both the bucket CORS policy and the
+  worker's `ALLOWED_ORIGINS`. The worker list lives in `wrangler.toml` — a dashboard edit to that var
+  is overwritten by the next `wrangler deploy`.
 
 ### Billing
 
