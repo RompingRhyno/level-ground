@@ -32,8 +32,12 @@ account → My Profile → API Tokens → Create Custom Token:
 | Account | **Workers → `Admin`** (product scope) | Cloudflare replaced "Workers Scripts: Edit" with Workers roles, where `Editor` can deploy but **cannot create** a Worker — and this account has none yet. `Admin` covers create, deploy, secrets and `wrangler tail`; `Editor` would be enough only after the Worker exists. |
 | Account | R2 write/edit (legacy name: "Workers R2 Storage: Edit") | only for `wrangler r2 bucket create`. Every object-level operation uses the R2 **S3** keys instead, not this token. |
 | Account | **Turnstile: Edit** / "Turnstile Sites: Edit" | create the widget, read both keys |
-| Zone | **DNS → Write** (zone-scoped, added once the domain is in the account) | create/edit DNS records — Resend verification, Email Routing MX |
+| Zone | **DNS → Write** (added by editing the token once the domain joins the account) | create/edit DNS records — Resend verification, Email Routing MX |
 | Zone | **DNS → Read** | read records back when verifying |
+
+The domain stays on the old site's DNS until the full migration, so the two zone rows cannot be
+attached yet. That blocks nothing today: R2 bucket, worker deploy and Turnstile are all account-scoped.
+On migration day, edit the existing token to add them and select the zone — no second token needed.
 
 Note: the *account*-level "Account DNS Settings: Edit" is a different permission (account DNS defaults
 such as enforce-DNS-only and zone defaults) — it does **not** grant record editing. Likewise the
@@ -112,10 +116,27 @@ what the project already has:
 Without step 2, replies leave as the owner's personal address — that is what Cloudflare's postmaster
 docs mean when they say Email Routing cannot send or reply from the domain.
 
+## Domain migration day (levelgroundlandscape.com)
+
+The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
+task queues up for one session — in this order, because the old site must not drop out along the way:
+
+1. **Add the zone** in the new Cloudflare account and review what Cloudflare imports. The old site's
+   A/CNAME (and any TXT verification records) must survive — the old site keeps serving as long as
+   those records still point at the old host. Anything Cloudflare proxies for a host it does not host
+   needs care: keep those records **DNS-only** unless the old site is fine being proxied.
+2. **Flip the nameservers** at the registrar to the pair the new account assigns, then confirm the old
+   site still resolves and serves.
+3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX), Email Routing's MX,
+   and add the real domain to the Turnstile widget's hostname list.
+4. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
+   smoke checks (home, /projects, both detail pages, a 404, /sitemap.xml, /admin redirect).
+
 ## What can be scripted from the dev machine
 
-Enabler: a **scoped Cloudflare API token** exported as `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit,
-R2: Edit, Turnstile: Edit, DNS: Edit), plus optionally a Vercel token. Then:
+Enabler: a **scoped Cloudflare API token** exported as `CLOUDFLARE_API_TOKEN` (Workers `Admin`,
+R2 write/edit, Turnstile `Edit`; Zone `DNS: Edit` added once the domain is in the account), plus
+optionally a Vercel token. Then:
 
 - `wrangler whoami` / `wrangler deploy` / `wrangler secret put …` — worker deploy and secret rotation.
 - `wrangler r2 bucket create <name>` and bucket CORS via the S3 API (the app uploads straight from the
