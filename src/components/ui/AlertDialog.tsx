@@ -10,6 +10,8 @@ export default function AlertDialog({
   onConfirm,
   onCancel,
   confirmVariant = 'danger',
+  secondaryLabel,
+  onSecondary,
 }: {
   open: boolean;
   title: string;
@@ -19,6 +21,9 @@ export default function AlertDialog({
   onConfirm: () => void;
   onCancel: () => void;
   confirmVariant?: 'danger' | 'primary';
+  /** Optional third, neutral action rendered left of Cancel (e.g. "Keep editing"). */
+  secondaryLabel?: string;
+  onSecondary?: () => void;
 }) {
   if (!open) return null;
   const confirmClass = confirmVariant === 'danger'
@@ -31,6 +36,9 @@ export default function AlertDialog({
         <div className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</div>
         {description ? <div className="text-sm text-gray-700 dark:text-gray-300 mb-4">{description}</div> : null}
         <div className="flex justify-end gap-2">
+          {secondaryLabel && onSecondary ? (
+            <button onClick={onSecondary} className="px-3 py-1 rounded text-sm admin-btn">{secondaryLabel}</button>
+          ) : null}
           <button onClick={onCancel} className="px-3 py-1 rounded text-sm admin-btn">{cancelLabel}</button>
           <button onClick={onConfirm} className={confirmClass}>{confirmLabel}</button>
         </div>
