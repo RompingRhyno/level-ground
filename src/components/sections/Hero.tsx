@@ -36,14 +36,18 @@ export default function Hero({
               boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
             }}
           >
-            <Image
-              src={image}
-              alt=""
-              fill
-              priority
-              sizes="(min-width:1024px) 40vw, 80vw"
-              className="rounded-full object-cover"
-            />
+            {image ? (
+              <Image
+                src={image}
+                alt=""
+                fill
+                priority
+                sizes="(min-width:1024px) 40vw, 80vw"
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 rounded-full bg-(--color-bg-secondary)" />
+            )}
           </div>
         </div>
 

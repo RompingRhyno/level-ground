@@ -36,14 +36,18 @@ export default function Services({
                     >
                         {/* Image */}
                         <div className="relative aspect-4/3">
-                            <Image
-                                src={service.image}
-                                alt={service.title}
-                                fill
-                                sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                loading="lazy"
-                            />
+                            {service.image ? (
+                                <Image
+                                    src={service.image}
+                                    alt={service.title}
+                                    fill
+                                    sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 bg-(--color-bg-secondary)" />
+                            )}
                         </div>
 
                         {/* Overlay */}
