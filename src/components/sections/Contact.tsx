@@ -55,18 +55,22 @@ export default function Contact({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string | null>(null);
 
-  // Load Turnstile widget
+  // Load the Turnstile widget once per page. Appending the script twice logs "Turnstile already has
+  // been loaded" and re-runs its global setup, so an existing tag is reused; nothing is torn down on
+  // unmount because the widget registry it installs outlives React.
   useEffect(() => {
     window.onTurnstileSuccess = (token: string) => setTurnstileToken(token);
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
     if (!siteKey) return;
-    const script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+    if (!document.querySelector("script[data-turnstile]")) {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.dataset.turnstile = "true";
+      document.head.appendChild(script);
+    }
     return () => {
-      document.head.removeChild(script);
       delete window.onTurnstileSuccess;
     };
   }, []);

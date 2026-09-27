@@ -3,6 +3,16 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+/**
+ * Sender for every admin email. `AUTH_EMAIL_FROM` was read but never set anywhere, so invite, unlock
+ * and reset mails would have thrown on `from: undefined`; `CONTACT_EMAIL_FROM` is the address already
+ * verified with Resend, so it is the fallback — and then the only one to keep in sync.
+ */
+const EMAIL_FROM = process.env.AUTH_EMAIL_FROM ?? process.env.CONTACT_EMAIL_FROM ?? ''
+
+/** Site origin for links inside those emails. Set per environment (Vercel: the production domain). */
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+
 /** SHA-256 hex digest of a raw token string. */
 export function hashToken(raw: string): string {
   return createHash('sha256').update(raw).digest('hex')
@@ -30,11 +40,11 @@ export async function sendUnlockEmail(
   rawToken: string,
   failedAttempts: number,
 ): Promise<boolean> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const base = SITE_URL
   const url = `${base}/admin/unlock?token=${rawToken}`
   try {
     const { error } = await resend.emails.send({
-      from: process.env.AUTH_EMAIL_FROM!,
+      from: EMAIL_FROM,
       to: email,
       subject: 'Admin account locked — action required',
       html: `
@@ -64,11 +74,11 @@ export async function sendPasswordResetEmail(
   email: string,
   rawToken: string,
 ): Promise<boolean> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const base = SITE_URL
   const url = `${base}/admin/unlock?token=${rawToken}`
   try {
     const { error } = await resend.emails.send({
-      from: process.env.AUTH_EMAIL_FROM!,
+      from: EMAIL_FROM,
       to: email,
       subject: 'Reset your admin password',
       html: `
@@ -93,10 +103,10 @@ export async function sendInviteEmail(
   email: string,
   rawToken: string,
 ): Promise<void> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const base = SITE_URL
   const url = `${base}/admin/accept-invite?token=${rawToken}`
   void resend.emails.send({
-    from: process.env.AUTH_EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: email,
     subject: 'You have been invited to the admin panel',
     html: `
@@ -111,10 +121,10 @@ export async function sendEmailChangeVerification(
   email: string,
   rawToken: string,
 ): Promise<void> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const base = SITE_URL
   const url = `${base}/admin/verify-email?token=${rawToken}`
   void resend.emails.send({
-    from: process.env.AUTH_EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: email,
     subject: 'Verify your new email address',
     html: `
@@ -127,7 +137,7 @@ export async function sendEmailChangeVerification(
 
 export async function sendEmailChangeNotice(currentEmail: string): Promise<void> {
   void resend.emails.send({
-    from: process.env.AUTH_EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: currentEmail,
     subject: 'Email change requested for your admin account',
     html: `
@@ -139,7 +149,7 @@ export async function sendEmailChangeNotice(currentEmail: string): Promise<void>
 
 export async function sendPasswordChangedNotice(email: string): Promise<void> {
   void resend.emails.send({
-    from: process.env.AUTH_EMAIL_FROM!,
+    from: EMAIL_FROM,
     to: email,
     subject: 'Your admin account password was changed',
     html: `
