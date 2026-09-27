@@ -157,8 +157,14 @@ export async function revalidationPlan(mutation: Mutation): Promise<Revalidation
 
     case "page:saved":
     case "page:deleted":
+      // `/sitemap.xml` belongs here as well as in the folder branches: creating, renaming or deleting
+      // a page changes the URL list, and without this it would only refresh when the 300s cache
+      // window on the page reads expired.
       return merge(
-        { tags: [`page:${mutation.slug}`, "global:nav", "global:pages"], paths: [pathForSlug(mutation.slug), "/"] },
+        {
+          tags: [`page:${mutation.slug}`, "global:nav", "global:pages"],
+          paths: [pathForSlug(mutation.slug), "/", "/sitemap.xml"],
+        },
         collections(),
       );
 
