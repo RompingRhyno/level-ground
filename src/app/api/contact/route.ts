@@ -150,7 +150,7 @@ function serializeEmailContent(ctx: {
   submission: ValidatedSubmissionContext;
   recipients: ResolvedRecipients;
   photoUrls: string[];
-}): { subject: string; html: string; to: string[] } {
+}): { subject: string; html: string; to: string[]; replyTo?: string } {
   const { section, submission, photoUrls } = ctx;
 
   const subject = "New contact form submission";
@@ -183,7 +183,17 @@ ${photosBlock}
 
   const to = ctx.recipients.map((r) => r.email);
 
-  return { subject, html, to };
+  // The visitor's own address, so the owner's Reply reaches the customer rather than bouncing back to
+  // the notification's sender (themselves). With a "send mail as" alias in the owner's mail client —
+  // see docs/handoff.md — that reply then leaves as the domain address.
+  const emailField = section.fields.find((f) => f.type === "email");
+  const visitorEmail = emailField ? submission.values[emailField.id] : undefined;
+  const replyTo =
+    typeof visitorEmail === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(visitorEmail)
+      ? visitorEmail
+      : undefined;
+
+  return { subject, html, to, replyTo };
 }
 
 // ── Route handler ──────────────────────────────────────────────────────────
@@ -416,7 +426,7 @@ export async function POST(request: Request) {
   }
 
   // Step 8 — Serialize and send
-  const { subject, html, to } = serializeEmailContent({
+  const { subject, html, to, replyTo } = serializeEmailContent({
     section: validatedSection,
     submission: validatedSubmission,
     recipients: resolvedRecipients,
@@ -455,6 +465,7 @@ export async function POST(request: Request) {
     to,
     subject,
     html,
+    ...(replyTo && { replyTo }),
     ...(attachments.length > 0 && { attachments }),
   });
 

@@ -78,11 +78,31 @@ precise, because these split neatly:
   reset). That only needs the domain verified in Resend, which is a set of DNS records — hence the
   DNS:Write permission above. Nothing about the app changes if Email Routing is enabled.
 
-So: Email Routing is worth enabling for receiving at the domain. For the client to *send* as
-`@domain.com` from their own mail app, the options are (a) the domain host's mailbox add-on, (b) a mail
-provider with SMTP (Fastmail/Proton/Workspace/Zoho) plus send-as configuration, or (c) accept replies
-from the personal address. Cloudflare Email Sending does not substitute for (a)/(b) today; keeping
-Resend for the app and routing for inbound is the low-risk split.
+### The flow that actually works: route inbound with Cloudflare, send outbound with Resend
+
+Cloudflare cannot rewrite a reply the owner sends from their own mail client — that message never
+touches Cloudflare; it leaves via whatever service that client uses. But the two halves compose with
+what the project already has:
+
+1. **Inbound — Cloudflare Email Routing.** Add `levelgroundlandscape.com` to Cloudflare, enable Email
+   Routing, route `info@levelgroundlandscape.com` → the owner's personal mailbox. Free; the domain has
+   no mailboxes today, so the MX change costs nothing.
+2. **Outbound — Resend SMTP as a "send mail as" alias.** Once the domain is verified in Resend (SPF +
+   DKIM + DMARC + the `send` subdomain MX, all DNS-only in Cloudflare), the owner can add
+   `info@levelgroundlandscape.com` in Gmail under Settings → Accounts → "Send mail as":
+   SMTP `smtp.resend.com`, port 465 (SSL) or 587 (STARTTLS), username literally `resend`, password = a
+   Resend **API key**. Gmail mails a confirmation code to the address — and step 1 is what makes that
+   code readable. Tick "Treat as an alias" so replies to routed mail use the domain address
+   automatically.
+3. **Key hygiene.** Create a *separate* Resend key for the owner's mail client, scoped to sending from
+   that domain — never the app's key. The app's key can send as anything on the domain; the client's
+   should not.
+4. **Result.** Contact form → notification to the owner → Reply (the notification now carries the
+   visitor's address as Reply-To, so Reply goes to the customer) → the customer sees
+   `info@levelgroundlandscape.com`.
+
+Without step 2, replies leave as the owner's personal address — that is what Cloudflare's postmaster
+docs mean when they say Email Routing cannot send or reply from the domain.
 
 ## What can be scripted from the dev machine
 
