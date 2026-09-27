@@ -74,13 +74,24 @@ Workers endpoints answer, R2 does not until enablement. `/user/tokens/verify` re
 Token* for this kind of token by design — the account-scoped endpoint is
 `/accounts/{id}/tokens/verify`.
 
-**Two credential sets coexist until the media copy is done.** The old account's keys must keep working
-as the copy *source*, so the new pair goes in under temporary names —
-`R2_NEW_ACCESS_KEY_ID` / `R2_NEW_SECRET_ACCESS_KEY` — and the main names (`R2_ACCOUNT_ID`,
-`R2_BUCKET_NAME`, `R2_BASE_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are switched to the new
-account only once the copy verifies. The S3 endpoint takes no variable: the app builds it from the
-account id as `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, so the value Cloudflare showed
-should match that shape for the new account id.
+**This token already works as an S3 credential** — Access Key ID is the token id
+(`c57c0c9af5ab2e20011a5da4629f28fc`), Secret Access Key is the SHA-256 of the token value. Verified
+with a real list → put → head → delete round trip against the new bucket. That makes it usable for
+ad-hoc tooling, but it is still the wrong thing to hand the app: it can also deploy Workers and manage
+Turnstile. The runtime credential is a dedicated R2 token —
+R2 → Account Details → API Tokens → **Manage** → *Create Account API token* → **Object Read & Write**
+→ "only apply to specific buckets" → `level-ground` (the bucket exists now, so the selector offers it).
+Copy both values when shown (the secret is displayed once) and set `R2_ACCESS_KEY_ID` /
+`R2_SECRET_ACCESS_KEY` / `R2_ACCOUNT_ID` in `.env.local` and `R2_BASE_URL` in `.env`.
+
+**Credential sets, now that no bulk copy is planned.** The swap is a straight replacement of the main
+names — `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (`R2_BUCKET_NAME` already matches)
+and `R2_BASE_URL` — and existing images keep serving throughout, because every stored URL is absolute
+and still points at the old bucket. If the object copy is revived later, keep the old pair as
+`R2_OLD_*` instead of dropping it; otherwise the old secret stops being stored anywhere, and the
+recovery path is a fresh old-account R2 token (its Access Key ID stays visible in the dashboard, its
+secret does not). The S3 endpoint takes no variable: the app builds it from the account id as
+`https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`.
 
 - **Placement:** `CLOUDFLARE_API_TOKEN=` and (if the account is not the only one on the token)
   `CLOUDFLARE_ACCOUNT_ID=` in `.env.local`. Both are read by `wrangler`; values are never printed.
