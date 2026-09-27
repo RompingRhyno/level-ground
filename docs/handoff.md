@@ -116,6 +116,13 @@ what the project already has:
 Without step 2, replies leave as the owner's personal address — that is what Cloudflare's postmaster
 docs mean when they say Email Routing cannot send or reply from the domain.
 
+**Email Routing needs no token permission if done in the dashboard** — Compute → Email Service → Email
+Routing → Onboard Domain, which adds the MX, SPF and DKIM TXT records itself; then add the destination
+address (Cloudflare mails it a verification link — the owner must click it, so this step is manual
+either way) and create the rule `info@` → personal mailbox. To script it instead, the pair is
+`Email Routing Addresses: Edit` (account-scoped destinations) plus `Email Routing Rules: Edit`
+(zone-scoped, so it joins the migration-day rows alongside `DNS: Edit`). Not worth it for three clicks.
+
 ## Domain migration day (levelgroundlandscape.com)
 
 The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
