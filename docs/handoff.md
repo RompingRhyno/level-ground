@@ -179,6 +179,22 @@ either way) and create the rule `info@` → personal mailbox. To script it inste
 `Email Routing Addresses: Edit` (account-scoped destinations) plus `Email Routing Rules: Edit`
 (zone-scoped, so it joins the migration-day rows alongside `DNS: Edit`). Not worth it for three clicks.
 
+**Who carries which direction** — the question that keeps coming back, answered once:
+
+| Message | Sent by | Carried by |
+|---|---|---|
+| Form notification → owner | the app | Resend API (`sending_access` key) |
+| Owner → customer | the owner's mail client | **Resend SMTP** (the send-as alias; routing is not involved) |
+| Customer → owner (reply) | the customer's mail provider | **Cloudflare Email Routing** MX, forwarded to the owner's mailbox |
+| Owner's inbox ← that forward | — | routing |
+
+Routing only ever handles mail *arriving at* the domain. Anything the owner sends — alias or not — leaves
+through whatever the mail client is configured to use, which here is Resend's SMTP relay with the domain
+identity. The customer side involves none of these services: their provider simply receives a message
+whose `From` is `info@levelgroundlandscape.com`, authenticated by the domain's SPF and DKIM records.
+Reply from the personal address instead and the alias is skipped entirely — nothing breaks, the customer
+just sees the personal address.
+
 **Receiving is Email Routing's job, not Resend's.** The app only ever *sends* through Resend. What makes
 the owner↔customer loop work is the inbound half: the owner replies as `info@levelgroundlandscape.com`
 (mail client with a send-as alias), the customer replies to that address, and Cloudflare's MX forwards it
