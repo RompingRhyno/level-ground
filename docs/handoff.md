@@ -22,6 +22,30 @@ Status: draft, built while migrating to new accounts (2026-09).
 Runtime dependencies with no account: `unpkg.com` (ffmpeg WASM core, fetched in the browser when
 converting video), `challenges.cloudflare.com` (Turnstile script), `fonts.googleapis.com`.
 
+## Cloudflare API token (local tooling only)
+
+Needed once, to let this machine create/deploy on the new account. Create under the new Cloudflare
+account → My Profile → API Tokens → Create Custom Token:
+
+| Scope | Permission | Why |
+|---|---|---|
+| Account | **Workers Scripts: Edit** | `wrangler deploy`, `wrangler secret put` |
+| Account | **Workers R2 Storage: Edit** | `wrangler r2 bucket create` (bucket CORS goes through the S3 keys instead) |
+| Account | **Turnstile: Edit** | create the widget, read both keys |
+| Zone | **DNS: Edit** | add the Resend/domain verification records |
+| Zone | **Zone: Read** | so the zone can be located by name |
+
+Skip "All resources / write all" — that token sits in a file on disk and only ever runs four
+commands. Add the specific zone in the Zone Resources step once the domain exists in the account; if
+the domain is not there yet, create the token account-scoped now and add DNS:Edit later.
+
+- **Placement:** `CLOUDFLARE_API_TOKEN=` and (if the account is not the only one on the token)
+  `CLOUDFLARE_ACCOUNT_ID=` in `.env.local`. Both are read by `wrangler`; values are never printed.
+- **Do not add either to Vercel** — they are local tooling credentials, not app runtime config.
+- Set an expiry (a week is plenty for the handoff) and delete the token once the migration is done.
+- First thing to run against it: `wrangler whoami` plus `GET /user/tokens/verify`, to confirm the
+  scopes before anything is created.
+
 ## What can be scripted from the dev machine
 
 Enabler: a **scoped Cloudflare API token** exported as `CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit,
