@@ -179,6 +179,14 @@ either way) and create the rule `info@` → personal mailbox. To script it inste
 `Email Routing Addresses: Edit` (account-scoped destinations) plus `Email Routing Rules: Edit`
 (zone-scoped, so it joins the migration-day rows alongside `DNS: Edit`). Not worth it for three clicks.
 
+**Receiving is Email Routing's job, not Resend's.** The app only ever *sends* through Resend. What makes
+the owner↔customer loop work is the inbound half: the owner replies as `info@levelgroundlandscape.com`
+(mail client with a send-as alias), the customer replies to that address, and Cloudflare's MX forwards it
+to the owner's mailbox — no form involved after first contact, which is exactly the case routing exists
+for. Resend does offer inbound email, but using it would require Resend to own the domain's MX records,
+displacing Email Routing — one or the other, never both. Routing is free, lands in the owner's existing
+inbox, and needs no code.
+
 ## R2 audit — what the new bucket should copy, and what it should change
 
 Measured 2026-09-27 against the live bucket, not assumed.
@@ -352,6 +360,12 @@ absent from production. Never add it to Vercel — the account it acts on is pin
 
 The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
 task queues up for one session — in this order, because the old site must not drop out along the way:
+
+Everything zone-scoped lands here in one go: the nameserver flip; **Resend domain verification**
+(SPF/DKIM/DMARC plus the `send.` MX); **Email Routing** MX; the **R2 custom domain** if the r2.dev
+publish domain is retired; and the **Vercel custom domain** with `NEXT_PUBLIC_BASE_URL`. Turnstile
+already lists the production hostnames, so it needs nothing at that point — the widget only changes if a
+preview deployment needs to run the form.
 
 1. **Add the zone** in the new Cloudflare account and review what Cloudflare imports. The old site's
    A/CNAME (and any TXT verification records) must survive — the old site keeps serving as long as
