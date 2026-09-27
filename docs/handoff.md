@@ -13,7 +13,7 @@ Status: draft, built while migrating to new accounts (2026-09).
 | **Cloudflare — R2** | Media bucket (`R2_BUCKET_NAME`), public publish domain | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` (`.env.local`), `R2_BASE_URL` (`.env`) | S3 credentials are dashboard-created (R2 → Manage API tokens). Publish domain is `r2.dev` today; custom domain later. |
 | **Cloudflare — Worker** | Contact-form upload endpoint (`workers/upload-worker`) | `WORKER_URL` (`.env`), `UPLOAD_TOKEN_SECRET` (`.env.local` + worker secret) | Deployed with `wrangler deploy`; the secret is set with `wrangler secret put` and never lives in the repo. |
 | **Cloudflare — Turnstile** | Contact-form CAPTCHA | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (`.env`), `TURNSTILE_SECRET_KEY` (`.env.local`) | Third piece under the same Cloudflare account — easy to forget. |
-| **Resend** | Contact notifications + admin auth mail | `RESEND_API_KEY` (`.env.local`), `CONTACT_EMAIL_FROM` (`.env`) | Needs a **verified domain** for the client; the sandbox sender only delivers to the account owner's address. |
+| **Resend** | Contact notifications + admin auth mail | `RESEND_API_KEY` (`.env.local`), `CONTACT_EMAIL_FROM` (`.env`) | Needs a **verified domain**; the sandbox sender only delivers to the account owner's address. Create the key as **Sending access, restricted to the domain** — the app only ever sends. Domain creation/verification needs full access (or the dashboard) on migration day. |
 | **Vercel** | Hosting + the contact-cleanup cron | `CRON_SECRET` (`.env.local`), all of the above | Cron hits `/api/contact/cleanup` daily (`vercel.json`). |
 | **GitHub** | Source of truth | — | Repo + the SSH key are part of the handoff, not runtime. |
 | **Domain + DNS** | Production origin, Resend records, R2 custom domain later | `NEXT_PUBLIC_BASE_URL` (`.env`) | Registrar + Cloudflare zone. Set `NEXT_PUBLIC_BASE_URL` to the real origin once it exists. |
@@ -325,13 +325,14 @@ publish domain — with the old value, every new upload would have been recorded
 
 Widget **"level-ground contact form"** created through the API (`mode: managed`) on the new account, with
 hostnames `levelgroundlandscape.com`, `www.levelgroundlandscape.com`, `localhost` and
-`level-ground.vercel.app`. Sitekey `0x4AAAAAAFFhQnN6o-Vl5QJG` went into `.env` as
+`level-ground-seven.vercel.app`. Sitekey `0x4AAAAAAFFhQnN6o-Vl5QJG` went into `.env` as
 `NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the secret went into `.env.local` as `TURNSTILE_SECRET_KEY` and was
 never displayed. `siteverify` accepts the secret (a dummy token answers `invalid-input-response`, not
 `invalid-input-secret`).
 
-The hostname list must contain **every** origin the form runs on — if the new Vercel deployment's
-hostname is not `level-ground.vercel.app`, add it there or the widget refuses to render on that origin.
+The hostname list must contain **every** origin the form runs on, preview deployments included:
+Turnstile rejects wildcards (`*.vercel.app` answers `invalid hostname`), and on an unlisted origin the
+widget simply refuses to render.
 
 Account ids are consolidated (this section's earlier note said otherwise): `CLOUDFLARE_ACCOUNT_ID` is
 deleted everywhere. `wrangler` reads the id from `workers/upload-worker/wrangler.toml` (`account_id`) —
