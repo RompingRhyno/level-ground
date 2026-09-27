@@ -249,11 +249,20 @@ The deployed `level-ground-upload-worker` matches this repo (variable `ALLOWED_O
 reconcile before the new deploy.
 
 But the dashboard also shows a second worker, **`r2-upload-limiter`**, bound to the same bucket with no
-vars or secrets. It appears **nowhere** in this repo (no code, no config, no env reference; the app only
-knows `WORKER_URL`) — so it is legacy, presumably created during early R2 experiments. Leave it alone;
-it costs nothing and dies with the old account. Two things to settle before retiring that account:
-confirm what it was for, and confirm nothing outside this project calls it. Do not recreate it on the
-new account unless its purpose turns out to be load-bearing.
+vars or secrets, and it appears **nowhere** in this repo (no code, no config, no env reference; the app
+only knows `WORKER_URL`). Its deployed code was read and then probed:
+
+- On paper it accepts any PUT path, performs **no authentication**, and writes the body to the bucket
+  key taken from the URL, with a 10 MB size cap. That is an open write endpoint into a publicly
+  readable bucket.
+- Measured: it is live (`GET` → 405 with its canned message), but **it cannot actually write.** Every
+  PUT dies inside `R2_BUCKET.put()` because the body is piped through a `TransformStream`, which has no
+  known length, and the R2 API rejects that — the worker reports it as a misleading 413. A probe upload
+  left nothing in the bucket, and the probe object was deleted either way.
+- Recommendation: **delete it** (dashboard, 30 seconds) rather than park it. It is unattended code with
+  no auth, no owner and no consumer in this project, and it never worked as written on the current
+  runtime. Do not recreate it on the new account. If the old site turns out to rely on it, delete it
+  right after the migration instead.
 
 ### Billing
 
