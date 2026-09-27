@@ -3,7 +3,7 @@ import { compare } from 'bcryptjs'
 import { randomBytes } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { generateToken, sendUnlockEmail } from '@/lib/auth-utils'
-import { SESSION_COOKIE } from '@/lib/auth'
+import { SESSION_COOKIE } from '@/lib/session-cookie'
 
 const MAX_ATTEMPTS = 3
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days

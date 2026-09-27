@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { SESSION_COOKIE } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 import {
   generateToken,
   isStrongPassword,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SESSION_COOKIE } from '@/lib/auth'
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 // Public admin auth pages — no session required.
 const PUBLIC_ADMIN = [
@@ -12,8 +12,8 @@ const PUBLIC_ADMIN = [
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // ── /api/auth/* — Better Auth's own endpoints + our custom sign-in route.
-  //    These handle their own authentication; pass through unconditionally.
+  // ── /api/auth/* — our sign-in, sign-out and password/unlock endpoints.
+  //    They authenticate themselves; pass through unconditionally.
   if (pathname.startsWith('/api/auth/')) return NextResponse.next()
 
   // ── /api/contact — public form submission endpoint.
@@ -27,8 +27,9 @@ export function proxy(request: NextRequest) {
   )
 
   // ── /admin/* — require a session cookie; redirect to login if absent.
-  //    Role checks (e.g. owner-only pages) are enforced by the page components
-  //    via auth.api.getSession(), not here — the proxy is a fast first-pass filter.
+  //    Role checks (e.g. owner-only pages) belong to the page, through getSession() / the
+  //    requireSession() guard in route handlers — the proxy is a fast first-pass filter that
+  //    only tests whether a cookie is present.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     if (!hasSession) {
       return NextResponse.redirect(new URL('/admin/login', request.url))

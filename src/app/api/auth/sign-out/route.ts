@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { SESSION_COOKIE } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 /**
  * Sign-out, deliberately shadowing better-auth's endpoint of the same name.

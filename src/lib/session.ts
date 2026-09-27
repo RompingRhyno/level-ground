@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
-import { SESSION_COOKIE } from '@/lib/auth'
+import { SESSION_COOKIE } from '@/lib/session-cookie'
 
 export async function getSession() {
   const cookieStore = await cookies()
