@@ -389,9 +389,16 @@ preview deployment needs to run the form.
    needs care: keep those records **DNS-only** unless the old site is fine being proxied.
 2. **Flip the nameservers** at the registrar to the pair the new account assigns, then confirm the old
    site still resolves and serves.
-3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX), Email Routing's MX,
-   and add the real domain to the Turnstile widget's hostname list.
-4. **Swap the media credentials** once the object copy verifies: `R2_ACCESS_KEY_ID` /
+3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX) and Email Routing's
+   MX. Turnstile already lists the production hostnames, so it needs nothing here.
+4. **Activate the two email paths**, in this order because each depends on the previous one:
+   add the domain in Resend (Dashboard → Domains) and wait for verification; enable Email Routing
+   (Onboard Domain) — routing must be live *before* the alias test, since the send-as confirmation code
+   is delivered to `info@`; then add `info@levelgroundlandscape.com` in the owner's mail client as a
+   send-as alias with Resend's SMTP — host `smtp.resend.com`, port 465 (SSL) or 587 (STARTTLS), username
+   literally `resend`, password a **dedicated sending-access key restricted to the domain** — and confirm
+   with the code that arrives.
+5. **Swap the media credentials** once the object copy verifies: `R2_ACCESS_KEY_ID` /
    `R2_SECRET_ACCESS_KEY` → the new pair, `R2_ACCOUNT_ID` → the new account, and
    `R2_BUCKET_NAME` / `R2_BASE_URL` → the new bucket and its publish domain. Delete the temporary
    `R2_NEW_*` names afterwards. An upload through the admin exercises the new bucket end to end.
@@ -399,7 +406,7 @@ preview deployment needs to run the form.
    `meta.poster` hold absolute URLs (5 + 28 references), and until they point at the new domain the
    site keeps serving from the old bucket. Verify zero old-domain references remain afterwards, and
    purge the affected cache tags.
-5. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
+6. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
    smoke checks (home, /projects, both detail pages, a 404, /sitemap.xml, /admin redirect).
 
 ## What can be scripted from the dev machine
