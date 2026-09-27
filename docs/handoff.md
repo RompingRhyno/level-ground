@@ -434,6 +434,17 @@ deployed home page references 19 media URLs, every one on `pub-51a88a…r2.dev`.
 admin now land in the new bucket and are recorded against the new base, so the two hosts coexist until
 the pass completes — never retire the old bucket beforehand.
 
+### Image host fix (2026-09-27)
+
+`next.config.ts` allowed only the host in `R2_BASE_URL` — now the new bucket — so every **optimized** image
+whose stored URL still pointed at the old host answered `400 INVALID_IMAGE_OPTIMIZE_REQUEST` and rendered
+broken, while the hero video kept playing because `<video>` tags never touch the optimizer. The previous
+publish host is now listed in `legacyR2Hosts`; delete that entry once no Page or Asset row references it.
+
+Verified on the deployed site after the fix: an old-host image proxies at `200 image/jpeg`, and the known
+orphan reference (`…residential-landscaping-maintenance-hero2.jpg`) still answers `404` because its object
+does not exist anywhere — it needs re-uploading or replacing in the page editor.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
