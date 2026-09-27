@@ -403,6 +403,18 @@ unverified. Two follow-ups for handoff: point the row at the client's real inbox
 (its `name` field still reads "Ryan"), and remember that after domain verification *any* recipient works,
 so the row stops being constrained to the account owner's address.
 
+### Vercel project settings (2026-09-27)
+
+- **Function Region** should be US West (the database is `us-west-2` and R2 is WNAM). That is the setting
+  changed on the old project; it has to be set again on the new one, per project.
+- The line `Running build in Washington, D.C., USA (East) – iad1` in build logs is **normal and not
+  configurable**: Vercel builds always run in the default build region, whatever the function region says.
+  It is cosmetic for this app — the functions are what talk to Neon and R2.
+- `NEXT_PUBLIC_BASE_URL` currently points at the Vercel origin; it changes at the domain. Env changes only
+  apply to *new* deployments, so every env edit needs a redeploy.
+- The first deployment after pasting env prerenders pages, so it fails without a working `DATABASE_URL` —
+  that is the usual cause of a build error on a fresh project.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
