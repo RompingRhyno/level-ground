@@ -237,6 +237,24 @@ deploy. It needs `CRON_SECRET` in the environment (Vercel sends it as the bearer
 one run per day. Disable the old project's cron once the new deployment is live so cleanup never runs
 twice.
 
+**Location WNAM is auto-placement, and it is the right one.** The create call passed no location hint —
+R2 chose WNAM and reported it back, exactly as the old bucket reports WNAM via `GetBucketLocation`. For
+a Vancouver-only audience that is the closest R2 storage region, so there is nothing to investigate; the
+hint is also fixed at creation, which settles it.
+
+### Old-account worker inventory
+
+The deployed `level-ground-upload-worker` matches this repo (variable `ALLOWED_ORIGIN`, secret
+`UPLOAD_TOKEN_SECRET`, binding `R2_BUCKET = level-ground`, no cron triggers) — no config drift to
+reconcile before the new deploy.
+
+But the dashboard also shows a second worker, **`r2-upload-limiter`**, bound to the same bucket with no
+vars or secrets. It appears **nowhere** in this repo (no code, no config, no env reference; the app only
+knows `WORKER_URL`) — so it is legacy, presumably created during early R2 experiments. Leave it alone;
+it costs nothing and dies with the old account. Two things to settle before retiring that account:
+confirm what it was for, and confirm nothing outside this project calls it. Do not recreate it on the
+new account unless its purpose turns out to be load-bearing.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
