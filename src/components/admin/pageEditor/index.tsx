@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PageConfig, PageSection } from "@/types/sections";
+import AlertDialog from "@/components/ui/AlertDialog";
 import { PreviewWidthContext } from "./PreviewWidthContext";
 import SectionEditor from "./SectionEditor";
 
@@ -16,6 +18,7 @@ type PreviewSizeLabel = typeof PREVIEW_SIZES[number]["label"];
 
 // ── AdminPageEditor ────────────────────────────────────────────────────────
 export default function AdminPageEditor({ initialPage }: { initialPage: PageConfig }) {
+  const router = useRouter();
   const [label, setLabel] = useState(initialPage.label || "");
   const [savedLabel, setSavedLabel] = useState(initialPage.label || "");
   const [sections, setSections] = useState<PageSection[]>(initialPage.sections || []);
@@ -25,6 +28,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [showRaw, setShowRaw] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /** Non-null while the unsaved-changes dialog is open; holds where the user wanted to go. */
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   const dirty =
     !saving &&
@@ -33,6 +38,47 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const saveClass = dirty
     ? "btn-positive px-4 py-2 rounded text-sm"
     : "bg-gray-500 cursor-not-allowed text-white px-4 py-2 rounded text-sm";
+
+  /**
+   * Unsaved work should not disappear silently, so leaving the editor asks first — through the same
+   * dialog the media pages use. In-app links are caught in the capture phase (before Next's own Link
+   * handler) and held until the user chooses; reloads and tab closes use the browser's own prompt, which
+   * is the only thing that can intercept them. The browser Back button cannot be intercepted by an App
+   * Router page — that path is the known gap.
+   */
+  useEffect(() => {
+    if (!dirty) return;
+
+    function onDocumentClick(event: MouseEvent) {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const anchor = (event.target as HTMLElement | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.hasAttribute("download")) return;
+
+      const url = new URL(anchor.href, window.location.href);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname === window.location.pathname) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingHref(`${url.pathname}${url.search}${url.hash}`);
+    }
+
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    document.addEventListener("click", onDocumentClick, true);
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      document.removeEventListener("click", onDocumentClick, true);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [dirty]);
 
   function updateSection(s: PageSection, i: number) {
     const arr = [...sections];
@@ -101,8 +147,9 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
     }
   }
 
-  async function save() {
-    if (!dirty) return;
+  /** Resolves true when the page was saved, so the leave-guard can navigate only on success. */
+  async function save(): Promise<boolean> {
+    if (!dirty) return true;
     setSaving(true);
     setMessage(null);
     try {
@@ -115,13 +162,15 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       if (!res.ok) {
         const body = await res.json();
         setMessage(body?.error || `Save failed (${res.status})`);
-      } else {
-        setMessage("Saved");
-        setSavedSections([...sections]);
-        setSavedLabel(label);
+        return false;
       }
+      setMessage("Saved");
+      setSavedSections([...sections]);
+      setSavedLabel(label);
+      return true;
     } catch (err: any) {
       setMessage(err.message || String(err));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -129,6 +178,30 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
   return (
     <section className="max-w-500 mx-auto px-4 space-y-4">
+      <AlertDialog
+        open={pendingHref !== null}
+        title="Unsaved changes"
+        description="Leaving this page discards your edits unless you save them first."
+        secondaryLabel="Keep editing"
+        cancelLabel="Discard changes"
+        confirmLabel="Save & leave"
+        confirmVariant="primary"
+        onSecondary={() => setPendingHref(null)}
+        onCancel={() => {
+          const href = pendingHref;
+          setPendingHref(null);
+          if (href) router.push(href);
+        }}
+        onConfirm={async () => {
+          const href = pendingHref;
+          const saved = await save();
+          if (saved && href) {
+            setPendingHref(null);
+            router.push(href);
+          }
+        }}
+      />
+
       <div>
         <label className="block text-sm font-medium text-gray-700">Label</label>
         <input
