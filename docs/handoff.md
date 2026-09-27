@@ -384,6 +384,25 @@ deleted everywhere. `wrangler` reads the id from `workers/upload-worker/wrangler
 the env var is only needed when a wrangler file cannot carry it — while the app and the scripts use
 `R2_ACCOUNT_ID`.
 
+### Secret status (2026-09-27)
+
+| Secret | State | Must match |
+|---|---|---|
+| `UPLOAD_TOKEN_SECRET` | rotated; sha256[:12] `c841436ce5d8` | `.env.local` ↔ worker secret (deployed and verified) ↔ Vercel at cutover |
+| `CRON_SECRET` | rotated; sha256[:12] `9b308571a1ca` | `.env.local` → Vercel, which injects it into the cron call |
+| `RESEND_API_KEY` | new sending-access key, authenticated successfully | `.env.local` → Vercel |
+| `TURNSTILE_SECRET_KEY` | new widget's secret; `siteverify` accepts it | `.env.local` → Vercel |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `0x4AAAAAAFFhQnN6o-Vl5QJG`, matches the account's widget | `.env` → Vercel |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | new account, scoped to `level-ground` | `.env.local` → Vercel |
+
+**The notification recipient must change with the account.** The `ContactRecipient` row still points at
+`ryan94j@gmail.com` (the developer's personal address) while the new Resend account's owner is
+`levelgrounddev@gmail.com`. Until a domain is verified, a Resend key can only deliver to the account
+owner's address, and the API says so verbatim: a test send answers
+`403 — You can only send testing emails to your own email address (levelgrounddev@gmail.com)`. So before
+cutover, either update that row to the client's address or complete domain verification — otherwise every
+contact-form submission fails at the send step and the visitor sees an error.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
