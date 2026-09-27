@@ -434,16 +434,22 @@ deployed home page references 19 media URLs, every one on `pub-51a88a…r2.dev`.
 admin now land in the new bucket and are recorded against the new base, so the two hosts coexist until
 the pass completes — never retire the old bucket beforehand.
 
-### Image host fix (2026-09-27)
+### Media: fresh slate (decided 2026-09-27)
 
-`next.config.ts` allowed only the host in `R2_BASE_URL` — now the new bucket — so every **optimized** image
-whose stored URL still pointed at the old host answered `400 INVALID_IMAGE_OPTIMIZE_REQUEST` and rendered
-broken, while the hero video kept playing because `<video>` tags never touch the optimizer. The previous
-publish host is now listed in `legacyR2Hosts`; delete that entry once no Page or Asset row references it.
+The transition is a re-authored content pass, not a compatibility window, so the old bucket is **not**
+bridged: `remotePatterns` stays derived from `R2_BASE_URL` alone and an old-bucket image fails visibly
+(`400` from the optimizer) until the editor re-points that section. A short-lived patch that allowed the
+legacy host was reverted for exactly this reason — it made stale references keep rendering from a bucket
+that is about to disappear, hiding the work left to do.
 
-Verified on the deployed site after the fix: an old-host image proxies at `200 image/jpeg`, and the known
-orphan reference (`…residential-landscaping-maintenance-hero2.jpg`) still answers `404` because its object
-does not exist anywhere — it needs re-uploading or replacing in the page editor.
+The admin sweep behaved as a fresh slate: **0 assets, 0 `MediaUsage` rows**, while the old bucket's objects
+were untouched — the app's R2 credentials point at the new bucket, so asset deletion can no longer reach
+the old one at all (its objects only serve the URLs still baked into page JSON). `HEAD` on those URLs still
+answers `200`, which is the evidence that the objects remain. Deleting the old bucket is therefore an
+owner-side action in the old account's dashboard, at any point after the editor work below.
+
+`<video>` tags never touch the optimizer, so the hero clip keeps playing from the old bucket until that
+reference is re-pointed or the bucket is deleted — expected, not a regression.
 
 ### Media content pass — what deleting assets does (verified in code, 2026-09-27)
 
@@ -460,12 +466,20 @@ than blocking. So how the public site reacts depends on how each section stores 
 Nothing 500s, and re-picking in the page editor fixes any of it — but deletion is irreversible (the objects
 leave the bucket), and it degrades the live site the moment it happens, so:
 
-**Recommended order for the content pass**
+**Remaining order for the content pass** (rows are already deleted, so step 3 is gone)
 
-1. Upload the finalized media first (into the folders that will keep the same slugs).
-2. Re-point each page in the editor and look at the rendered page — pickers list the new assets.
-3. Delete the superseded assets **last**, folder by folder: the delete warning names the pages still using
-   each one, so an empty list is the signal that page has been fully migrated.
+1. Upload the finalized media into the folders that keep their slugs.
+2. Re-point these five dangling references in the page editor — this is the complete list, measured:
+
+   | Page | Field | Was |
+   |---|---|---|
+   | `landscape-design-installation` | `sections[0].image` | `…west-35th-4.jpg` |
+   | `contact` | `sections[0].image` | `…west-35th-4.jpg` |
+   | `home` | `sections[0].image` | `…IMG_9006.JPG` |
+   | `home` | `sections[1].videoUrl` | `…Lawn install.mp4` |
+   | `home` | `sections[2].services[1].image` | `…landscaping-maintenance-hero2.jpg` (object never existed) |
+
+3. Delete the old bucket from the old account's dashboard once the references are re-pointed.
 
 Junk folders (`Example Folder`, `Assets`, `Videos`) are safe to delete from at any point — the user cleared
 exactly those for testing. If a folder should not appear at all while it is empty, use its hide toggle.
