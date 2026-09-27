@@ -96,6 +96,13 @@ delete). `/api/storage` derives usage from `sum(Asset.size)` in Postgres, so not
 runtime — read/list access exists for tooling and verification, which is why the scoped token still
 takes Read *and* Write: one credential covers the app and confirms uploads afterwards.
 
+**Client IP filtering: left empty, deliberately.** The credential is used from Vercel Functions, whose
+egress IPs are dynamic with no published range (Vercel documents allowlisting as requiring their
+Static IPs add-on at $100/month), and from the dev machine, whose public IP changes. A filter would
+eventually 403 uploads and deletions with confusing errors, and buy little: the browser never sees this
+secret (presigned URLs are signed server-side) and the upload worker does not use S3 credentials at
+all. The control here is a credential scoped to one bucket, shown once, and rotatable.
+
 **Credential sets, now that no bulk copy is planned.** The swap is a straight replacement of the main
 names — `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (`R2_BUCKET_NAME` already matches)
 and `R2_BASE_URL` — and existing images keep serving throughout, because every stored URL is absolute
