@@ -80,6 +80,14 @@ precise, because these split neatly:
 
 ### The flow that actually works: route inbound with Cloudflare, send outbound with Resend
 
+Note what each piece is *not* for. The contact notification itself needs no Cloudflare at all — Resend
+delivers it to the owner's personal mailbox directly, which is already working today. Routing's only
+job is to give the domain an **inbox**, and that is needed for exactly two things: reading Gmail's
+send-as confirmation code, and letting customers' replies land somewhere instead of bouncing — once
+outgoing mail carries the domain address, Reply goes *to* the domain, so something has to receive
+there. Free, and Resend's records live on the `send.` subdomain with routing's on the root, so the two
+do not collide.
+
 Cloudflare cannot rewrite a reply the owner sends from their own mail client — that message never
 touches Cloudflare; it leaves via whatever service that client uses. But the two halves compose with
 what the project already has:
