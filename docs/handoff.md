@@ -215,6 +215,28 @@ type + session expiry, 15-minute sessions, max 5 files, slot states with retry-t
   worker's `ALLOWED_ORIGINS`. The worker list lives in `wrangler.toml` — a dashboard edit to that var
   is overwritten by the next `wrangler deploy`.
 
+### Bucket created 2026-09-27
+
+`level-ground` now exists on the new account (WNAM, jurisdiction default), configured through the
+Cloudflare API and read back:
+
+- **Public:** r2.dev enabled → `R2_BASE_URL` becomes
+  `https://pub-5dd7bf9ee41145a89487852a67ee30a1.r2.dev` (404 on an unknown key confirms it is live).
+- **CORS:** the five origins above; verified behaviourally — allowed origin gets a 204 preflight with a
+  matching `Access-Control-Allow-Origin`, a disallowed one gets **403 from R2 itself**.
+- **Lifecycle:** "Contact Upload Retention", `contact-uploads/`, 60 days.
+
+**No bulk object copy** (decision): media gets re-uploaded through the new bucket during a content
+pass, which also exercises the upload flow. Consequence to keep in mind: the 27 existing assets and the
+folder covers still live *only* in the old bucket, and page sections reference them by absolute URL — so
+nothing breaks until that bucket is deleted. Retire the old account only after the content pass has
+replaced those references, or copy the 28 objects first if the pass is not happening.
+
+Vercel cron: `vercel.json` ships the daily cleanup job with the repo, so the new project picks it up on
+deploy. It needs `CRON_SECRET` in the environment (Vercel sends it as the bearer token) and Hobby allows
+one run per day. Disable the old project's cron once the new deployment is live so cleanup never runs
+twice.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
