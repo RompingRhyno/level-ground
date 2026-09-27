@@ -421,6 +421,19 @@ so the row stops being constrained to the account owner's address.
   local runs do not. Fixed by removing both (they only ever wrote unused credential rows), and the rule
   from here on: **run `prisma generate` after any schema change before trusting `tsc` or a build.**
 
+### Vercel status, verified 2026-09-27
+
+Read straight off the API with the tooling token: latest production deployment **READY** (commit
+`303f7d6`, the `prisma.account` fix — the three before it failed on that), **Function Region `pdx1`**
+(Portland, the same region family as Neon's `us-west-2`, so nothing to change), all **15 expected env
+names present** with sane targets, and the tooling-only tokens (`VERCEL_API_TOKEN`,
+`CLOUDFLARE_API_TOKEN`) correctly absent from Vercel.
+
+While the media content pass is pending, the site legitimately serves from the **old** bucket: the
+deployed home page references 19 media URLs, every one on `pub-51a88a…r2.dev`. Uploads made through the
+admin now land in the new bucket and are recorded against the new base, so the two hosts coexist until
+the pass completes — never retire the old bucket beforehand.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
