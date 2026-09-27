@@ -104,7 +104,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
       <div className="shrink-0 flex items-center py-4">
         <Link href="/">
           <Image
-            src="/logo-dark.webp"
+            src="/logo-dark.png"
             alt="Level Ground Landscaping"
             width={252}
             height={36}
