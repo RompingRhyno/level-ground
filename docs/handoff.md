@@ -445,6 +445,31 @@ Verified on the deployed site after the fix: an old-host image proxies at `200 i
 orphan reference (`…residential-landscaping-maintenance-hero2.jpg`) still answers `404` because its object
 does not exist anywhere — it needs re-uploading or replacing in the page editor.
 
+### Media content pass — what deleting assets does (verified in code, 2026-09-27)
+
+`DELETE /api/assets/[id]` removes the R2 objects (registered file **plus** every rendition and poster), the
+`MediaUsage` rows and the asset row, then revalidates the affected pages; it **reports** `usedOn` rather
+than blocking. So how the public site reacts depends on how each section stores its media:
+
+| Reference kind | After deleting the asset | Notes |
+|---|---|---|
+| Static gallery (`assetIds[]`) | the tile simply disappears | the gallery resolves rows by id, so missing ids contribute nothing — no broken image, no error |
+| Folder card cover | grey placeholder block | `entityImages` pin first, then the first asset; a folder with no assets renders the placeholder and the card stays listed |
+| URL-based sections (`hero.image`, `twoColumn`, `banner`, `services[].image`, `contact.image`, `video.videoUrl`, pinned `entityImages`) | **broken image / black player** | the URL lives in the page JSON and survives deletion, and nothing in the media components has an `onError` fallback |
+
+Nothing 500s, and re-picking in the page editor fixes any of it — but deletion is irreversible (the objects
+leave the bucket), and it degrades the live site the moment it happens, so:
+
+**Recommended order for the content pass**
+
+1. Upload the finalized media first (into the folders that will keep the same slugs).
+2. Re-point each page in the editor and look at the rendered page — pickers list the new assets.
+3. Delete the superseded assets **last**, folder by folder: the delete warning names the pages still using
+   each one, so an empty list is the signal that page has been fully migrated.
+
+Junk folders (`Example Folder`, `Assets`, `Videos`) are safe to delete from at any point — the user cleared
+exactly those for testing. If a folder should not appear at all while it is empty, use its hide toggle.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
