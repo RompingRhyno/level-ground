@@ -54,8 +54,17 @@ the domain is not there yet, create the token account-scoped now and add DNS:Edi
 **Separate from this token:** the app's runtime R2 credentials come from the R2 dashboard
 (R2 → Account Details → Manage API Tokens → *Create Account API token*), permission **Object Read &
 Write** scoped to the new bucket. That pair (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) is what the
-presigned uploads and deletes use, and the secret is only shown once at creation. R2 must be
-"purchased" (free tier counts) before that page allows token creation.
+presigned uploads and deletes use; the secret is shown once at creation, while the Access Key ID stays
+listed — a lost secret means rolling the token. R2 must be "purchased" (free tier counts) before that
+page allows token creation.
+
+**Two credential sets coexist until the media copy is done.** The old account's keys must keep working
+as the copy *source*, so the new pair goes in under temporary names —
+`R2_NEW_ACCESS_KEY_ID` / `R2_NEW_SECRET_ACCESS_KEY` — and the main names (`R2_ACCOUNT_ID`,
+`R2_BUCKET_NAME`, `R2_BASE_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`) are switched to the new
+account only once the copy verifies. The S3 endpoint takes no variable: the app builds it from the
+account id as `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`, so the value Cloudflare showed
+should match that shape for the new account id.
 
 - **Placement:** `CLOUDFLARE_API_TOKEN=` and (if the account is not the only one on the token)
   `CLOUDFLARE_ACCOUNT_ID=` in `.env.local`. Both are read by `wrangler`; values are never printed.
@@ -136,7 +145,11 @@ task queues up for one session — in this order, because the old site must not 
    site still resolves and serves.
 3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX), Email Routing's MX,
    and add the real domain to the Turnstile widget's hostname list.
-4. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
+4. **Swap the media credentials** once the object copy verifies: `R2_ACCESS_KEY_ID` /
+   `R2_SECRET_ACCESS_KEY` → the new pair, `R2_ACCOUNT_ID` → the new account, and
+   `R2_BUCKET_NAME` / `R2_BASE_URL` → the new bucket and its publish domain. Delete the temporary
+   `R2_NEW_*` names afterwards. An upload through the admin exercises the new bucket end to end.
+5. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
    smoke checks (home, /projects, both detail pages, a 404, /sitemap.xml, /admin redirect).
 
 ## What can be scripted from the dev machine
