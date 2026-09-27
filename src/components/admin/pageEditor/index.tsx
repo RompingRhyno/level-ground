@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PageConfig, PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
@@ -16,6 +16,11 @@ const PREVIEW_SIZES = [
 
 type PreviewSizeLabel = typeof PREVIEW_SIZES[number]["label"];
 
+/** Where the user was heading when the unsaved-changes dialog interrupted them. */
+type PendingNav = { kind: "href"; href: string } | { kind: "back" };
+
+const GUARD_STATE_KEY = "levelGroundEditorGuard";
+
 // ── AdminPageEditor ────────────────────────────────────────────────────────
 export default function AdminPageEditor({ initialPage }: { initialPage: PageConfig }) {
   const router = useRouter();
@@ -28,8 +33,10 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [showRaw, setShowRaw] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  /** Non-null while the unsaved-changes dialog is open; holds where the user wanted to go. */
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  /** Non-null while the unsaved-changes dialog is open; remembers the interrupted destination. */
+  const [pending, setPending] = useState<PendingNav | null>(null);
+  /** Set just before we navigate away on purpose, so the popstate we cause is not treated as a fresh Back. */
+  const leavingRef = useRef(false);
 
   const dirty =
     !saving &&
@@ -40,14 +47,20 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
     : "bg-gray-500 cursor-not-allowed text-white px-4 py-2 rounded text-sm";
 
   /**
-   * Unsaved work should not disappear silently, so leaving the editor asks first — through the same
-   * dialog the media pages use. In-app links are caught in the capture phase (before Next's own Link
-   * handler) and held until the user chooses; reloads and tab closes use the browser's own prompt, which
-   * is the only thing that can intercept them. The browser Back button cannot be intercepted by an App
-   * Router page — that path is the known gap.
+   * Guard every way out while there are unsaved edits:
+   *  - in-app links: caught in the capture phase, before Next's own Link handler;
+   *  - Back button: while dirty we keep a duplicate history entry on the same URL, so pressing Back lands
+   *    on it (URL unchanged, nothing lost) and hands us the decision. Staying re-arms the entry; leaving
+   *    goes one entry further back, which is where the user was actually heading;
+   *  - reload / tab close: the browser's own prompt, the only hook available for those.
+   *
+   * Two honest limits: a fresh tab has no entry behind the editor, so "leaving" there does nothing, and a
+   * deliberate save leaves one harmless extra history entry behind (one dead Back press).
    */
   useEffect(() => {
     if (!dirty) return;
+
+    window.history.pushState({ [GUARD_STATE_KEY]: true }, "", window.location.href);
 
     function onDocumentClick(event: MouseEvent) {
       if (event.defaultPrevented || event.button !== 0) return;
@@ -64,7 +77,12 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
       event.preventDefault();
       event.stopPropagation();
-      setPendingHref(`${url.pathname}${url.search}${url.hash}`);
+      setPending({ kind: "href", href: `${url.pathname}${url.search}${url.hash}` });
+    }
+
+    function onPopState() {
+      if (leavingRef.current) return;
+      setPending({ kind: "back" });
     }
 
     function onBeforeUnload(event: BeforeUnloadEvent) {
@@ -73,12 +91,25 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
     }
 
     document.addEventListener("click", onDocumentClick, true);
+    window.addEventListener("popstate", onPopState);
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       document.removeEventListener("click", onDocumentClick, true);
+      window.removeEventListener("popstate", onPopState);
       window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [dirty]);
+
+  /** Staying put after a Back press: re-arm the duplicate entry so the next press is caught too. */
+  function rearmBackGuard() {
+    if (dirty) window.history.pushState({ [GUARD_STATE_KEY]: true }, "", window.location.href);
+  }
+
+  function goTo(target: PendingNav) {
+    leavingRef.current = true;
+    if (target.kind === "href") router.push(target.href);
+    else window.history.back();
+  }
 
   function updateSection(s: PageSection, i: number) {
     const arr = [...sections];
@@ -179,24 +210,27 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   return (
     <section className="max-w-500 mx-auto px-4 space-y-4">
       <AlertDialog
-        open={pendingHref !== null}
+        open={pending !== null}
         title="Unsaved changes"
         cancelLabel="Discard changes"
         cancelVariant="danger"
         confirmLabel="Save"
         confirmVariant="positive"
-        onDismiss={() => setPendingHref(null)}
+        onDismiss={() => {
+          setPending(null);
+          rearmBackGuard();
+        }}
         onCancel={() => {
-          const href = pendingHref;
-          setPendingHref(null);
-          if (href) router.push(href);
+          const target = pending;
+          setPending(null);
+          if (target) goTo(target);
         }}
         onConfirm={async () => {
-          const href = pendingHref;
+          const target = pending;
           const saved = await save();
-          if (saved && href) {
-            setPendingHref(null);
-            router.push(href);
+          if (saved) {
+            setPending(null);
+            if (target) goTo(target);
           }
         }}
       />
