@@ -395,13 +395,13 @@ the env var is only needed when a wrangler file cannot carry it — while the ap
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `0x4AAAAAAFFhQnN6o-Vl5QJG`, matches the account's widget | `.env` → Vercel |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | new account, scoped to `level-ground` | `.env.local` → Vercel |
 
-**The notification recipient must change with the account.** The `ContactRecipient` row still points at
-`ryan94j@gmail.com` (the developer's personal address) while the new Resend account's owner is
-`levelgrounddev@gmail.com`. Until a domain is verified, a Resend key can only deliver to the account
-owner's address, and the API says so verbatim: a test send answers
-`403 — You can only send testing emails to your own email address (levelgrounddev@gmail.com)`. So before
-cutover, either update that row to the client's address or complete domain verification — otherwise every
-contact-form submission fails at the send step and the visitor sees an error.
+**The notification recipient now points at `levelgrounddev@gmail.com`** (updated 2026-09-27). It
+previously held the developer's personal address, which the new account's sandbox refused verbatim:
+`403 — You can only send testing emails to your own email address`. A test send through the app's key was
+then **accepted** by Resend, so the notification path works on the new account while the domain is still
+unverified. Two follow-ups for handoff: point the row at the client's real inbox once that is available
+(its `name` field still reads "Ryan"), and remember that after domain verification *any* recipient works,
+so the row stops being constrained to the account owner's address.
 
 ### Billing
 
