@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUniqueFolderSlug, rewriteFolderSlug, slugifyFolderName } from "@/lib/folders";
 import { revalidateFor } from "@/lib/revalidate";
-import { deleteR2Objects } from "@/lib/r2";
+import { deleteR2Objects, r2KeysFromMeta } from "@/lib/r2";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
 const FOLDER_NAME_MAX_LENGTH = 100;
@@ -123,7 +123,7 @@ export async function DELETE(request: NextRequest, context: any) {
 
     const assets = await prisma.asset.findMany({
       where: { folder: folder.slug },
-      select: { id: true, storageKey: true, provider: true },
+      select: { id: true, storageKey: true, provider: true, meta: true },
     });
 
     if (assets.length > 0 && !deleteContents) {
@@ -139,9 +139,12 @@ export async function DELETE(request: NextRequest, context: any) {
 
     let r2 = { deleted: 0, failed: [] as string[] };
     if (assets.length > 0) {
-      r2 = await deleteR2Objects(
-        assets.filter((a) => a.provider === "r2").map((a) => a.storageKey),
-      );
+      // Every object an asset owns: the registered file plus its renditions and poster, which live in
+      // `meta` as public URLs (see r2KeysFromMeta).
+      const keys = assets
+        .filter((a) => a.provider === "r2")
+        .flatMap((a) => [a.storageKey, ...r2KeysFromMeta(a.meta)]);
+      r2 = await deleteR2Objects(keys);
 
       const ids = assets.map((a) => a.id);
       await prisma.$transaction([

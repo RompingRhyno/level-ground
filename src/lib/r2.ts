@@ -49,3 +49,46 @@ export function r2PublicUrlFor(key: string): string | null {
   if (!base) return null;
   return `${base.replace(/\/$/, "")}/${key}`;
 }
+
+/**
+ * Every R2 object key an asset's `meta` refers to.
+ *
+ * A video upload writes one object per rendition plus a poster, and records only their public URLs
+ * (`meta.variants.{720p,1080p}`, `meta.poster`), while the poster backfill also stored an explicit
+ * `*Key` field. Deleting just `Asset.storageKey` therefore left the 720p rendition and the poster
+ * behind in the bucket forever — collect them here so delete paths can remove the whole set.
+ */
+export function r2KeysFromMeta(meta: unknown): string[] {
+  const base = (process.env.R2_BASE_URL || "").replace(/\/$/, "");
+  const keys = new Set<string>();
+
+  const keyFromUrl = (url: string): string | null => {
+    if (base && url.startsWith(`${base}/`)) return url.slice(base.length + 1);
+    // Renditions and posters live under `media/<folder>/…`, so the key can be recovered from the path
+    // alone — which keeps this working when the r2.dev publish domain is replaced by a custom domain.
+    const marker = url.indexOf("/media/");
+    return marker === -1 ? null : url.slice(marker + 1);
+  };
+
+  const visit = (node: unknown, field = "") => {
+    if (typeof node === "string") {
+      if (/^https?:\/\//.test(node)) {
+        const key = keyFromUrl(node);
+        if (key) keys.add(key);
+      } else if (node && /Key$/.test(field)) {
+        keys.add(node);
+      }
+      return;
+    }
+    if (Array.isArray(node)) {
+      for (const entry of node) visit(entry, field);
+      return;
+    }
+    if (node && typeof node === "object") {
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) visit(value, key);
+    }
+  };
+
+  visit(meta);
+  return [...keys].filter(Boolean);
+}

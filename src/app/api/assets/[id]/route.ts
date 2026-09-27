@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { deleteR2Objects } from "@/lib/r2";
+import { deleteR2Objects, r2KeysFromMeta } from "@/lib/r2";
 import { usageForAssets } from "@/lib/media-refs";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
@@ -110,7 +110,7 @@ export async function DELETE(request: NextRequest, context: any) {
     const usedOn = usage[id] ?? [];
 
     const r2 = asset.provider === "r2" && asset.storageKey
-      ? await deleteR2Objects([asset.storageKey])
+      ? await deleteR2Objects([asset.storageKey, ...r2KeysFromMeta(asset.meta)])
       : { deleted: 0, failed: [] as string[] };
 
     await prisma.$transaction([
