@@ -115,6 +115,76 @@ async function main() {
     'https://cdn/clip%20with%20space.mp4',
   ].sort())
 
+  // ── revalidation plan ──────────────────────────────────────────────────────
+  // These hit the database (the plan resolves route bases and collection pages), so assertions are
+  // properties rather than exact arrays: a mutation must invalidate *at least* the things it cannot
+  // be correct without. The non-empty check is the guard that caught nothing for months — a mutation
+  // kind whose plan silently returns `{ tags: [], paths: [] }` looks fine in every log line.
+  console.log('revalidation plan')
+  const { revalidationPlan } = await import('../src/lib/revalidate.ts')
+
+  const folderCreated = await revalidationPlan({ kind: 'folder:created' })
+  check(
+    'folder:created busts the folder list, /projects and the sitemap',
+    [
+      folderCreated.tags.includes('folders'),
+      folderCreated.paths.includes('/projects'),
+      folderCreated.paths.includes('/sitemap.xml'),
+    ],
+    [true, true, true],
+  )
+
+  const renamed = await revalidationPlan({ kind: 'folder:updated', slug: 'new-slug', previousSlug: 'old-slug' })
+  check(
+    'folder rename busts both slugs (tags)',
+    [renamed.tags.includes('folder:new-slug'), renamed.tags.includes('folder:old-slug')],
+    [true, true],
+  )
+  check(
+    'folder rename busts both detail paths',
+    [renamed.paths.includes('/projects/new-slug'), renamed.paths.includes('/projects/old-slug')],
+    [true, true],
+  )
+
+  const folderDeleted = await revalidationPlan({ kind: 'folder:deleted', slug: 'gone' })
+  check(
+    'folder:deleted busts its detail path and the sitemap',
+    [folderDeleted.paths.includes('/projects/gone'), folderDeleted.paths.includes('/sitemap.xml')],
+    [true, true],
+  )
+
+  for (const kind of ['page:saved', 'page:deleted'] as const) {
+    const plan = await revalidationPlan({ kind, slug: 'about' })
+    check(
+      `${kind} busts the page, the nav and the sitemap`,
+      [
+        plan.paths.includes('/about'),
+        plan.paths.includes('/'),
+        plan.paths.includes('/sitemap.xml'),
+        plan.tags.includes('page:about'),
+      ],
+      [true, true, true, true],
+    )
+  }
+
+  const tagChanged = await revalidationPlan({ kind: 'tag:changed' })
+  check('tag:changed busts the tag list', tagChanged.tags.includes('tags'), true)
+
+  const mustInvalidateSomething: Parameters<typeof revalidationPlan>[0][] = [
+    { kind: 'asset:created' },
+    { kind: 'asset:deleted', pageSlugs: ['home'] },
+    { kind: 'asset:reordered', folder: 'some-folder' },
+    { kind: 'folder:created' },
+    { kind: 'folders:reordered' },
+    { kind: 'page:saved', slug: 'home' },
+    { kind: 'page:deleted', slug: 'home' },
+    { kind: 'tag:changed' },
+  ]
+  for (const mutation of mustInvalidateSomething) {
+    const plan = await revalidationPlan(mutation as Parameters<typeof revalidationPlan>[0])
+    check(`${mutation.kind} invalidates something`, plan.tags.length + plan.paths.length > 0, true)
+  }
+
   console.log(failures === 0 ? '\nall checks passed' : `\n${failures} check(s) failed`)
   process.exit(failures === 0 ? 0 : 1)
 }
