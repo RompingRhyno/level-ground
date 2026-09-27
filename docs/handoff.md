@@ -451,6 +451,14 @@ owner-side action in the old account's dashboard, at any point after the editor 
 `<video>` tags never touch the optimizer, so the hero clip keeps playing from the old bucket until that
 reference is re-pointed or the bucket is deleted — expected, not a regression.
 
+**Development is the exception, deliberately.** `next dev` escalates an unconfigured image host into a hard
+runtime error, and the page editor's preview iframe renders the real sections — so a stale reference made
+the editor itself unopenable, blocking the very pass that replaces it. `next.config.ts` therefore adds a
+`**.r2.dev` pattern **only when `NODE_ENV === "development"`**; production keeps the strict list. Verified by
+printing the resolved allowlist under both environments (dev: wildcard present, prod: absent). Restart the
+dev server after touching `next.config.ts`. On the deployed site the editor never crashes either — stale
+previews render as broken images, so the re-point pass can also be done there.
+
 ### Media content pass — what deleting assets does (verified in code, 2026-09-27)
 
 `DELETE /api/assets/[id]` removes the R2 objects (registered file **plus** every rendition and poster), the
