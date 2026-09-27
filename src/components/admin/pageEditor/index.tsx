@@ -181,12 +181,11 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       <AlertDialog
         open={pendingHref !== null}
         title="Unsaved changes"
-        description="Leaving this page discards your edits unless you save them first."
-        secondaryLabel="Keep editing"
         cancelLabel="Discard changes"
-        confirmLabel="Save & leave"
-        confirmVariant="primary"
-        onSecondary={() => setPendingHref(null)}
+        cancelVariant="danger"
+        confirmLabel="Save"
+        confirmVariant="positive"
+        onDismiss={() => setPendingHref(null)}
         onCancel={() => {
           const href = pendingHref;
           setPendingHref(null);
