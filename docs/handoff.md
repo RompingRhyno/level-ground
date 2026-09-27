@@ -84,6 +84,18 @@ R2 → Account Details → API Tokens → **Manage** → *Create Account API tok
 Copy both values when shown (the secret is displayed once) and set `R2_ACCESS_KEY_ID` /
 `R2_SECRET_ACCESS_KEY` / `R2_ACCOUNT_ID` in `.env.local` and `R2_BASE_URL` in `.env`.
 
+Permission naming is legacy, and it misleads: Cloudflare files R2 permissions under the *Workers R2
+Storage* family (R2 started life as a Workers binding), so the dashboard's **Object Read & Write**
+appears in the API permission list as `Workers R2 Storage Bucket Item Read` + `Workers R2 Storage
+Bucket Item Write`. "Bucket Item" means *objects inside a bucket*, scopable to specific buckets, and it
+grants nothing about deploying or running Worker code. Bucket-level settings — create/delete, CORS,
+lifecycle — need the account-level `Workers R2 Storage Write` instead; that is the general token's job.
+
+What the app itself touches: `PutObject` (presigned admin uploads) and `DeleteObject` (cleanup, asset
+delete). `/api/storage` derives usage from `sum(Asset.size)` in Postgres, so nothing lists objects at
+runtime — read/list access exists for tooling and verification, which is why the scoped token still
+takes Read *and* Write: one credential covers the app and confirms uploads afterwards.
+
 **Credential sets, now that no bulk copy is planned.** The swap is a straight replacement of the main
 names — `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (`R2_BUCKET_NAME` already matches)
 and `R2_BASE_URL` — and existing images keep serving throughout, because every stored URL is absolute
