@@ -12,8 +12,8 @@
  */
 import { config } from 'dotenv'
 config({ path: ['.env.local', '.env'] })
-import { randomBytes } from 'crypto'
-import { hash } from 'bcryptjs'
+// No crypto/bcrypt imports: the app verifies `User.passwordHash` directly, and the better-auth
+// credential row this script used to create went away with the account/verification tables.
 
 async function main() {
   const { prisma } = await import('../src/lib/prisma')
@@ -36,15 +36,6 @@ async function main() {
       emailVerified: true,
       passwordHash,
       role: 'owner',
-    },
-  })
-  await prisma.account.create({
-    data: {
-      id: crypto.randomUUID(),
-      accountId: user.id,
-      providerId: 'credential',
-      userId: user.id,
-      password: await hash(randomBytes(32).toString('base64'), 12),
     },
   })
   console.log(`Owner created: ${user.email} (id: ${user.id})`)

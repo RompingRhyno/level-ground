@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { generateToken, sendInviteEmail } from "@/lib/auth-utils";
@@ -30,15 +28,8 @@ export default async function InviteUserPage({ searchParams }: PageProps) {
       data: { name: email, email, emailVerified: false, role: "admin" },
     });
 
-    await prisma.account.create({
-      data: {
-        id: crypto.randomUUID(),
-        accountId: user.id,
-        providerId: "credential",
-        userId: user.id,
-        password: await hash(randomBytes(32).toString("base64"), 12),
-      },
-    });
+    // No credential row: `User.passwordHash` is what the sign-in route verifies, and it stays unset
+    // until the invitee accepts and chooses a password.
 
     await prisma.unlockToken.create({
       data: {

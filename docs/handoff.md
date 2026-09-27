@@ -415,6 +415,12 @@ so the row stops being constrained to the account owner's address.
 - The first deployment after pasting env prerenders pages, so it fails without a working `DATABASE_URL` —
   that is the usual cause of a build error on a fresh project.
 
+  The first real failure on the new project (2026-09-27) was different: two `prisma.account` call sites
+  left over from dropping the better-auth tables, which failed Vercel's type check while passing locally
+  because the *generated Prisma client* on the dev machine was stale — Vercel regenerates it on install,
+  local runs do not. Fixed by removing both (they only ever wrote unused credential rows), and the rule
+  from here on: **run `prisma generate` after any schema change before trusting `tsc` or a build.**
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
