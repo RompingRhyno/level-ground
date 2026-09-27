@@ -294,6 +294,30 @@ only knows `WORKER_URL`). Its deployed code was read and then probed:
   runtime. Do not recreate it on the new account. If the old site turns out to rely on it, delete it
   right after the migration instead.
 
+### Worker live on the new account (2026-09-27)
+
+`level-ground-upload-worker` is deployed to the new account with the multi-origin CORS and caching code:
+
+- URL: `https://level-ground-upload-worker.levelground.workers.dev` — subdomain `levelground` registered
+  through the API, `workers_dev = true`, `preview_urls = false` (one public endpoint, not one per
+  deploy). `WORKER_URL` in `.env` points at it.
+- `UPLOAD_TOKEN_SECRET` **rotated** for the new account (sha256 prefix `c841436ce5d8`); app and worker
+  share it, and Vercel needs the same value at cutover.
+- `account_id` is pinned in `wrangler.toml` — a cached OAuth session for the old account otherwise wins
+  the account lookup and the deploy fails against the wrong account with an authentication error.
+- `CLOUDFLARE_ACCOUNT_ID` had to be re-added to `.env.local` (it was dropped during the credential edit);
+  the wrangler tooling path reads it.
+
+Verified end to end (7/7): valid token → 200 and the object in the new bucket, wrong secret → 401,
+content-type mismatch → 415, production and Vercel origins receive their `Access-Control-Allow-Origin`,
+a stranger receives none. The contact-form uploader therefore works outside localhost for the first
+time — locally now, and in production once Vercel carries the new `WORKER_URL` and `UPLOAD_TOKEN_SECRET`.
+
+`.env.local` after the swap: `R2_*` point at the new bucket (verified 6/6 — account id, publish domain,
+list, put, head, delete) and `R2_API_TOKEN` was **removed**: nothing in `src/`, `scripts/` or `workers/`
+reads it, and it was not a copy of `CLOUDFLARE_API_TOKEN`. `R2_BASE_URL` (in `.env`) now holds the new
+publish domain — with the old value, every new upload would have been recorded with a URL that 404s.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
