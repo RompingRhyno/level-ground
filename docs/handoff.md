@@ -53,10 +53,26 @@ the domain is not there yet, create the token account-scoped now and add DNS:Edi
 
 **Separate from this token:** the app's runtime R2 credentials come from the R2 dashboard
 (R2 → Account Details → Manage API Tokens → *Create Account API token*), permission **Object Read &
-Write** scoped to the new bucket. That pair (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) is what the
+Write, scoped to the new bucket. That pair (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) is what the
 presigned uploads and deletes use; the secret is shown once at creation, while the Access Key ID stays
 listed — a lost secret means rolling the token. R2 must be "purchased" (free tier counts) before that
 page allows token creation.
+
+Cloudflare also shows S3-compatible credentials while creating a *general* API token that carries R2
+permissions. Those belong to that token (the Access Key ID is the token's id; the secret is the
+SHA-256 of its value, per Cloudflare's R2 auth docs). Convenient for one-off tooling from the dev
+machine, but **not** as the app's runtime credential: a token that can also deploy Workers and manage
+Turnstile is far too broad to sit in the app's environment. Create the dedicated bucket-scoped pair
+once the bucket exists and use *that* for both the object copy and the app.
+
+R2 itself must be **enabled on the account** first (Dashboard → R2 → enable; free tier) — until then
+every R2 call answers `Please enable R2 through the Cloudflare Dashboard.`
+
+Token facts, verified 2026-09-27: account `levelgrounddev@gmail.com` (`319c49fdb7d685313f30b07d52220dcf`,
+matching `CLOUDFLARE_ACCOUNT_ID`), account-owned token active, expires **2026-12-26**; Turnstile and
+Workers endpoints answer, R2 does not until enablement. `/user/tokens/verify` returns *Invalid API
+Token* for this kind of token by design — the account-scoped endpoint is
+`/accounts/{id}/tokens/verify`.
 
 **Two credential sets coexist until the media copy is done.** The old account's keys must keep working
 as the copy *source*, so the new pair goes in under temporary names —
