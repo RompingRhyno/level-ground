@@ -31,9 +31,13 @@ account → My Profile → API Tokens → Create Custom Token:
 |---|---|---|
 | Account | **Workers → `Admin`** (product scope) | Cloudflare replaced "Workers Scripts: Edit" with Workers roles, where `Editor` can deploy but **cannot create** a Worker — and this account has none yet. `Admin` covers create, deploy, secrets and `wrangler tail`; `Editor` would be enough only after the Worker exists. |
 | Account | R2 write/edit (legacy name: "Workers R2 Storage: Edit") | only for `wrangler r2 bucket create`. Every object-level operation uses the R2 **S3** keys instead, not this token. |
-| Account | **Turnstile: Edit** | create the widget, read both keys |
-| Zone | **DNS: Edit** | add the Resend/domain verification records |
-| Zone | **Zone: Read** | so the zone can be located by name |
+| Account | **Turnstile: Edit** / "Turnstile Sites: Edit" | create the widget, read both keys |
+| Zone | **DNS → Write** (zone-scoped, added once the domain is in the account) | create/edit DNS records — Resend verification, Email Routing MX |
+| Zone | **DNS → Read** | read records back when verifying |
+
+Note: the *account*-level "Account DNS Settings: Edit" is a different permission (account DNS defaults
+such as enforce-DNS-only and zone defaults) — it does **not** grant record editing. Likewise the
+Workers `Admin` role covers `wrangler tail`, so the legacy "Workers Tail Read" is unnecessary.
 
 Cloudflare's legacy→new mapping (from the Workers docs): `Workers Scripts Read` → `Content Read-Only`,
 `Workers Scripts Edit` → `Editor`, both at the Workers **product** scope; `Metadata Read-Only` is the
@@ -55,6 +59,30 @@ presigned uploads and deletes use, and the secret is only shown once at creation
 - Set an expiry (a week is plenty for the handoff) and delete the token once the migration is done.
 - First thing to run against it: `wrangler whoami` plus `GET /user/tokens/verify`, to confirm the
   scopes before anything is created.
+
+## Email: what Cloudflare covers, and what it does not
+
+The client's domain has no mail hosting, so the plan was Email Routing + Email Sending. Worth being
+precise, because these split neatly:
+
+- **Email Routing = inbound only.** It forwards `info@domain` to a real mailbox. Cloudflare's own
+  postmaster docs: *"Email Routing does not support sending or replying from your Cloudflare domain.
+  When you reply to emails forwarded by Email Routing, the reply will be sent from your destination
+  address (like my-name@gmail.com), not from info@yourdomain.com."* So the client can *receive*
+  contact-form mail at a domain address, but their replies show their personal mailbox.
+- **Email Sending** (the permission added pre-emptively) is a Cloudflare beta for *programmatic*
+  sending — a Worker binding (`env.EMAIL.send`) or the API. It can send from the domain, but it is not
+  an SMTP service, so it does not give a human mail client "send as info@domain" the way Gmail's
+  send-as needs.
+- **The app's own outbound mail already goes through Resend** (contact notifications, invite/unlock/
+  reset). That only needs the domain verified in Resend, which is a set of DNS records — hence the
+  DNS:Write permission above. Nothing about the app changes if Email Routing is enabled.
+
+So: Email Routing is worth enabling for receiving at the domain. For the client to *send* as
+`@domain.com` from their own mail app, the options are (a) the domain host's mailbox add-on, (b) a mail
+provider with SMTP (Fastmail/Proton/Workspace/Zoho) plus send-as configuration, or (c) accept replies
+from the personal address. Cloudflare Email Sending does not substitute for (a)/(b) today; keeping
+Resend for the app and routing for inbound is the low-risk split.
 
 ## What can be scripted from the dev machine
 
