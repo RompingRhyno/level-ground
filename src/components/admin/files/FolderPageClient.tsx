@@ -323,7 +323,7 @@ function FolderPageClientInner({
       {/* Back navigation */}
       <div className="mb-4">
         <Link href="/admin/files" className="inline-flex items-center gap-1 text-sm text-(--color-brand-dark) hover:underline">
-          <span aria-hidden="true">←</span> All projects
+          <span aria-hidden="true">←</span> All folders
         </Link>
       </div>
 
