@@ -195,6 +195,27 @@ whose `From` is `info@levelgroundlandscape.com`, authenticated by the domain's S
 Reply from the personal address instead and the alias is skipped entirely — nothing breaks, the customer
 just sees the personal address.
 
+**SMTP is a transport, not a mode.** Resend's SMTP endpoint is a second way into the same sending service
+— an API key plus a verified domain, with nothing to switch on. Per Resend's docs: emails sent through it
+appear in the same Emails table, count against the same rate limits, and leave the REST API path
+untouched. The only gap is debugging: no SMTP server logs are published.
+
+**Three verifications, easy to conflate:**
+
+1. **Resend domain** — add the records Resend shows (SPF + DKIM TXT, and MX on the `send.` subdomain) and
+   Resend confirms they match. Once verified, *any* address at the domain can send and receive with no
+   further setup.
+2. **Email Routing destination** — this verifies the *mailbox*, not the domain: Cloudflare emails the
+   owner a link to click. Cloudflare adds the routing MX and SPF/DKIM records itself on onboarding.
+3. **Gmail send-as code** — Gmail mails a confirmation to `info@`, delivered through routing, which is
+   why routing must be live first.
+
+Domain ownership is never re-verified anywhere — the zone sitting in the account is the proof.
+
+The alias deliberately uses the **root domain**, not a subdomain: Resend recommends subdomains for
+reputation segmentation, but the point here is a human-readable `info@`, and a `updates.` subdomain would
+defeat it.
+
 **Receiving is Email Routing's job, not Resend's.** The app only ever *sends* through Resend. What makes
 the owner↔customer loop work is the inbound half: the owner replies as `info@levelgroundlandscape.com`
 (mail client with a send-as alias), the customer replies to that address, and Cloudflare's MX forwards it
