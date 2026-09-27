@@ -60,6 +60,17 @@ export function storageKeyFor(folderSlug: string, filename: string, timestamp = 
   return `media/${folder}/${timestamp}-${sanitiseFilename(filename)}`;
 }
 
+/**
+ * Cache-Control for media objects. Keys are timestamped and never overwritten, so a year-long
+ * immutable lifetime is safe and removes repeat downloads entirely.
+ *
+ * Verified against the live bucket: the presigned PUT URL does *not* carry this value (aws-sdk signs
+ * only `host`), so the browser upload must send it as a request header — both upload call sites pass
+ * it through `uploadWithProgress`'s extraHeaders. A caller that omits it stores the object with no
+ * cache-control at all, silently rather than with an error.
+ */
+export const MEDIA_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
 /** Mime type implied by a filename extension (used for generated variants/posters). */
 export function mimeFromFilename(filename: string): string {
   const ext = filename.slice(filename.lastIndexOf(".") + 1).toLowerCase();

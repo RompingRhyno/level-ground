@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { prepareMedia, type EncodedRendition } from "@/lib/client/media-encode";
 import { uploadWithProgress } from "@/lib/uploadWithProgress";
+import { MEDIA_CACHE_CONTROL } from "@/lib/mime";
 import { api, filesApi } from "./api";
 import { formatBytes, type FolderData, type StorageInfo } from "./types";
 import FolderPicker from "./FolderPicker";
@@ -161,11 +162,17 @@ export default function UploadModal({
 
     await Promise.all(
       presign.results.map((result, index) =>
-        uploadWithProgress(result.url, encoded[index].blob as File, encoded[index].mime, (percent) => {
-          uploadedByIndex[index] = (encoded[index].blob.size * percent) / 100;
-          const done = uploadedByIndex.reduce((total, value) => total + value, 0);
-          update(item.id, { progress: Math.round((done / totalBytes) * 100) });
-        }),
+        uploadWithProgress(
+          result.url,
+          encoded[index].blob as File,
+          encoded[index].mime,
+          (percent) => {
+            uploadedByIndex[index] = (encoded[index].blob.size * percent) / 100;
+            const done = uploadedByIndex.reduce((total, value) => total + value, 0);
+            update(item.id, { progress: Math.round((done / totalBytes) * 100) });
+          },
+          { "Cache-Control": MEDIA_CACHE_CONTROL },
+        ),
       ),
     );
 
