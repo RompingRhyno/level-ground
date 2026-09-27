@@ -69,7 +69,7 @@ R2 itself must be **enabled on the account** first (Dashboard → R2 → enable;
 every R2 call answers `Please enable R2 through the Cloudflare Dashboard.`
 
 Token facts, verified 2026-09-27: account `levelgrounddev@gmail.com` (`319c49fdb7d685313f30b07d52220dcf`,
-matching `CLOUDFLARE_ACCOUNT_ID`), account-owned token active, expires **2026-12-26**; Turnstile and
+matching `R2_ACCOUNT_ID`), account-owned token active, expires **2026-12-26**; Turnstile and
 Workers endpoints answer, R2 does not until enablement. `/user/tokens/verify` returns *Invalid API
 Token* for this kind of token by design — the account-scoped endpoint is
 `/accounts/{id}/tokens/verify`.
@@ -112,8 +112,9 @@ recovery path is a fresh old-account R2 token (its Access Key ID stays visible i
 secret does not). The S3 endpoint takes no variable: the app builds it from the account id as
 `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`.
 
-- **Placement:** `CLOUDFLARE_API_TOKEN=` and (if the account is not the only one on the token)
-  `CLOUDFLARE_ACCOUNT_ID=` in `.env.local`. Both are read by `wrangler`; values are never printed.
+- **Placement:** `CLOUDFLARE_API_TOKEN=` in `.env.local`, read by `wrangler`; the account id lives in
+  `workers/upload-worker/wrangler.toml` (`account_id`) and in `R2_ACCOUNT_ID` for the app and scripts.
+  Values are never printed.
 - **Do not add either to Vercel** — they are local tooling credentials, not app runtime config.
 - Set an expiry (a week is plenty for the handoff) and delete the token once the migration is done.
 - First thing to run against it: `wrangler whoami` plus `GET /user/tokens/verify`, to confirm the
@@ -298,15 +299,17 @@ only knows `WORKER_URL`). Its deployed code was read and then probed:
 
 `level-ground-upload-worker` is deployed to the new account with the multi-origin CORS and caching code:
 
-- URL: `https://level-ground-upload-worker.levelground.workers.dev` — subdomain `levelground` registered
-  through the API, `workers_dev = true`, `preview_urls = false` (one public endpoint, not one per
-  deploy). `WORKER_URL` in `.env` points at it.
+- URL: `https://upload-worker.levelground.workers.dev` — renamed from `level-ground-upload-worker`
+  (the old service was deleted from the account; only `upload-worker` remains). Subdomain
+  `levelground` was registered through the API. `workers_dev = true` / `preview_urls = false` must sit
+  **above** the `[vars]` table in `wrangler.toml`: below it they are parsed as environment variables
+  and silently do nothing. `WORKER_URL` in `.env` points at the renamed worker, re-verified 7/7.
 - `UPLOAD_TOKEN_SECRET` **rotated** for the new account (sha256 prefix `c841436ce5d8`); app and worker
   share it, and Vercel needs the same value at cutover.
 - `account_id` is pinned in `wrangler.toml` — a cached OAuth session for the old account otherwise wins
   the account lookup and the deploy fails against the wrong account with an authentication error.
-- `CLOUDFLARE_ACCOUNT_ID` had to be re-added to `.env.local` (it was dropped during the credential edit);
-  the wrangler tooling path reads it.
+- Account ids are not duplicated: `R2_ACCOUNT_ID` serves the app and the scripts, and `wrangler.toml`
+  pins `account_id` for deploys — `CLOUDFLARE_ACCOUNT_ID` was dropped as a redundant name.
 
 Verified end to end (7/7): valid token → 200 and the object in the new bucket, wrong secret → 401,
 content-type mismatch → 415, production and Vercel origins receive their `Access-Control-Allow-Origin`,
@@ -318,14 +321,31 @@ list, put, head, delete) and `R2_API_TOKEN` was **removed**: nothing in `src/`, 
 reads it, and it was not a copy of `CLOUDFLARE_API_TOKEN`. `R2_BASE_URL` (in `.env`) now holds the new
 publish domain — with the old value, every new upload would have been recorded with a URL that 404s.
 
+### Turnstile on the new account (2026-09-27)
+
+Widget **"level-ground contact form"** created through the API (`mode: managed`) on the new account, with
+hostnames `levelgroundlandscape.com`, `www.levelgroundlandscape.com`, `localhost` and
+`level-ground.vercel.app`. Sitekey `0x4AAAAAAFFhQnN6o-Vl5QJG` went into `.env` as
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY`; the secret went into `.env.local` as `TURNSTILE_SECRET_KEY` and was
+never displayed. `siteverify` accepts the secret (a dummy token answers `invalid-input-response`, not
+`invalid-input-secret`).
+
+The hostname list must contain **every** origin the form runs on — if the new Vercel deployment's
+hostname is not `level-ground.vercel.app`, add it there or the widget refuses to render on that origin.
+
+Account ids are consolidated (this section's earlier note said otherwise): `CLOUDFLARE_ACCOUNT_ID` is
+deleted everywhere. `wrangler` reads the id from `workers/upload-worker/wrangler.toml` (`account_id`) —
+the env var is only needed when a wrangler file cannot carry it — while the app and the scripts use
+`R2_ACCOUNT_ID`.
+
 ### Billing
 
 R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
 card before sign-off** — the client's account must not depend on your personal card, and the same
 check applies to any other service where a card was entered.
 
-`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are dev-machine tooling only: nothing in `src/` reads
-them, so they are correctly absent from production. Never add them to Vercel.
+`CLOUDFLARE_API_TOKEN` is dev-machine tooling only: nothing in `src/` reads it, so it is correctly
+absent from production. Never add it to Vercel — the account it acts on is pinned in `wrangler.toml`.
 
 ## Domain migration day (levelgroundlandscape.com)
 
