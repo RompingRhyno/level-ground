@@ -148,6 +148,66 @@ either way) and create the rule `info@` → personal mailbox. To script it inste
 `Email Routing Addresses: Edit` (account-scoped destinations) plus `Email Routing Rules: Edit`
 (zone-scoped, so it joins the migration-day rows alongside `DNS: Edit`). Not worth it for three clicks.
 
+## R2 audit — what the new bucket should copy, and what it should change
+
+Measured 2026-09-27 against the live bucket, not assumed.
+
+### Current state
+
+- **`level-ground`, 28 objects, 113.7 MB**, location hint WNAM. Every key is **legacy flat**
+  (`<timestamp>-<filename>`, no `media/` prefix): the `media/<folderSlug>/…` scheme in
+  `storageKeyFor()` is newer than all existing content, so the new bucket will hold a mix. The copy
+  preserves keys; no key rewriting is needed.
+- **No `contact-uploads/` objects exist at all** — see the bug below.
+- Object metadata: `contentType` set; **`Cache-Control` never set on anything**; no custom metadata.
+- CORS and lifecycle config **cannot be read** with object-scoped S3 credentials (`403 AccessDenied` —
+  bucket config needs an Admin-scoped R2 token). Read the CORS policy from the dashboard before
+  creating the new bucket so the new one is not a downgrade; lifecycle is almost certainly unset.
+- **The DB hard-codes the publish domain.** 3 `Page` rows carry 5 references
+  (`sections[0].image`, `sections[1].videoUrl`, `sections[2].services[1].image`) and all 27 `Asset` rows
+  carry 28 (`publicUrl`, `meta.poster`). So the cutover is **copy + base-URL rewrite in Postgres** —
+  the site will keep serving from the old bucket until the rewrite runs.
+
+### Bugs and gaps found
+
+1. **The contact-form uploader cannot work in production.** The deployed worker replies to every
+   preflight with `access-control-allow-origin: http://localhost:3000` — `ALLOWED_ORIGIN` in
+   `wrangler.toml` is dev-only — so a browser on the real domain is refused. Zero `contact-uploads/`
+   objects is consistent with the feature never having succeeded in production. Fix: accept a list of
+   origins (dev + prod) and set the production origin at deploy.
+2. **No `Cache-Control` on uploads** — browser caching is heuristic. Media keys are timestamped and
+   never overwritten, so `public, max-age=31536000, immutable` is safe and a straight win. Set at
+   upload (presign `CacheControl`, worker `httpMetadata.cacheControl`). Caveat: a re-encoded rendition
+   reuses its source key, so an update would not reach already-cached clients.
+3. **`contact-uploads/` accumulates**: the cleanup cron deletes the DB row but *preserves* the object
+   for `used` uploads (the emailed attachment is the record), so those photos stay in the bucket
+   forever with nothing referencing them. A lifecycle rule is the right home for that expiry.
+
+Settings adopted for contact-form uploads live in **code, not bucket config**, and carry over as-is:
+worker MIME allowlist (jpeg/png/webp/heic/heif), 10 MB cap, HMAC-signed token bound to key + content
+type + session expiry, 15-minute sessions, max 5 files, slot states with retry-then-dead-letter.
+
+### Recommended config for the new bucket
+
+| Setting | Recommendation |
+|---|---|
+| Name | `level-ground` — keeps `R2_BUCKET_NAME` unchanged at cutover |
+| Location | default (automatic); WNAM hint unnecessary |
+| Public access | r2.dev managed domain now (that is `R2_BASE_URL`); custom domain later (r2.dev is rate-limited and documented as non-production) |
+| CORS | explicit rule — methods `PUT, GET, HEAD`, header `content-type`, expose `ETag`, origins: production domain + `http://localhost:3000` |
+| Lifecycle | `contact-uploads/` expire after 90 days |
+| Cache-Control | `media/` immutable 1 year; contact uploads short |
+| Credentials | dedicated bucket-scoped R2 token for both copy and runtime; the general API token stays tooling-only |
+
+### Billing
+
+R2 asked for a credit card on the new account. **Replace the stored payment method with the owner's
+card before sign-off** — the client's account must not depend on your personal card, and the same
+check applies to any other service where a card was entered.
+
+`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` are dev-machine tooling only: nothing in `src/` reads
+them, so they are correctly absent from production. Never add them to Vercel.
+
 ## Domain migration day (levelgroundlandscape.com)
 
 The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
@@ -165,6 +225,10 @@ task queues up for one session — in this order, because the old site must not 
    `R2_SECRET_ACCESS_KEY` → the new pair, `R2_ACCOUNT_ID` → the new account, and
    `R2_BUCKET_NAME` / `R2_BASE_URL` → the new bucket and its publish domain. Delete the temporary
    `R2_NEW_*` names afterwards. An upload through the admin exercises the new bucket end to end.
+   **Then rewrite the publish domain in the database** — `Page.sections` and `Asset.publicUrl` /
+   `meta.poster` hold absolute URLs (5 + 28 references), and until they point at the new domain the
+   site keeps serving from the old bucket. Verify zero old-domain references remain afterwards, and
+   purge the affected cache tags.
 5. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
    smoke checks (home, /projects, both detail pages, a 404, /sitemap.xml, /admin redirect).
 
