@@ -31,6 +31,12 @@ async function fetchAssets(section: GallerySection): Promise<AssetRow[]> {
     where.folder = { in: taggedFolders.map((f) => f.slug) };
   }
 
+  // Dynamic membership comes from a folder or a tag, so videos land in the result — and every tile
+  // is rendered with next/image, which cannot show one (it showed as a broken image). Filter to
+  // images here; a row with no mime counts as an image, mirroring `pickCover()`. Static galleries
+  // keep exactly what was picked by hand.
+  where.OR = [{ mime: { startsWith: "image/" } }, { mime: null }];
+
   return prisma.asset.findMany({
     where,
     select: { id: true, publicUrl: true, alt: true, folder: true },
