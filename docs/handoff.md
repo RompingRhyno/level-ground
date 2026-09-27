@@ -29,15 +29,25 @@ account → My Profile → API Tokens → Create Custom Token:
 
 | Scope | Permission | Why |
 |---|---|---|
-| Account | **Workers Scripts: Edit** | `wrangler deploy`, `wrangler secret put` |
-| Account | **Workers R2 Storage: Edit** | `wrangler r2 bucket create` (bucket CORS goes through the S3 keys instead) |
+| Account | **Workers → `Admin`** (product scope) | Cloudflare replaced "Workers Scripts: Edit" with Workers roles, where `Editor` can deploy but **cannot create** a Worker — and this account has none yet. `Admin` covers create, deploy, secrets and `wrangler tail`; `Editor` would be enough only after the Worker exists. |
+| Account | R2 write/edit (legacy name: "Workers R2 Storage: Edit") | only for `wrangler r2 bucket create`. Every object-level operation uses the R2 **S3** keys instead, not this token. |
 | Account | **Turnstile: Edit** | create the widget, read both keys |
 | Zone | **DNS: Edit** | add the Resend/domain verification records |
 | Zone | **Zone: Read** | so the zone can be located by name |
 
+Cloudflare's legacy→new mapping (from the Workers docs): `Workers Scripts Read` → `Content Read-Only`,
+`Workers Scripts Edit` → `Editor`, both at the Workers **product** scope; `Metadata Read-Only` is the
+one `wrangler tail` needs on its own. Legacy names still work — there is no deprecation date.
+
 Skip "All resources / write all" — that token sits in a file on disk and only ever runs four
 commands. Add the specific zone in the Zone Resources step once the domain exists in the account; if
 the domain is not there yet, create the token account-scoped now and add DNS:Edit later.
+
+**Separate from this token:** the app's runtime R2 credentials come from the R2 dashboard
+(R2 → Account Details → Manage API Tokens → *Create Account API token*), permission **Object Read &
+Write** scoped to the new bucket. That pair (`R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`) is what the
+presigned uploads and deletes use, and the secret is only shown once at creation. R2 must be
+"purchased" (free tier counts) before that page allows token creation.
 
 - **Placement:** `CLOUDFLARE_API_TOKEN=` and (if the account is not the only one on the token)
   `CLOUDFLARE_ACCOUNT_ID=` in `.env.local`. Both are read by `wrangler`; values are never printed.
