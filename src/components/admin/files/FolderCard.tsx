@@ -126,7 +126,7 @@ export default function FolderCard({
             src={folder.coverUrl}
             alt=""
             fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 384px"
             className="object-cover"
           />
         ) : (
