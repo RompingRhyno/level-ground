@@ -19,10 +19,14 @@ type Props = {
   lightbox: boolean;
 };
 
+// Full-bleed tiles with a 16px gutter, like Gallery.tsx. Every image needs its own `sizes`: without one
+// next/image assumes 100vw and the browser fetches the largest candidate for a third-width tile.
+const TILE_SIZES = "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
+
 function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout }) {
   if (layout === "masonry") {
     return (
-      <div className="max-w-7xl mx-auto px-4 columns-1 sm:columns-2 md:columns-3 gap-4">
+      <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-4">
         {assets.map((a) => (
           <div key={a.id} className="break-inside-avoid mb-4 rounded overflow-hidden">
             <Image
@@ -30,6 +34,8 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
               alt={a.alt ?? ""}
               width={800}
               height={600}
+              sizes={TILE_SIZES}
+              quality={85}
               className="w-full object-cover"
               loading="lazy"
             />
@@ -39,10 +45,18 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
     );
   }
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 px-4">
+    <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {assets.map((a) => (
         <div key={a.id} className="relative aspect-video rounded overflow-hidden">
-          <Image src={a.publicUrl} alt={a.alt ?? ""} fill className="object-cover" loading="lazy" />
+          <Image
+            src={a.publicUrl}
+            alt={a.alt ?? ""}
+            fill
+            sizes={TILE_SIZES}
+            quality={85}
+            className="object-cover"
+            loading="lazy"
+          />
         </div>
       ))}
     </div>
@@ -60,38 +74,42 @@ export default function CollectionItemClient({
 }: Props) {
   return (
     <div>
-      <h1
-        className="heading text-3xl sm:text-4xl md:text-5xl font-light leading-tight mb-6"
-        style={{ color: "var(--color-text-heading)" }}
-      >
-        {name}
-      </h1>
+      {/* Text carries its own padding — the section wrapper is full-bleed with no edge inset — while the
+          media grids below run flush to the edges. */}
+      <div className="px-4 md:px-8">
+        <h1
+          className="heading max-w-4xl text-3xl sm:text-4xl md:text-5xl font-light leading-tight mb-6"
+          style={{ color: "var(--color-text-heading)" }}
+        >
+          {name}
+        </h1>
 
-      {displayTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6">
-          {displayTags.map((tag) =>
-            collectionSlug ? (
-              <Link
-                key={tag.slug}
-                href={`/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}`}
-                className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
-              >
-                {tag.name}
-              </Link>
-            ) : (
-              <span key={tag.slug} className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text)">
-                {tag.name}
-              </span>
-            )
-          )}
-        </div>
-      )}
+        {displayTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {displayTags.map((tag) =>
+              collectionSlug ? (
+                <Link
+                  key={tag.slug}
+                  href={`/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}`}
+                  className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
+                >
+                  {tag.name}
+                </Link>
+              ) : (
+                <span key={tag.slug} className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text)">
+                  {tag.name}
+                </span>
+              )
+            )}
+          </div>
+        )}
 
-      {description && (
-        <p className="mb-10 max-w-3xl" style={{ color: "var(--color-text-primary)" }}>
-          {description}
-        </p>
-      )}
+        {description && (
+          <p className="mb-10 max-w-3xl" style={{ color: "var(--color-text-primary)" }}>
+            {description}
+          </p>
+        )}
+      </div>
 
       {assets.length > 0 && (
         lightbox ? (

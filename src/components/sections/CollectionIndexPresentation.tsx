@@ -173,11 +173,13 @@ export default function CollectionIndexPresentation(props: CollectionIndexPresen
   return (
     <div>
       {props.heading && (
-        <h2
-          className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-          dangerouslySetInnerHTML={{ __html: props.heading }}
-          style={{ color: "var(--color-text-heading)" }}
-        />
+        <div className="px-4 md:px-8">
+          <h2
+            className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+            dangerouslySetInnerHTML={{ __html: props.heading }}
+            style={{ color: "var(--color-text-heading)" }}
+          />
+        </div>
       )}
       <Suspense fallback={<ItemGrid {...props} />}>
         <CollectionIndexPresentationInner {...props} />
