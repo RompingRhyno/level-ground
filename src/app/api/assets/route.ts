@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isAllowedUploadMime, isClientConvertedMime } from "@/lib/mime";
 import { usageForAssets } from "@/lib/media-refs";
+import { lockFolderForOrdering } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
@@ -138,6 +139,10 @@ export async function POST(request: Request) {
     }
 
     const created = await prisma.$transaction(async (tx: any) => {
+      // Serialise index assignment: batch uploads post files in parallel and every request otherwise reads
+      // the same MAX(orderIndex), failing all but one on `@@unique([folder, orderIndex])`.
+      await lockFolderForOrdering(tx, folderSlug);
+
       const agg = await tx.asset.aggregate({
         where: { folder: folderSlug },
         _max: { orderIndex: true },
