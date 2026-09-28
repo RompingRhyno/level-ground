@@ -4,20 +4,21 @@ import { TwoColumnSection } from "@/types/sections";
 export default function TwoColumn({ title, body, image }: TwoColumnSection) {
   return (
     <section className="py-12">
-      <div className="mx-auto max-w-7xl grid gap-8 md:grid-cols-2 items-center px-6">
-        <div>
+      <div className="w-full grid gap-8 md:grid-cols-2 items-center">
+        <div className="px-4 md:px-8 md:max-w-2xl">
           <h2 className="text-3xl font-semibold mb-4">{title}</h2>
           <p className="text-gray-700">{body}</p>
         </div>
 
         <div>
-          <div className="relative h-64 w-full rounded-lg overflow-hidden shadow">
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg shadow">
             {image ? (
               <Image
                 src={image}
                 alt={title}
                 fill
                 sizes="(min-width:1024px) 50vw, 100vw"
+                quality={90}
                 className="object-cover"
                 loading="lazy"
               />
