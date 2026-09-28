@@ -20,7 +20,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
   return (
     <>
       {/* Mobile: simple 1–2 col responsive grid */}
-      <div className="md:hidden max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
         {assets.map((asset, i) => (
           <button
             key={asset.id}
@@ -33,6 +33,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
               alt={asset.alt ?? ""}
               fill
               sizes="(min-width:640px) 50vw, 100vw"
+              quality={85}
               className="object-cover transition-opacity hover:opacity-90"
               loading="lazy"
             />
@@ -40,8 +41,9 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
         ))}
       </div>
 
-      {/* Desktop: bento/grid layout engine */}
-      <div className="hidden md:grid md:grid-cols-6 gap-4 max-w-7xl mx-auto px-4">
+      {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Quality tiers mirror the
+          non-lightbox path: hero + bento-large q95, small tiles q85. */}
+      <div className="hidden md:grid md:grid-cols-6 gap-4">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
           return (
@@ -62,6 +64,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
                 alt={asset.alt ?? ""}
                 fill
                 sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                quality={cell.cellType === "small" ? 85 : 95}
                 className="object-cover transition-opacity hover:opacity-90"
                 loading="lazy"
               />
