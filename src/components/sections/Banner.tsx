@@ -12,7 +12,8 @@ export default function Banner({
 
   return (
     <section className="relative py-24 px-4 sm:px-6">
-      {/* Background image and overlay */}
+      {/* Background image and overlay. Full-span media takes the q95 tier. No `priority`: the banner sits
+          below the fold on every page it appears on, so preloading it competes with the hero's image. */}
       {hasImage && (
         <div className="absolute inset-0">
           <Image
@@ -20,8 +21,8 @@ export default function Banner({
             alt=""
             fill
             sizes="100vw"
+            quality={95}
             className="object-cover"
-            priority
           />
           <div
             className="absolute inset-0 bg-black"

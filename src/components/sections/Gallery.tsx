@@ -97,10 +97,10 @@ async function findCollectionIndexPageSlug(): Promise<string | null> {
 function SectionHeader({ heading, body }: { heading?: string; body?: string }) {
   if (!heading && !body) return null;
   return (
-    <div className="max-w-7xl mx-auto px-4 mb-8">
+    <div className="w-full px-4 md:px-8 mb-8">
       {heading && (
         <h2
-          className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+          className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
           dangerouslySetInnerHTML={{ __html: heading }}
           style={{ color: "var(--color-text-heading)" }}
         />
@@ -121,7 +121,7 @@ function SectionHeader({ heading, body }: { heading?: string; body?: string }) {
 function TagPills({ tags, collectionSlug }: { tags: TagRow[]; collectionSlug: string | null }) {
   if (!tags.length) return null;
   return (
-    <div className="max-w-7xl mx-auto px-4 mb-6 flex flex-wrap gap-2">
+    <div className="w-full px-4 md:px-8 mb-6 flex flex-wrap gap-2">
       {tags.map((tag) =>
         collectionSlug ? (
           <Link
@@ -170,7 +170,7 @@ export default async function Gallery(section: GallerySection) {
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
-        <div className="max-w-7xl mx-auto px-4 columns-1 sm:columns-2 md:columns-3 gap-4">
+        <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-4">
           {valid.map((asset) => (
             <div key={asset.id} className="break-inside-avoid mb-4 rounded overflow-hidden">
               <Image
@@ -179,6 +179,7 @@ export default async function Gallery(section: GallerySection) {
                 width={800}
                 height={600}
                 sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                quality={85}
                 className="w-full h-auto object-cover"
                 loading="lazy"
               />
@@ -198,7 +199,7 @@ export default async function Gallery(section: GallerySection) {
       <TagPills tags={tags} collectionSlug={collectionSlug} />
 
       {/* Mobile: simple 1–2 col responsive grid */}
-      <div className="md:hidden max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4 px-4">
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
         {valid.map((asset) => (
           <div key={asset.id} className="relative aspect-video w-full rounded overflow-hidden">
             <Image
@@ -206,6 +207,7 @@ export default async function Gallery(section: GallerySection) {
               alt={asset.alt ?? ""}
               fill
               sizes="(min-width:640px) 50vw, 100vw"
+              quality={85}
               className="object-cover"
               loading="lazy"
             />
@@ -216,8 +218,9 @@ export default async function Gallery(section: GallerySection) {
       {/* Desktop: bento/grid layout engine. The engine places cells on a SIX-column grid (1–6, `span 2`
           per tile, `span 6` for a hero); rendering it in three columns leaves columns 4–6 as implicit auto
           tracks, which collapse to a 0px column and a stray wide one — one tile per triple row comes out
-          ~140px wide. GalleryClient (the lightbox path) already declares six. */}
-      <div className="hidden md:grid md:grid-cols-6 gap-4 max-w-7xl mx-auto px-4">
+          ~140px wide. GalleryClient (the lightbox path) already declares six. Quality tiers: hero and
+          bento-large run full or two-thirds width (q95), the small tiles a third (q85). */}
+      <div className="hidden md:grid md:grid-cols-6 gap-4">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
           return (
@@ -236,6 +239,7 @@ export default async function Gallery(section: GallerySection) {
                 alt={asset.alt ?? ""}
                 fill
                 sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                quality={cell.cellType === "small" ? 85 : 95}
                 className="object-cover"
                 loading="lazy"
               />

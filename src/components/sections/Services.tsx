@@ -19,14 +19,17 @@ export default function Services({
     bodyText,
 }: ServicesProps) {
     return (
-        <section className="px-8">
+        <section className="w-full">
             {/* Heading */}
-            <h2
-                className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-12"
-                dangerouslySetInnerHTML={{ __html: heading }}
-            />
+            <div className="px-4 md:px-8">
+                <h2
+                    className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-12"
+                    dangerouslySetInnerHTML={{ __html: heading }}
+                />
+            </div>
 
-            {/* Services grid */}
+            {/* Services grid — full bleed: two columns of the whole width, cards flush with the edges,
+                gap-8 as the gutter between them. */}
             <div className="grid gap-8 sm:grid-cols-2">
                 {services.map((service, index) => (
                     <Link
@@ -41,7 +44,8 @@ export default function Services({
                                     src={service.image}
                                     alt={service.title}
                                     fill
-                                    sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                                    sizes="(min-width:640px) 50vw, 100vw"
+                                    quality={85}
                                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                                     loading="lazy"
                                 />
@@ -65,7 +69,7 @@ export default function Services({
 
             {/* Body text */}
             {bodyText && (
-                <p className="mt-10 max-w-3xl mx-auto text-center text-(--color-text-primary)">
+                <p className="mt-10 max-w-3xl mx-auto px-4 md:px-8 text-center text-(--color-text-primary)">
                     {bodyText}
                 </p>
             )}

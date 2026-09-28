@@ -270,16 +270,16 @@ export default function Contact({
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-20">
+    <section className="w-full px-4 md:px-8 py-20">
       {/* Heading — full width, above the grid so image aligns with first field */}
       <h2
-        className="heading text-3xl md:text-5xl font-light leading-tight mb-6"
+        className="heading max-w-4xl text-3xl md:text-5xl font-light leading-tight mb-6"
         style={{ color: "var(--color-text-heading)" }}
         dangerouslySetInnerHTML={{ __html: heading }}
       />
       {subheading && (
         <p
-          className="mb-8 text-lg md:text-xl"
+          className="mb-8 max-w-3xl text-lg md:text-xl"
           style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
           dangerouslySetInnerHTML={{ __html: subheading }}
         />
@@ -430,6 +430,7 @@ export default function Contact({
                 alt=""
                 fill
                 sizes="(min-width:1024px) 480px, 384px"
+                quality={85}
                 className="rounded-full object-cover"
               />
             </div>
