@@ -213,8 +213,11 @@ export default async function Gallery(section: GallerySection) {
         ))}
       </div>
 
-      {/* Desktop: bento/grid layout engine */}
-      <div className="hidden md:grid md:grid-cols-3 gap-4 max-w-7xl mx-auto px-4">
+      {/* Desktop: bento/grid layout engine. The engine places cells on a SIX-column grid (1–6, `span 2`
+          per tile, `span 6` for a hero); rendering it in three columns leaves columns 4–6 as implicit auto
+          tracks, which collapse to a 0px column and a stray wide one — one tile per triple row comes out
+          ~140px wide. GalleryClient (the lightbox path) already declares six. */}
+      <div className="hidden md:grid md:grid-cols-6 gap-4 max-w-7xl mx-auto px-4">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
           return (
@@ -232,7 +235,7 @@ export default async function Gallery(section: GallerySection) {
                 src={asset.publicUrl}
                 alt={asset.alt ?? ""}
                 fill
-                sizes={getCellSizes(cell.cellType)}
+                sizes={getCellSizes(cell.cellType, cell.colSpan)}
                 className="object-cover"
                 loading="lazy"
               />
