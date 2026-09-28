@@ -1,7 +1,18 @@
 # Media format migration — LGL Full → LGL JPG
 
-Status: **plan, nothing executed.** Measured 2026-09-28. Account/handoff side lives in `docs/handoff.md`;
-this is the content-format workstream.
+Status: **steps 1–6 done 2026-09-28; steps 7–8 (deletions) await sign-off.** Account/handoff side lives in
+`docs/handoff.md`; this is the content-format workstream.
+
+As-built results (measured):
+- Step 1: 221 PNGs → q95 JPEG, 0 failures, 4,176 MB → 1,100 MB.
+- Steps 3–4: 221 objects uploaded (990.7 MB, 94 s); 221 rows updated in place — id, folder and orderIndex
+  untouched; 2 filename-only renames (west-10th's JPEGs); 1 asset created (`LarchSt_00001_s.jpg`, slotted by
+  name). Backup of all 256 rows + 6 pages: `~/lg-migration-backups/<stamp>-media-migration.json`.
+- Step 5: 0 page references needed rewriting — every page uses galleries (asset ids) or folder-driven
+  collections, so nothing literal pointed at a migrated asset.
+- Step 6: 0 rows still PNG; 0 references to replaced URLs; 259/259 stored objects answer 206; optimizer
+  serves a migrated asset at 384/1920 in ~0.6 s (was 2.4–4.9 s); dry-run re-run reports 0 to upload.
+- R2 storage 5.161 GB (old + new coexisting) → expected ~1.2 GB once step 7 runs.
 
 ## Why
 
