@@ -17,7 +17,7 @@ export default function Hero({
   image,
 }: HeroProps) {
   return (
-    <section className="relative mx-auto max-w-7xl px-6">
+    <section className="relative w-full px-4 md:px-8">
       <div className="grid items-center gap-12 md:grid-cols-2">
         {/* Image */}
         <div className="order-1 flex justify-center md:order-2 md:justify-start">
@@ -42,7 +42,8 @@ export default function Hero({
                 alt=""
                 fill
                 priority
-                sizes="(min-width:1024px) 40vw, 80vw"
+                sizes="(min-width: 768px) 440px, (min-width: 640px) 380px, 320px"
+                quality={95}
                 className="rounded-full object-cover"
               />
             ) : (
@@ -52,7 +53,7 @@ export default function Hero({
         </div>
 
         {/* Text */}
-        <div className="order-2 text-center md:order-1 md:text-right">
+        <div className="order-2 text-center md:order-1 md:ml-auto md:max-w-2xl md:text-right">
           <h1
             className="heading text-3xl md:text-5xl font-light tracking-tight"
             dangerouslySetInnerHTML={{ __html: heading }}

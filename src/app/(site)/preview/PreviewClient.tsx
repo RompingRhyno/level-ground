@@ -290,7 +290,7 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   const visibleItems = maxItems ? filteredItems.slice(0, maxItems) : filteredItems;
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
+    <div className="section-container py-12">
       <CollectionIndexPresentation
         heading={heading}
         items={visibleItems}
@@ -316,7 +316,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as HeroSection;
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="section-container py-20">
           <Hero {...s} />
         </div>
       </div>
@@ -329,7 +329,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as TwoColumnSection;
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="section-container py-20">
           <TwoColumn {...s} />
         </div>
       </div>
@@ -340,7 +340,7 @@ function renderContent(section: PageSection, bg?: string) {
     const previewServices = (s as any).services?.filter((sv: any) => sv.image) ?? [];
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="section-container py-20">
           <Services {...s} services={previewServices} />
         </div>
       </div>
@@ -359,7 +359,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as VideoSection;
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="section-container py-20">
           {(s.heading || s.subheading) && (
             <div className="mb-8">
               {s.heading && (
@@ -391,7 +391,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as any;
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="section-container py-20">
           <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
         </div>
       </div>
