@@ -1,7 +1,7 @@
 # Media format migration — LGL Full → LGL JPG
 
-Status: **steps 1–6 done 2026-09-28; steps 7–8 (deletions) await sign-off.** Account/handoff side lives in
-`docs/handoff.md`; this is the content-format workstream.
+Status: **complete (steps 1–8) 2026-09-28.** Account/handoff side lives in `docs/handoff.md`; this is the
+content-format workstream.
 
 As-built results (measured):
 - Step 1: 221 PNGs → q95 JPEG, 0 failures, 4,176 MB → 1,100 MB.
@@ -12,7 +12,15 @@ As-built results (measured):
   collections, so nothing literal pointed at a migrated asset.
 - Step 6: 0 rows still PNG; 0 references to replaced URLs; 259/259 stored objects answer 206; optimizer
   serves a migrated asset at 384/1920 in ~0.6 s (was 2.4–4.9 s); dry-run re-run reports 0 to upload.
-- R2 storage 5.161 GB (old + new coexisting) → expected ~1.2 GB once step 7 runs.
+- Steps 7–8: 220 replaced objects (4,051.9 MB) and the 5 west-24th duplicates deleted, 0 failures.
+  **220 rows first needed their `meta.variants` pointer rewritten** — an upload records its original object in
+  that slot, so a row that no longer points at the replaced object still names it, and the live-key safety
+  check correctly refused to delete it. Nothing was deleted until the pointers were fixed.
+- Final: R2 **1.103 GB (11.0% of the free tier)**, 254 assets, every stored object answers 206, dry run
+  0 upgrade / 0 create / 0 dupe / 0 orphan, 0 page references to replaced URLs. Cleanup audit:
+  `~/lg-migration-backups/<stamp>-cleanup.json`.
+- Open, unrelated: the five `/images/*.jpg` paths on `landscape-maintenance` and
+  `landscape-design-installation` still point at a `public/images/` directory that has never existed.
 
 ## Why
 
