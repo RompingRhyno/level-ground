@@ -593,3 +593,7 @@ into chat — those go into env files or the vault instead.
 - [ ] Old Neon project retired; local dump and `.env.pre-cutover-backup` deleted.
 - [ ] Deciding whether R2 gets a custom domain (then `R2_BASE_URL` changes; `r2KeysFromMeta` already
       copes with either form).
+
+## Capacity
+
+- Storage headroom (measured 2026-09-27): **337 MB across 23 objects — 3.3% of the 10 GB free tier** (the three project folders account for 319 MB; database rows sum 331 MB of originals, the remainder are the video's derived 720p + poster). The R2 free tier is per **account**, not per bucket: a second bucket shares the same 10 GB. Past it, storage is $0.015/GB-month rounded up to the whole GB, so a second 10 GB would cost about $0.15/month. Re-measure any time with `npx tsx scripts/storage-usage.ts`.
