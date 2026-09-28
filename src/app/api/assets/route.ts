@@ -9,6 +9,10 @@ const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
 
 function clampInt(value: string | null, fallback: number, min: number, max: number): number {
+  // `Number(null)` is 0 — finite — so a *missing* param used to fall through to the clamp and become `min`.
+  // The image picker asks for no limit and got exactly one asset back (the newest), which reads in the UI as
+  // "my image isn't in the list, just a blank tile". Missing or blank means "use the default".
+  if (value === null || value.trim() === "") return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, Math.trunc(parsed)));

@@ -36,13 +36,17 @@ function StaticPicker({
 
   useEffect(() => {
     setLoading(true);
-    const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
-    fetch(`/api/assets${q}`)
+    // Galleries are image-only (the grid below filters videos out anyway), so ask the API for images and
+    // skip the payload. The tag select was rendered but never reached the request until now.
+    const params = new URLSearchParams({ kind: "image", limit: "500" });
+    if (folder) params.set("folder", folder);
+    if (tag) params.set("tag", tag);
+    fetch(`/api/assets?${params}`)
       .then((r) => r.json())
-      .then((d) => setAssets(d || []))
+      .then((d) => setAssets(Array.isArray(d) ? d : []))
       .catch(() => setAssets([]))
       .finally(() => setLoading(false));
-  }, [folder]);
+  }, [folder, tag]);
 
   function toggle(id: string) {
     if (selected.includes(id)) {
