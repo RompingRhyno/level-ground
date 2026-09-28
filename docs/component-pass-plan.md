@@ -46,18 +46,31 @@ original dimensions instead of 16-38 MB PNGs.
 4. Attach a screenshot for the operator's visual judgement.
 5. Commit that component before moving on, so any regression is one commit wide.
 
+## Progress
+
+- **Container + config + hero** (`ad916a4`): `.section-container` in `globals.css` used by both renderers
+  (replacing eight copies of `mx-auto max-w-7xl px-6 py-20`); `qualities: [75, 85, 90, 95]` + a 2560
+  `deviceSize` in `next.config.ts`; the hero's `sizes` matched to the circle it renders, at q95. Measured at
+  2560: sections 2545 (were 1265), the banner takes the 2560 candidate (was 3840). The container carries **no
+  edge inset** — the approved reading is that the gutter is the gap between images, not padding at the screen
+  edge (an earlier revision had 16/32px there; removed).
+- **Project cards** (`8caa8a8`): operator-reported "pixelated recent projects thumbnails". Cause: the card's
+  `sizes` still said `384px` from the capped layout, so a card rendering 809px at 2560 fetched the 384
+  candidate. Now `33vw` + q85 — verified on `/` and `/projects`: 809px card, 1080 candidate, complete.
+  The hero is reworked into a full-bleed image next, superseding the circle work above.
+
 ## Components
 
 | component | layout change | quality | status |
 |---|---|---|---|
-| `sections/Hero.tsx` | full bleed | q95 | pending |
+| `sections/Hero.tsx` | full bleed | q95 | done for the circle — **superseded**: the operator reworks it into a full-bleed image next |
 | `sections/Gallery.tsx` + `GalleryClient.tsx` + `lib/gallery-layout.ts` | full bleed, tile gaps, re-derive cell hints | q95 hero/large, q85 small | pending |
 | `sections/Services.tsx` | wider row | q85 | pending |
 | `sections/Banner.tsx` | full bleed | q95 | pending |
 | `sections/Video.tsx` + `VideoClient.tsx` | full bleed + player work (poster, preload, DPR pick) | q95 poster | pending |
 | `sections/TwoColumn.tsx` | half-width media, text measure unchanged | q90 | pending |
 | `sections/Contact.tsx` | text section — measure only | — | pending |
-| `sections/CollectionIndexPresentation.tsx` (project cards) | wider grid | q85 | pending |
+| `sections/CollectionIndexPresentation.tsx` (project cards) | wider grid | q85 | **done** (`8caa8a8`) — `sizes` 33vw (was 384px), q85 |
 | collection/detail pages (`CollectionItem*`) | full bleed media | q85/q95 by slot | pending |
 
 Admin surfaces are out of scope: their tiles already declare 384px and stay on q75.

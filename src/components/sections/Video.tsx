@@ -1,14 +1,31 @@
 import type { VideoSection } from "@/types/sections";
+import { prisma } from "@/lib/prisma";
 import VideoClient from "./VideoClient";
 
-export default function Video(section: VideoSection) {
+type VideoMeta = { poster?: string; variants?: { "720p"?: string; "1080p"?: string } };
+
+export default async function Video(section: VideoSection) {
+  // The section stores the video's public URL; the captured poster and the renditions live on the
+  // asset row's meta (the upload pipeline writes meta.variants.{720p,1080p} + meta.poster).
+  let poster: string | undefined;
+  let variants: VideoMeta["variants"];
+  if (section.videoUrl) {
+    const asset = await prisma.asset.findFirst({
+      where: { publicUrl: section.videoUrl },
+      select: { meta: true },
+    });
+    const meta = asset?.meta as VideoMeta | null;
+    poster = meta?.poster;
+    variants = meta?.variants;
+  }
+
   return (
     <section>
       {(section.heading || section.subheading) && (
-        <div className="max-w-7xl mx-auto px-4 mb-8">
+        <div className="w-full px-4 md:px-8 mb-8">
           {section.heading && (
             <h2
-              className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+              className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
               dangerouslySetInnerHTML={{ __html: section.heading }}
               style={{ color: "var(--color-text-heading)" }}
             />
@@ -23,9 +40,7 @@ export default function Video(section: VideoSection) {
           )}
         </div>
       )}
-      <div className="max-w-7xl mx-auto px-4">
-        <VideoClient src={section.videoUrl} />
-      </div>
+      <VideoClient src={section.videoUrl} poster={poster} variants={variants} />
     </section>
   );
 }
