@@ -128,8 +128,6 @@ work:
 
 ## Not in scope
 
-- **Per-component image quality** (q95 full-span, q85 one-third-width, q75 thumbnails). Later, with the layout
-  pass that narrows margins and enlarges images. That work needs the allowed qualities declared in
-  `next.config.ts` (`images.qualities`) plus a re-measure of every `sizes` string afterwards — using the
-  browser's resource-timing entries, since `naturalWidth` lies for `srcset` images.
+- **Per-component image quality** (q95 full-span, q85 one-third-width, q75 thumbnails) and the full-bleed
+  layout pass that goes with it: now `docs/component-pass-plan.md`, approved 2026-09-28.
 - Video re-encoding — the mp4 pipeline already produces 720p + poster.
