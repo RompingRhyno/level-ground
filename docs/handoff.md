@@ -596,4 +596,4 @@ into chat — those go into env files or the vault instead.
 
 ## Capacity
 
-- Storage headroom (measured 2026-09-27): **337 MB across 23 objects — 3.3% of the 10 GB free tier** (the three project folders account for 319 MB; database rows sum 331 MB of originals, the remainder are the video's derived 720p + poster). The R2 free tier is per **account**, not per bucket: a second bucket shares the same 10 GB. Past it, storage is $0.015/GB-month rounded up to the whole GB, so a second 10 GB would cost about $0.15/month. Re-measure any time with `npx tsx scripts/storage-usage.ts`.
+- Storage headroom (measured 2026-09-28, after the PNG→JPEG format migration): **1.103 GB — 11.0% of the 10 GB free tier**, 254 assets, every stored object verified over HTTP; the migration's as-built numbers are in `docs/media-migration-plan.md`. The R2 free tier is per **account**, not per bucket: a second bucket shares the same 10 GB. Past it, storage is $0.015/GB-month rounded up to the whole GB, so a second 10 GB would cost about $0.15/month. Re-measure any time with `npx tsx scripts/storage-usage.ts`.
