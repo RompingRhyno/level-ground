@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isAllowedUploadMime, isClientConvertedMime } from "@/lib/mime";
 import { usageForAssets } from "@/lib/media-refs";
-import { lockFolderForOrdering } from "@/lib/asset-order";
+import { lockFolderForOrdering, nameInsertionSlot } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
@@ -143,11 +143,20 @@ export async function POST(request: Request) {
       // the same MAX(orderIndex), failing all but one on `@@unique([folder, orderIndex])`.
       await lockFolderForOrdering(tx, folderSlug);
 
-      const agg = await tx.asset.aggregate({
-        where: { folder: folderSlug },
-        _max: { orderIndex: true },
-      });
-      const orderIndex = (agg._max.orderIndex ?? 0) + 1;
+      // Fresh uploads take their place in filename order without disturbing the existing sequence: find the
+      // slot this name earns, make room by renumbering the tail, then insert.
+      const { slot, tail } = await nameInsertionSlot(tx, folderSlug, filename);
+      if (tail.length) {
+        // Nulling first keeps the unique index happy while the tail is reassigned (NULLs do not collide).
+        await tx.asset.updateMany({
+          where: { id: { in: tail.map((a: { id: string }) => a.id) } },
+          data: { orderIndex: null },
+        });
+        for (let i = 0; i < tail.length; i++) {
+          await tx.asset.update({ where: { id: tail[i].id }, data: { orderIndex: slot + i + 2 } });
+        }
+      }
+      const orderIndex = slot + 1;
 
       return tx.asset.create({
         data: {
