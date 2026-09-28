@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { lockFolderForOrdering } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
         return;
       }
 
-      // Get current max orderIndex in target folder (excluding the assets being moved)
+      // Get current max orderIndex in target folder (excluding the assets being moved). The folder lock
+      // keeps a concurrent batch upload from reading the same maximum and colliding.
+      await lockFolderForOrdering(tx, folder);
       const agg = await tx.asset.aggregate({
         where: { folder, NOT: { id: { in: ids } } },
         _max: { orderIndex: true },

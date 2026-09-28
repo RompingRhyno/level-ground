@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { lockFolderForOrdering } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
@@ -16,6 +17,11 @@ export async function POST(request: Request) {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Same folder lock as the create/move paths: a concurrent batch upload must not read the same
+      // maximum while this reassignment runs.
+      const first = await tx.asset.findUnique({ where: { id: orderedIds[0] }, select: { folder: true } });
+      if (first?.folder) await lockFolderForOrdering(tx, first.folder);
+
       // Null out orderIndex first to avoid unique constraint violations
       // during the sequential reassignment (PostgreSQL checks per-statement).
       await tx.asset.updateMany({
