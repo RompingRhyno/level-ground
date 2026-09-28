@@ -58,7 +58,7 @@ identity: the same asset ids, the same folder slugs, and every page reference st
 | ElmSt | Elm St | elm-st | 18 / 18 |
 | LarchSt | Larch St | larch-st | 12 / 11 |
 | SouthSurrey | South Surrey | south-surrey | 5 / 5 |
-| West10-frontgarden | West 10th | west-10th | 7 / 7 |
+| West10 | West 10th | west-10th | 7 / 7 · dir and files renamed by hand |
 | West11 | West 11th | west-11th | 9 / 9 |
 | West11-patio | West 11th - Patio | west-11th---patio | 5 / 5 |
 | West14 | West 14th | west-14th | 9 / 9 |
@@ -90,7 +90,9 @@ identity: the same asset ids, the same folder slugs, and every page reference st
 Each step is idempotent and resumable — matching is on (folder slug, filename), so a re-run skips finished
 work:
 
-1. **Convert** PNGs into `LGL JPG/`; verify counts and dimensions.
+1. **Convert** PNGs into `LGL JPG/` with `bash scripts/convert-media-to-jpg.sh` — q95, `-auto-orient`, idempotent,
+   skips `Logo/`, and verifies dimensions per file (221 converted, 0 failures, 4,176 MB → 1,100 MB on
+   2026-09-28).
 2. **Dry-run report** (no writes): per folder — local files, DB rows, local files with no row, rows with no
    local file, duplicate rows. Sign-off before anything is written.
 3. **Upload** each converted JPEG to a fresh key `media/<slug>/<ts>-<name>` (direct S3 PUT with the scoped R2
