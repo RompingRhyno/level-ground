@@ -50,7 +50,7 @@ function ItemGrid({
           >
             <div className="relative aspect-video w-full">
               {image ? (
-                <Image src={image} alt={item.name} fill sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 384px" className="object-cover" />
+                <Image src={image} alt={item.name} fill sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" quality={85} className="object-cover" />
               ) : (
                 <div className="absolute inset-0 bg-(--color-bg-secondary)" />
               )}
