@@ -39,8 +39,10 @@ export async function POST(request: Request) {
     const base = typeof slug === "string" && slug.trim() ? slugifyFolderName(slug.trim()) : slugifyFolderName(trimmedName);
     const folderSlug = await resolveUniqueFolderSlug(base);
 
-    const max = await prisma.folder.aggregate({ _max: { order: true } });
-    const order = (max._max.order ?? 0) + 1;
+    // Newest first: start below the current minimum so the new folder leads the grid while every existing
+    // folder keeps its relative position. A drag-reorder later normalises the whole list back to 1..n.
+    const min = await prisma.folder.aggregate({ _min: { order: true } });
+    const order = (min._min.order ?? 1) - 1;
 
     const created = await prisma.folder.create({
       data: {
