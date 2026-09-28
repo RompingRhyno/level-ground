@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null };
+type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
 
@@ -23,26 +23,38 @@ export function ImagePickerModal({
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>(defaultTag ?? "");
+  const [broken, setBroken] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     Promise.all([
       fetch("/api/folders").then((r) => r.json()).catch(() => []),
       fetch("/api/tags").then((r) => r.json()).catch(() => []),
     ]).then(([fData, tData]) => {
-      setFolders(fData || []);
-      setAllTags(tData || []);
+      const fList: { slug: string; name: string }[] = Array.isArray(fData) ? fData : [];
+      const tList: { slug: string; name: string }[] = Array.isArray(tData) ? tData : [];
+      setFolders(fList);
+      setAllTags(tList);
+      // A default that no longer exists (folder renamed — which changes its slug — or tag deleted) would
+      // leave the select showing "All" while the request still filtered by the dead slug: an empty grid
+      // with every control looking correct. Reset to All so what is shown is what is queried.
+      setFolder((current) => (current && fList.some((f) => f.slug === current) ? current : ""));
+      setTag((current) => (current && tList.some((t) => t.slug === current) ? current : ""));
     });
   }, []);
 
   useEffect(() => {
     setLoading(true);
-    const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
-    fetch(`/api/assets${q}`)
+    // `kind=image` matters: a video in this grid renders as a blank tile (next/image cannot optimise it)
+    // that still looks clickable and would put a .mp4 URL into an image field.
+    const params = new URLSearchParams({ kind: "image", limit: "500" });
+    if (folder) params.set("folder", folder);
+    if (tag) params.set("tag", tag);
+    fetch(`/api/assets?${params}`)
       .then((r) => r.json())
-      .then((d) => setAssets(d || []))
+      .then((d) => setAssets(Array.isArray(d) ? d : []))
       .catch(() => setAssets([]))
       .finally(() => setLoading(false));
-  }, [folder]);
+  }, [folder, tag]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -51,8 +63,6 @@ export function ImagePickerModal({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  const filtered = assets;
 
   return (
     <div
@@ -88,26 +98,36 @@ export function ImagePickerModal({
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading ? (
             <div className="text-sm text-gray-500">Loading…</div>
-          ) : filtered.length === 0 ? (
+          ) : assets.length === 0 ? (
             <div className="text-sm text-gray-500">No assets found.</div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {filtered.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  disabled={!a.publicUrl}
-                  onClick={() => { if (a.publicUrl) { onPick(a.publicUrl); onClose(); } }}
-                  className="relative aspect-video rounded overflow-hidden border-2 border-transparent hover:border-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40"
-                  title={a.filename ?? a.id}
-                >
-                  {a.publicUrl ? (
-                    <Image src={a.publicUrl} alt={a.alt ?? ""} fill sizes="120px" className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">no preview</div>
-                  )}
-                </button>
-              ))}
+              {assets.map((a) => {
+                const usable = Boolean(a.publicUrl) && !broken.has(a.id);
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    disabled={!usable}
+                    onClick={() => { if (usable && a.publicUrl) { onPick(a.publicUrl); onClose(); } }}
+                    className="relative aspect-video rounded overflow-hidden border-2 border-transparent hover:border-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:hover:border-transparent"
+                    title={a.filename ?? a.id}
+                  >
+                    {usable ? (
+                      <Image
+                        src={a.publicUrl as string}
+                        alt={a.alt ?? ""}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                        onError={() => setBroken((prev) => new Set(prev).add(a.id))}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">no preview</div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
