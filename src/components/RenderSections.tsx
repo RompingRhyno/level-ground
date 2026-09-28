@@ -75,7 +75,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
           case "collection-index":
             return (
               <section key={index} className={backgroundClass}>
-                <div className="mx-auto max-w-7xl px-6 py-20">
+                <div className="section-container py-20">
                   <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
                 </div>
               </section>
@@ -84,7 +84,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
           case "collection-item":
             return (
               <section key={index} className={backgroundClass}>
-                <div className="mx-auto max-w-7xl px-6 py-20">
+                <div className="section-container py-20">
                   <CollectionItem {...section} entityContext={entityContext} />
                 </div>
               </section>
@@ -96,7 +96,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
 
         return (
           <section key={index} className={backgroundClass}>
-            <div className="mx-auto max-w-7xl px-6 py-20">{content}</div>
+            <div className="section-container py-20">{content}</div>
           </section>
         );
       })}

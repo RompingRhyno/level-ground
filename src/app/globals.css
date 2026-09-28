@@ -128,6 +128,21 @@ h1, h2, h3, h4, h5 {
   background-color: var(--btn-primary-hover-bg);
 }
 
+/* Public section container. Full bleed: the margin being removed was the 1280px cap, not breathing room at
+ * the screen edge, so this is a small gutter and nothing else. Text blocks inside a section carry their own
+ * measure (≤ ~72ch) so prose never stretches across a wide display. Defined once so the live renderer
+ * (components/RenderSections.tsx) and the editor preview ((site)/preview/PreviewClient.tsx) cannot drift. */
+.section-container {
+  width: 100%;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 768px) {
+  .section-container {
+    padding-inline: 2rem;
+  }
+}
+
 /* Positive action button utility */
 .btn-positive {
   background-color: var(--btn-positive-bg);
