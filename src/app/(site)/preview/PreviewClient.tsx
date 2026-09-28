@@ -377,7 +377,7 @@ function renderContent(section: PageSection, bg?: string) {
             </div>
           )}
           {s.videoUrl ? (
-            <video src={s.videoUrl} className="w-full rounded" preload="metadata" muted playsInline />
+            <video src={s.videoUrl} className="w-full aspect-video object-cover" preload="metadata" muted playsInline />
           ) : (
             <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-gray-400">
               No video selected
@@ -407,7 +407,7 @@ function renderContent(section: PageSection, bg?: string) {
   if (type === "collection-item") {
     const s = section as CollectionItemSection;
     return (
-      <div style={{ backgroundColor: bg }} className="mx-auto max-w-7xl px-6 py-20">
+      <div style={{ backgroundColor: bg }} className="section-container py-20">
         <CollectionItemPreview section={s} />
       </div>
     );
