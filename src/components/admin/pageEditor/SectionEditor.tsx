@@ -367,7 +367,7 @@ export default function SectionEditor({
 
       {/* Expanded body */}
       {expanded && (
-        <div className="section-fields" style={{ backgroundColor: "var(--color-editor-bg)" }}>
+        <div className="section-fields">
           <div className="editor-form max-w-6xl mx-auto px-4 py-4 space-y-6">
           {type === "hero" && (
             <div className="space-y-4">
