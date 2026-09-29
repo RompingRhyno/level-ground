@@ -4,16 +4,37 @@ import type { Prisma } from "@prisma/client";
 import { GallerySection } from "@/types/sections";
 import { prisma } from "@/lib/prisma";
 import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
+import { resolveTransitions } from "@/lib/transition-db";
+import TransitionTile from "./TransitionTile";
 import GalleryClient from "./GalleryClient";
 
-type AssetRow = { id: string; publicUrl: string | null; alt: string | null; folder: string | null };
+type AssetRow = {
+  id: string;
+  publicUrl: string | null;
+  alt: string | null;
+  folder: string | null;
+  meta: unknown;
+  width: number | null;
+  height: number | null;
+};
 type TagRow = { slug: string; name: string };
+
+const ASSET_SELECT = {
+  id: true,
+  publicUrl: true,
+  alt: true,
+  folder: true,
+  meta: true,
+  width: true,
+  height: true,
+} as const;
 
 async function fetchAssets(section: GallerySection): Promise<AssetRow[]> {
   if (section.mode === "static") {
+    // Hand-picked: hidden assets still render here, exactly as the operator chose them.
     const rows = await prisma.asset.findMany({
       where: { id: { in: section.assetIds } },
-      select: { id: true, publicUrl: true, alt: true, folder: true },
+      select: ASSET_SELECT,
     });
     const order = new Map(section.assetIds.map((id, i) => [id, i]));
     return rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
@@ -31,6 +52,10 @@ async function fetchAssets(section: GallerySection): Promise<AssetRow[]> {
     where.folder = { in: taggedFolders.map((f) => f.slug) };
   }
 
+  // Hidden assets are excluded from every dynamic membership — a hidden "before" shot is a member of a
+  // transition group, not a tile of its own.
+  where.hidden = false;
+
   // Dynamic membership comes from a folder or a tag, so videos land in the result — and every tile
   // is rendered with next/image, which cannot show one (it showed as a broken image). Filter to
   // images here; a row with no mime counts as an image, mirroring `pickCover()`. Static galleries
@@ -39,7 +64,7 @@ async function fetchAssets(section: GallerySection): Promise<AssetRow[]> {
 
   return prisma.asset.findMany({
     where,
-    select: { id: true, publicUrl: true, alt: true, folder: true },
+    select: ASSET_SELECT,
     orderBy: hasFolder
       ? [{ orderIndex: "asc" }, { createdAt: "asc" }]
       : { createdAt: "desc" },
@@ -145,14 +170,15 @@ export default async function Gallery(section: GallerySection) {
   const assets = await fetchAssets(section);
   const valid = assets.filter(
     (a): a is AssetRow & { publicUrl: string } => a.publicUrl !== null
-  ) as (AssetRow & { publicUrl: string })[];
+  );
 
   const layout = section.layout ?? "grid";
 
-  // Resolve display tags and collection-index page slug in parallel
-  const [tags, collectionSlug] = await Promise.all([
+  // Resolve display tags, the collection-index page slug and every transition group's members in parallel.
+  const [tags, collectionSlug, transitions] = await Promise.all([
     resolveTags(section, assets),
     section.tagDisplay?.enabled ? findCollectionIndexPageSlug() : Promise.resolve(null),
+    resolveTransitions(valid),
   ]);
 
   if (section.lightbox) {
@@ -160,33 +186,51 @@ export default async function Gallery(section: GallerySection) {
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
-        <GalleryClient assets={valid} layoutMode={layout === "bento" ? "bento" : "grid"} />
+        <GalleryClient assets={valid} transitions={transitions} layoutMode={layout === "bento" ? "bento" : "grid"} />
       </section>
     );
   }
 
   if (layout === "masonry") {
     // Masonry keeps its rounded corners throughout: which column an item lands in is decided by the
-    // browser's column balancing, so an item cannot know whether it sits on the screen edge.
+    // browser's column balancing, so an item cannot know whether it sits on the screen edge. A group
+    // there uses its first member's aspect (the row carries those dimensions).
     return (
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
         <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5">
-          {valid.map((asset) => (
-            <div key={asset.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
-              <Image
-                src={asset.publicUrl}
-                alt={asset.alt ?? ""}
-                width={800}
-                height={600}
-                sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                quality={85}
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-            </div>
-          ))}
+          {valid.map((asset) => {
+            const group = transitions[asset.id];
+            return (
+              <div key={asset.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
+                {group ? (
+                  <div
+                    className="relative w-full"
+                    style={{ aspectRatio: `${asset.width ?? 16} / ${asset.height ?? 9}` }}
+                  >
+                    <TransitionTile
+                      members={group.members}
+                      transition={group.transition}
+                      sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                      quality={85}
+                    />
+                  </div>
+                ) : (
+                  <Image
+                    src={asset.publicUrl}
+                    alt={asset.alt ?? ""}
+                    width={800}
+                    height={600}
+                    sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                    quality={85}
+                    className="w-full h-auto object-cover"
+                    loading="lazy"
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     );
@@ -204,24 +248,37 @@ export default async function Gallery(section: GallerySection) {
           (all corners square) and at two columns the left tile squares its left pair, the right tile its
           right pair. */}
       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        {valid.map((asset, i) => (
-          <div
-            key={asset.id}
-            className={`relative aspect-video w-full overflow-hidden rounded-none ${
-              i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
-            }`}
-          >
-            <Image
-              src={asset.publicUrl}
-              alt={asset.alt ?? ""}
-              fill
-              sizes="(min-width:640px) 50vw, 100vw"
-              quality={85}
-              className="object-cover"
-              loading="lazy"
-            />
-          </div>
-        ))}
+        {valid.map((asset, i) => {
+          const group = transitions[asset.id];
+          return (
+            <div
+              key={asset.id}
+              className={`relative aspect-video w-full overflow-hidden rounded-none ${
+                i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
+              }`}
+            >
+              {group ? (
+                <TransitionTile
+                  members={group.members}
+                  transition={group.transition}
+                  sizes="(min-width:640px) 50vw, 100vw"
+                  quality={85}
+                  showPills={false}
+                />
+              ) : (
+                <Image
+                  src={asset.publicUrl}
+                  alt={asset.alt ?? ""}
+                  fill
+                  sizes="(min-width:640px) 50vw, 100vw"
+                  quality={85}
+                  className="object-cover"
+                  loading="lazy"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Desktop: bento/grid layout engine. The engine places cells on a SIX-column grid (1–6, `span 2`
@@ -233,6 +290,7 @@ export default async function Gallery(section: GallerySection) {
       <div className="hidden md:grid md:grid-cols-6 gap-1.5">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
+          const group = transitions[asset.id];
           return (
             <div
               key={asset.id}
@@ -245,15 +303,24 @@ export default async function Gallery(section: GallerySection) {
                 cell.colSpan,
               )}${cell.cellType !== "bento-large" ? " aspect-video" : ""}`}
             >
-              <Image
-                src={asset.publicUrl}
-                alt={asset.alt ?? ""}
-                fill
-                sizes={getCellSizes(cell.cellType, cell.colSpan)}
-                quality={cell.cellType === "small" ? 85 : 95}
-                className="object-cover"
-                loading="lazy"
-              />
+              {group ? (
+                <TransitionTile
+                  members={group.members}
+                  transition={group.transition}
+                  sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                  quality={cell.cellType === "small" ? 85 : 95}
+                />
+              ) : (
+                <Image
+                  src={asset.publicUrl}
+                  alt={asset.alt ?? ""}
+                  fill
+                  sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                  quality={cell.cellType === "small" ? 85 : 95}
+                  className="object-cover"
+                  loading="lazy"
+                />
+              )}
             </div>
           );
         })}

@@ -12,11 +12,10 @@ import {
   TRANSITION_MIME,
   clampMs,
   isTransition,
-  nextTransitionName,
   readTransition,
-  transitionRowsInFolder,
   type TransitionAnimation,
 } from "@/lib/transition";
+import { nextTransitionName, transitionRowsInFolder } from "@/lib/transition-db";
 
 /** Transition groups in a folder — the manager modal's list. */
 export async function GET(request: Request) {

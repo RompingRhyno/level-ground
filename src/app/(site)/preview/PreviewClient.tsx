@@ -5,6 +5,7 @@ import Banner from "@/components/sections/Banner";
 import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
+import { transitionsFromRows } from "@/lib/transition";
 import Contact from "@/components/sections/Contact";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import CollectionIndexPresentation from "@/components/sections/CollectionIndexPresentation";
@@ -20,7 +21,7 @@ import type {
   CollectionItemSection,
 } from "@/types/sections";
 
-type AssetRow = { id: string; publicUrl: string; alt: string | null };
+type AssetRow = { id: string; publicUrl: string; alt: string | null; meta?: unknown; hidden?: boolean };
 
 function GalleryPreview({ section }: { section: GallerySection }) {
   const [assets, setAssets] = useState<AssetRow[]>([]);
@@ -52,7 +53,9 @@ function GalleryPreview({ section }: { section: GallerySection }) {
             // No-op: show all for preview.
           }
         }
-        setAssets(rows);
+        // A dynamic gallery excludes hidden files exactly like the live page; a static gallery is an explicit
+        // list of picks, where a hidden file is still allowed to appear.
+        setAssets(section.mode === "static" ? rows : rows.filter((row) => !row.hidden));
       })
       .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -136,7 +139,7 @@ function GalleryPreview({ section }: { section: GallerySection }) {
           ))}
         </div>
       )}
-      <GalleryClient assets={assets} layoutMode={section.layout ?? "grid"} />
+      <GalleryClient assets={assets} transitions={transitionsFromRows(assets)} layoutMode={section.layout ?? "grid"} />
     </>
   );
 }

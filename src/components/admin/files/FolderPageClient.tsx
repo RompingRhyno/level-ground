@@ -12,7 +12,14 @@ import Lightbox from "./Lightbox";
 import Menu from "./Menu";
 import MoveModal from "./MoveModal";
 import UploadModal from "./UploadModal";
+import TransitionModal from "./TransitionModal";
 import { ToastProvider, useToast } from "./Toast";
+import {
+  TRANSITION_MAX_MEMBERS,
+  TRANSITION_MIN_MEMBERS,
+  readTransition,
+  transitionsFromRows,
+} from "@/lib/transition";
 
 type LightboxPrompt = { kind: "rename" | "alt"; asset: AssetData } | null;
 
@@ -54,6 +61,10 @@ function FolderPageClientInner({
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
+  const [transitionModal, setTransitionModal] = useState<
+    { mode: "create" } | { mode: "edit"; groupId: string } | null
+  >(null);
+  const [hiddenOpen, setHiddenOpen] = useState(false);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   const reload = useCallback(async () => {
@@ -86,6 +97,37 @@ function FolderPageClientInner({
   }, [assets, query, kind]);
 
   const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
+
+  const transitions = useMemo(() => transitionsFromRows(assets), [assets]);
+  const groups = useMemo(() => assets.filter((asset) => readTransition(asset.meta) !== null), [assets]);
+  // Hidden files keep their place in `assets` (they are ordered last) but render in their own section and
+  // are never part of "Select all".
+  const visible = useMemo(() => filtered.filter((asset) => !asset.hidden), [filtered]);
+  const hiddenRows = useMemo(() => filtered.filter((asset) => asset.hidden), [filtered]);
+
+  const selectedAssets = useMemo(
+    () => selectedIds.map((id) => assets.find((asset) => asset.id === id)).filter((a): a is AssetData => Boolean(a)),
+    [selectedIds, assets],
+  );
+  const anyHiddenSelected = selectedAssets.some((asset) => asset.hidden);
+  const anyVisibleSelected = selectedAssets.some((asset) => !asset.hidden);
+  const mixedSelection = anyHiddenSelected && anyVisibleSelected;
+  const canCreateTransition =
+    selectedAssets.length >= TRANSITION_MIN_MEMBERS &&
+    selectedAssets.length <= TRANSITION_MAX_MEMBERS &&
+    !selectedAssets.some((asset) => readTransition(asset.meta) !== null);
+
+  const groupNamesFor = useCallback(
+    (assetId: string) =>
+      groups
+        .filter((group) => readTransition(group.meta)?.members.includes(assetId))
+        .map((group) => group.filename ?? "Before/After"),
+    [groups],
+  );
+
+  useEffect(() => {
+    setHiddenOpen(window.localStorage.getItem(`admin_files_hidden:${folder.slug}`) === "1");
+  }, [folder.slug]);
 
   // ── Folder level actions ────────────────────────────────────────────────
 
@@ -249,11 +291,18 @@ function FolderPageClientInner({
     const usage = new Set<string>();
     ids.forEach((id) => assets.find((asset) => asset.id === id)?.usedOn?.forEach((slug) => usage.add(slug)));
     const usedList = [...usage];
+    const affectedGroups = [...new Set(ids.flatMap((id) => groupNamesFor(id)))];
     const ok = await confirm(
       `Delete ${ids.length} file${ids.length === 1 ? "" : "s"}?`,
-      usedList.length
-        ? `Used on: ${usedList.join(", ")}. Deleting removes the file from the server and leaves those pages without it.`
-        : "This removes the file from the server and cannot be undone.",
+      [
+        usedList.length ? `Used on: ${usedList.join(", ")}.` : "",
+        affectedGroups.length
+          ? `In ${affectedGroups.length === 1 ? "transition" : "transitions"} ${affectedGroups.join(", ")} — a two-image transition is removed entirely, a larger one loses the image.`
+          : "",
+        "This removes the file from the server and cannot be undone.",
+      ]
+        .filter(Boolean)
+        .join(" "),
       "danger",
       "Delete",
     );
@@ -274,6 +323,26 @@ function FolderPageClientInner({
       kind: failed ? "error" : "success",
       message: failed ? `${failed} file(s) could not be deleted` : `Deleted ${ids.length} file(s)`,
     });
+  }
+
+  /** Hide or unhide every selected file. The toolbar refuses a mixed selection, so this is unambiguous. */
+  async function setHiddenSelected(hidden: boolean) {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    try {
+      for (const id of ids) {
+        await api(`/api/assets/${id}`, { method: "PATCH", body: JSON.stringify({ hidden }) });
+      }
+      setSelected({});
+      await reload();
+      router.refresh();
+      toast({
+        kind: "success",
+        message: `${ids.length} file${ids.length === 1 ? "" : "s"} ${hidden ? "hidden" : "shown again"}`,
+      });
+    } catch (err: any) {
+      toast({ kind: "error", message: "Could not change visibility", detail: err?.message });
+    }
   }
 
   async function persistOrder(orderedIds: string[]) {
@@ -314,7 +383,7 @@ function FolderPageClientInner({
     void persistOrder(ids);
   }
 
-  const lightboxAsset = lightboxIndex !== null ? filtered[lightboxIndex] : null;
+  const lightboxAsset = lightboxIndex !== null ? visible[lightboxIndex] : null;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -514,19 +583,45 @@ function FolderPageClientInner({
         </select>
 
         <div className="ml-auto flex items-center gap-2">
+          {selectedIds.length > 0 && <span className="text-sm text-gray-700">{selectedIds.length} selected</span>}
+          <button
+            type="button"
+            onClick={() => setSelected(Object.fromEntries(visible.map((asset) => [asset.id, true])))}
+            className="rounded px-2 py-1 text-sm admin-btn"
+          >
+            Select all
+          </button>
           {selectedIds.length > 0 && (
             <>
-              <span className="text-sm text-gray-700">{selectedIds.length} selected</span>
-              <button
-                type="button"
-                onClick={() => setSelected(Object.fromEntries(filtered.map((asset) => [asset.id, true])))}
-                className="rounded px-2 py-1 text-sm admin-btn"
-              >
-                Select all
-              </button>
               <button type="button" onClick={() => setSelected({})} className="rounded px-2 py-1 text-sm admin-btn">
                 Clear
               </button>
+              <button
+                type="button"
+                onClick={() => void setHiddenSelected(anyHiddenSelected && !anyVisibleSelected ? false : true)}
+                disabled={mixedSelection}
+                title={mixedSelection ? "A hidden and a visible file are selected" : undefined}
+                className="rounded px-2 py-1 text-sm admin-btn disabled:opacity-50"
+              >
+                {anyHiddenSelected && !anyVisibleSelected ? "Unhide" : "Hide"}
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setTransitionModal({ mode: "create" })}
+            disabled={!canCreateTransition}
+            title={
+              canCreateTransition
+                ? undefined
+                : `Select ${TRANSITION_MIN_MEMBERS}–${TRANSITION_MAX_MEMBERS} images (a transition cannot contain another transition)`
+            }
+            className="rounded px-2 py-1 text-sm admin-btn disabled:opacity-50"
+          >
+            Create transition…
+          </button>
+          {selectedIds.length > 0 && (
+            <>
               <button type="button" onClick={() => setMoveOpen(true)} className="rounded px-2 py-1 text-sm btn-positive">
                 Move to…
               </button>
@@ -539,17 +634,57 @@ function FolderPageClientInner({
               </button>
             </>
           )}
-          {selectedIds.length === 0 && (
-            <button
-              type="button"
-              onClick={() => setSelected(Object.fromEntries(filtered.map((asset) => [asset.id, true])))}
-              className="rounded px-2 py-1 text-sm admin-btn"
-            >
-              Select all
-            </button>
-          )}
         </div>
       </div>
+
+      {/* Hidden files: ordered last, out of dynamic galleries, kept out of "Select all". */}
+      {hiddenRows.length > 0 && (
+        <div
+          className="mb-3 rounded-lg border border-(--color-border)"
+          style={{ backgroundColor: "var(--color-bg-secondary)" }}
+        >
+          <button
+            type="button"
+            aria-expanded={hiddenOpen}
+            onClick={() => {
+              const next = !hiddenOpen;
+              setHiddenOpen(next);
+              window.localStorage.setItem(`admin_files_hidden:${folder.slug}`, next ? "1" : "0");
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm font-medium text-(--color-brand-dark)"
+          >
+            <span aria-hidden="true">{hiddenOpen ? "▾" : "▸"}</span>
+            Hidden from galleries ({hiddenRows.length})
+          </button>
+          {hiddenOpen && (
+            <div className="grid grid-cols-1 gap-5 border-t border-(--color-border) p-3 sm:grid-cols-2 lg:grid-cols-3">
+              {hiddenRows.map((asset) => (
+                <AssetTile
+                  key={asset.id}
+                  asset={asset}
+                  group={transitions[asset.id]}
+                  selected={!!selected[asset.id]}
+                  usage={asset.usedOn ?? []}
+                  onToggleSelect={() => setSelected((current) => ({ ...current, [asset.id]: !current[asset.id] }))}
+                  onOpen={() => undefined}
+                  onRename={() => undefined}
+                  onSetAlt={() => undefined}
+                  onMove={() => {
+                    setSelected({ [asset.id]: true });
+                    setMoveOpen(true);
+                  }}
+                  onDelete={() => void deleteAssets([asset.id])}
+                  onEditTransition={
+                    transitions[asset.id]
+                      ? () => setTransitionModal({ mode: "edit", groupId: asset.id })
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Drop zone + grid */}
       <div
@@ -582,10 +717,11 @@ function FolderPageClientInner({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((asset, index) => (
+            {visible.map((asset, index) => (
               <AssetTile
                 key={asset.id}
                 asset={asset}
+                group={transitions[asset.id]}
                 selected={!!selected[asset.id]}
                 usage={asset.usedOn ?? []}
                 dragging={dragId === asset.id}
@@ -605,6 +741,11 @@ function FolderPageClientInner({
                   setMoveOpen(true);
                 }}
                 onDelete={() => void deleteAssets([asset.id])}
+                onEditTransition={
+                  transitions[asset.id]
+                    ? () => setTransitionModal({ mode: "edit", groupId: asset.id })
+                    : undefined
+                }
                 onReorderDragStart={(event) => {
                   setDragId(asset.id);
                   event.dataTransfer.effectAllowed = "move";
@@ -689,6 +830,39 @@ function FolderPageClientInner({
             </div>
           </div>
         </div>
+      )}
+
+      {transitionModal && (
+        <TransitionModal
+          folderSlug={folder.slug}
+          assets={assets}
+          initialIds={
+            transitionModal.mode === "create"
+              ? visible.filter((asset) => selected[asset.id]).map((asset) => asset.id)
+              : undefined
+          }
+          initialGroup={
+            transitionModal.mode === "edit"
+              ? (() => {
+                  const asset = assets.find((a) => a.id === transitionModal.groupId);
+                  const transition = asset ? readTransition(asset.meta) : null;
+                  return asset && transition
+                    ? {
+                        id: asset.id,
+                        name: asset.filename ?? "Before/After",
+                        orderIndex: asset.orderIndex,
+                        transition,
+                      }
+                    : undefined;
+                })()
+              : undefined
+          }
+          onClose={() => setTransitionModal(null)}
+          onSaved={() => {
+            void reload();
+            router.refresh();
+          }}
+        />
       )}
 
       <MoveModal

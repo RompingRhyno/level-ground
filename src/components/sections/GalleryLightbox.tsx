@@ -2,6 +2,8 @@
 
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import type { ResolvedTransition } from "@/lib/transition";
+import TransitionTile from "./TransitionTile";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
@@ -49,6 +51,7 @@ function LightboxButton({ onClick, label, className, children }: {
 
 export default function GalleryLightbox({
   assets,
+  transitions,
   openIndex,
   onClose,
   onGotoIndex,
@@ -56,6 +59,7 @@ export default function GalleryLightbox({
   onNext,
 }: {
   assets: Asset[];
+  transitions: Record<string, ResolvedTransition>;
   openIndex: number | null;
   onClose: () => void;
   onGotoIndex: (i: number) => void;
@@ -135,16 +139,26 @@ export default function GalleryLightbox({
         className={`w-screen ${isLandscape ? "flex flex-row h-screen overflow-hidden" : "flex flex-col items-center"}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Main image */}
+        {/* Main image — a transition group cycles in place, at its members' own aspect */}
         <div className={isLandscape ? "relative flex-1 min-w-0 h-full" : "relative w-full mt-3 max-h-[75vh] xl:max-h-[calc(100vh-200px)] aspect-video"}>
-          <Image
-            src={assets[open].publicUrl}
-            alt={assets[open].alt ?? ""}
-            fill
-            className="object-contain"
-            sizes="100vw"
-            priority
-          />
+          {transitions[assets[open].id] ? (
+            <TransitionTile
+              members={transitions[assets[open].id].members}
+              transition={transitions[assets[open].id].transition}
+              sizes="100vw"
+              quality={95}
+              fit="contain"
+            />
+          ) : (
+            <Image
+              src={assets[open].publicUrl}
+              alt={assets[open].alt ?? ""}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          )}
           {/* Buttons overlaid — landscape only */}
           {isLandscape && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-row items-center gap-3 z-10">
