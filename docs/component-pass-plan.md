@@ -89,7 +89,8 @@ Admin surfaces are out of scope: their tiles already declare 384px and stay on q
 
 ## Remaining
 
-- Preview parity: `PreviewClient`'s own inline gallery/video/contact markup still carries `max-w-7xl px-4`
-  containers in a couple of places. Invisible while the preview pane is narrower than 1280px; align them when
-  the pane is widened.
-- Operator content: re-pick the hero image and the two service card images.
+- Preview parity: **done.** The preview's own markup — gallery header/pills, video heading, collection-item
+  wrapper — now carries the same padding and measures as the live sections, and every other branch renders the
+  real component. Drift here is invisible until someone opens the preview, which is how three separate
+  instances surfaced.
+- Operator content: the hero image is set; the two service card images are still empty.
