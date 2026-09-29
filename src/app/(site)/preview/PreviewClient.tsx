@@ -316,7 +316,7 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as HeroSection;
     return (
       <div style={{ backgroundColor: bg }}>
-        <div className="section-container py-20">
+        <div className="section-container">
           <Hero {...s} />
         </div>
       </div>
