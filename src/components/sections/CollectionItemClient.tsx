@@ -28,9 +28,9 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
     // Rounded throughout: which column an item lands in is the browser's column balancing, so an item
     // cannot know whether it sits on the screen edge.
     return (
-      <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-4">
+      <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-2">
         {assets.map((a) => (
-          <div key={a.id} className="break-inside-avoid mb-4 rounded overflow-hidden">
+          <div key={a.id} className="break-inside-avoid mb-2 rounded overflow-hidden">
             <Image
               src={a.publicUrl}
               alt={a.alt ?? ""}
@@ -50,7 +50,7 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
   // breakpoint: at one column a tile touches both edges, at two the left tile squares its left pair and
   // the right tile its right pair, and at three the same logic applies to first/middle/last.
   return (
-    <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
       {assets.map((a, i) => {
         const sm = i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l";
         const md =

@@ -172,9 +172,9 @@ export default async function Gallery(section: GallerySection) {
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
-        <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-4">
+        <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-2">
           {valid.map((asset) => (
-            <div key={asset.id} className="break-inside-avoid mb-4 rounded overflow-hidden">
+            <div key={asset.id} className="break-inside-avoid mb-2 rounded overflow-hidden">
               <Image
                 src={asset.publicUrl}
                 alt={asset.alt ?? ""}
@@ -203,7 +203,7 @@ export default async function Gallery(section: GallerySection) {
       {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
           (all corners square) and at two columns the left tile squares its left pair, the right tile its
           right pair. */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-2">
         {valid.map((asset, i) => (
           <div
             key={asset.id}
@@ -230,7 +230,7 @@ export default async function Gallery(section: GallerySection) {
           ~140px wide. GalleryClient (the lightbox path) already declares six. Quality tiers: hero and
           bento-large run full or two-thirds width (q95), the small tiles a third (q85). Corners that touch
           the screen edge are square (edgeCornerClasses); the rest stay rounded. */}
-      <div className="hidden md:grid md:grid-cols-6 gap-4">
+      <div className="hidden md:grid md:grid-cols-6 gap-2">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
           return (
