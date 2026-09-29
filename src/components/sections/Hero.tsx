@@ -9,6 +9,11 @@ export type HeroProps = {
   image: string;
 };
 
+// The sticky header (Navigation.tsx) is 67px: py-4 (32) + the 35px logo. The hero takes the rest of the
+// viewport so the first screen is exactly header + hero. `svh` (not `vh`) keeps that true on mobile when
+// the URL bar retracts.
+const NAV_H = "67px";
+
 export default function Hero({
   heading,
   subheading,
@@ -19,10 +24,20 @@ export default function Hero({
   const hasImage = Boolean(image);
 
   return (
-    <section className="relative w-full min-h-[420px] md:min-h-[560px] flex items-center overflow-hidden">
+    <section
+      className="relative w-full flex items-center overflow-hidden min-h-[420px]"
+      style={{ height: `calc(100svh - ${NAV_H})` }}
+    >
       {/* Full-bleed image with the copy on top, so it needs a scrim: a gradient from the left keeps the
-          text legible while the photo stays visible on the right. Without an image the neutral panel
-          shows and the text falls back to the normal heading colour. */}
+          text legible while the photo stays visible on the right. `object-cover object-center` is what
+          makes a narrow (portrait) viewport crop the sides of a landscape photo and keep the middle,
+          instead of squashing it or letterboxing it. Without an image the neutral panel shows and the
+          text falls back to the normal heading colour.
+
+          `sizes` follows the same rule the crop does: while the viewport is wider than 16:9 the width is
+          what limits the scale, so 100vw is right; once it is taller than wide, object-cover scales by
+          height, and the image needs roughly (height x 1.78) pixels of width — declaring only 100vw there
+          would fetch a candidate that has to be upscaled. */}
       {hasImage ? (
         <>
           <Image
@@ -30,9 +45,9 @@ export default function Hero({
             alt=""
             fill
             priority
-            sizes="100vw"
+            sizes="(min-aspect-ratio: 16/9) 100vw, calc((100svh - 67px) * 1.78)"
             quality={95}
-            className="object-cover"
+            className="object-cover object-center"
           />
           <div
             className="absolute inset-0"
