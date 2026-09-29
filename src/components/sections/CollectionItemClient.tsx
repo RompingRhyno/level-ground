@@ -25,6 +25,8 @@ const TILE_SIZES = "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
 
 function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout }) {
   if (layout === "masonry") {
+    // Rounded throughout: which column an item lands in is the browser's column balancing, so an item
+    // cannot know whether it sits on the screen edge.
     return (
       <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-4">
         {assets.map((a) => (
@@ -44,21 +46,33 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
       </div>
     );
   }
+  // 1 / 2 / 3 columns of a full-bleed row, so the corner that sits on a screen edge is square at each
+  // breakpoint: at one column a tile touches both edges, at two the left tile squares its left pair and
+  // the right tile its right pair, and at three the same logic applies to first/middle/last.
   return (
     <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      {assets.map((a) => (
-        <div key={a.id} className="relative aspect-video rounded overflow-hidden">
-          <Image
-            src={a.publicUrl}
-            alt={a.alt ?? ""}
-            fill
-            sizes={TILE_SIZES}
-            quality={85}
-            className="object-cover"
-            loading="lazy"
-          />
-        </div>
-      ))}
+      {assets.map((a, i) => {
+        const sm = i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l";
+        const md =
+          i % 3 === 0
+            ? "md:rounded-r"
+            : i % 3 === 1
+              ? "md:rounded"
+              : "md:rounded-l md:rounded-r-none";
+        return (
+          <div key={a.id} className={`relative aspect-video overflow-hidden rounded-none ${sm} ${md}`}>
+            <Image
+              src={a.publicUrl}
+              alt={a.alt ?? ""}
+              fill
+              sizes={TILE_SIZES}
+              quality={85}
+              className="object-cover"
+              loading="lazy"
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

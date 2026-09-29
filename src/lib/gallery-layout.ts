@@ -177,3 +177,20 @@ export function getCellSizes(cellType: CellType, colSpan?: number): string {
   if (colSpan === 3) return "(min-width:1024px) 50vw, 100vw";
   return "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
 }
+
+/**
+ * Corner classes for a cell that may sit on the screen edge. Sections run full bleed, so a cell in the
+ * first column has its left edge on the screen edge and a cell in the last column has its right edge
+ * there; corners that touch the edge are square, the rest keep the rounded default. A cell spanning the
+ * whole grid (the gallery hero) touches both edges and loses all four corners.
+ *
+ * Combine with a base `rounded` class — this only subtracts the corners that touch.
+ */
+export function edgeCornerClasses(colStart: number, colSpan: number, cols = 6): string {
+  const touchesLeft = colStart === 1;
+  const touchesRight = colStart + colSpan - 1 === cols;
+  if (touchesLeft && touchesRight) return "rounded-none";
+  if (touchesLeft) return "rounded-l-none";
+  if (touchesRight) return "rounded-r-none";
+  return "";
+}

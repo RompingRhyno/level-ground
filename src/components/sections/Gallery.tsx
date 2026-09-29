@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { GallerySection } from "@/types/sections";
 import { prisma } from "@/lib/prisma";
-import { getLayoutCells, getCellSizes } from "@/lib/gallery-layout";
+import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
 import GalleryClient from "./GalleryClient";
 
 type AssetRow = { id: string; publicUrl: string | null; alt: string | null; folder: string | null };
@@ -166,6 +166,8 @@ export default async function Gallery(section: GallerySection) {
   }
 
   if (layout === "masonry") {
+    // Masonry keeps its rounded corners throughout: which column an item lands in is decided by the
+    // browser's column balancing, so an item cannot know whether it sits on the screen edge.
     return (
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
@@ -198,10 +200,17 @@ export default async function Gallery(section: GallerySection) {
       <SectionHeader heading={section.heading} body={section.body} />
       <TagPills tags={tags} collectionSlug={collectionSlug} />
 
-      {/* Mobile: simple 1–2 col responsive grid */}
+      {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
+          (all corners square) and at two columns the left tile squares its left pair, the right tile its
+          right pair. */}
       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {valid.map((asset) => (
-          <div key={asset.id} className="relative aspect-video w-full rounded overflow-hidden">
+        {valid.map((asset, i) => (
+          <div
+            key={asset.id}
+            className={`relative aspect-video w-full overflow-hidden rounded-none ${
+              i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
+            }`}
+          >
             <Image
               src={asset.publicUrl}
               alt={asset.alt ?? ""}
@@ -219,7 +228,8 @@ export default async function Gallery(section: GallerySection) {
           per tile, `span 6` for a hero); rendering it in three columns leaves columns 4–6 as implicit auto
           tracks, which collapse to a 0px column and a stray wide one — one tile per triple row comes out
           ~140px wide. GalleryClient (the lightbox path) already declares six. Quality tiers: hero and
-          bento-large run full or two-thirds width (q95), the small tiles a third (q85). */}
+          bento-large run full or two-thirds width (q95), the small tiles a third (q85). Corners that touch
+          the screen edge are square (edgeCornerClasses); the rest stay rounded. */}
       <div className="hidden md:grid md:grid-cols-6 gap-4">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
@@ -230,9 +240,10 @@ export default async function Gallery(section: GallerySection) {
                 gridColumn: `${cell.colStart} / span ${cell.colSpan}`,
                 gridRow: `${cell.rowStart} / span ${cell.rowSpan}`,
               }}
-              className={`relative rounded overflow-hidden${
-                cell.cellType !== "bento-large" ? " aspect-video" : ""
-              }`}
+              className={`relative rounded overflow-hidden ${edgeCornerClasses(
+                cell.colStart,
+                cell.colSpan,
+              )}${cell.cellType !== "bento-large" ? " aspect-video" : ""}`}
             >
               <Image
                 src={asset.publicUrl}

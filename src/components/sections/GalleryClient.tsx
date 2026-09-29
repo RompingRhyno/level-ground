@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { getLayoutCells, getCellSizes } from "@/lib/gallery-layout";
+import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
 import GalleryLightbox from "./GalleryLightbox";
 
 import type { GalleryLayout } from "@/types/sections";
@@ -19,12 +19,16 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
 
   return (
     <>
-      {/* Mobile: simple 1–2 col responsive grid */}
+      {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
+          (all corners square) and at two columns the left tile squares its left pair, the right tile its
+          right pair. */}
       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
         {assets.map((asset, i) => (
           <button
             key={asset.id}
-            className="relative aspect-video w-full rounded overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className={`group relative aspect-video w-full overflow-hidden cursor-pointer rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+              i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
+            }`}
             onClick={() => setOpen(i)}
             aria-label={asset.alt ?? `Image ${i + 1}`}
           >
@@ -34,15 +38,16 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
               fill
               sizes="(min-width:640px) 50vw, 100vw"
               quality={85}
-              className="object-cover transition-opacity hover:opacity-90"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
           </button>
         ))}
       </div>
 
-      {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Quality tiers mirror the
-          non-lightbox path: hero + bento-large q95, small tiles q85. */}
+      {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Corners on the screen edge
+          are square (edgeCornerClasses); the rest stay rounded. Hover is a subtle zoom clipped by the
+          tile's own overflow, not an opacity overlay. */}
       <div className="hidden md:grid md:grid-cols-6 gap-4">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
@@ -53,9 +58,10 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
                 gridColumn: `${cell.colStart} / span ${cell.colSpan}`,
                 gridRow: `${cell.rowStart} / span ${cell.rowSpan}`,
               }}
-              className={`relative rounded overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white${
-                cell.cellType !== "bento-large" ? " aspect-video" : ""
-              }`}
+              className={`group relative rounded overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${edgeCornerClasses(
+                cell.colStart,
+                cell.colSpan,
+              )}${cell.cellType !== "bento-large" ? " aspect-video" : ""}`}
               onClick={() => setOpen(cell.assetIndex)}
               aria-label={asset.alt ?? `Image ${cell.assetIndex + 1}`}
             >
@@ -65,7 +71,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
                 fill
                 sizes={getCellSizes(cell.cellType, cell.colSpan)}
                 quality={cell.cellType === "small" ? 85 : 95}
-                className="object-cover transition-opacity hover:opacity-90"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
             </button>
