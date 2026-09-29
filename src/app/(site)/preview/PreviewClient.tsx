@@ -317,7 +317,7 @@ function renderContent(section: PageSection, bg?: string) {
     return (
       <div style={{ backgroundColor: bg }}>
         <div className="section-container">
-          <Hero {...s} />
+          <Hero {...s} fillViewport={false} />
         </div>
       </div>
     );
