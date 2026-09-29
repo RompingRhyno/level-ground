@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Menu from "./Menu";
+import TransitionTile from "@/components/sections/TransitionTile";
 import { filenameExt, filenameStem, formatBytes, isVideoAsset, tileThumb, type AssetData } from "./types";
+import type { ResolvedTransition } from "@/lib/transition";
 
 function DocumentIcon() {
   return (
@@ -33,9 +35,14 @@ function PlayBadge() {
  *
  * Videos show their captured poster (never a live <video> element — that would fetch video
  * headers for every tile) and are identified by a play badge.
+ *
+ * A transition group (a row whose meta carries `transition`) is rendered by the same tile component the
+ * galleries use, so the card shows the transition as configured, and its kebab offers Edit transition instead
+ * of rename/alt — those fields are generated.
  */
 export default function AssetTile({
   asset,
+  group,
   selected,
   usage,
   onToggleSelect,
@@ -44,6 +51,7 @@ export default function AssetTile({
   onSetAlt,
   onMove,
   onDelete,
+  onEditTransition,
   dragging,
   dropTarget,
   onReorderDragStart,
@@ -52,6 +60,7 @@ export default function AssetTile({
   onReorderDragEnd,
 }: {
   asset: AssetData;
+  group?: ResolvedTransition;
   selected: boolean;
   usage: string[];
   onToggleSelect: () => void;
@@ -60,6 +69,7 @@ export default function AssetTile({
   onSetAlt: () => void;
   onMove: () => void;
   onDelete: () => void;
+  onEditTransition?: () => void;
   dragging?: boolean;
   dropTarget?: boolean;
   onReorderDragStart?: (event: React.DragEvent) => void;
@@ -100,7 +110,14 @@ export default function AssetTile({
         aria-label={`Open ${asset.filename ?? "file"}`}
         className="relative aspect-video w-full cursor-pointer bg-(--color-bg-secondary) focus:outline-none focus-visible:ring-2 focus-visible:ring-(--btn-select)"
       >
-        {thumb ? (
+        {group ? (
+          <TransitionTile
+            members={group.members}
+            transition={group.transition}
+            sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 384px"
+            quality={75}
+          />
+        ) : thumb ? (
           <Image
             src={thumb}
             alt={asset.alt ?? ""}
@@ -131,12 +148,20 @@ export default function AssetTile({
         <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 has-[button[aria-expanded=true]]:opacity-100">
           <Menu
             buttonClassName="rounded bg-white/90 p-1 shadow hover:bg-white"
-            items={[
-              { label: "Rename…", onSelect: onRename },
-              { label: asset.alt ? "Edit alt text…" : "Set alt text…", onSelect: onSetAlt },
-              { label: "Move to folder…", onSelect: onMove },
-              { label: "Delete…", danger: true, onSelect: onDelete },
-            ]}
+            items={
+              group
+                ? [
+                    ...(onEditTransition ? [{ label: "Edit transition…", onSelect: onEditTransition }] : []),
+                    { label: "Move to folder…", onSelect: onMove },
+                    { label: "Delete…", danger: true, onSelect: onDelete },
+                  ]
+                : [
+                    { label: "Rename…", onSelect: onRename },
+                    { label: asset.alt ? "Edit alt text…" : "Set alt text…", onSelect: onSetAlt },
+                    { label: "Move to folder…", onSelect: onMove },
+                    { label: "Delete…", danger: true, onSelect: onDelete },
+                  ]
+            }
           />
         </div>
 
@@ -164,13 +189,23 @@ export default function AssetTile({
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-(--color-brand-dark)" title={asset.filename ?? ""}>
-            {filenameStem(asset) || asset.filename}
-            <span className="text-gray-400">{filenameExt(asset)}</span>
+            {group ? asset.filename : (
+              <>
+                {filenameStem(asset) || asset.filename}
+                <span className="text-gray-400">{filenameExt(asset)}</span>
+              </>
+            )}
           </span>
           <span className="block text-[11px] text-gray-500">
-            {formatBytes(asset.size)}
-            {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
-            {video ? " · video" : ""}
+            {group
+              ? `${group.members.length} images · transition`
+              : (
+                <>
+                  {formatBytes(asset.size)}
+                  {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
+                  {video ? " · video" : ""}
+                </>
+              )}
           </span>
         </span>
       </label>
