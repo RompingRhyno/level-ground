@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { resolveTransitions } from "@/lib/transition-db";
 import CollectionItemClient from "./CollectionItemClient";
 import type { CollectionItemSection } from "@/types/sections";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
-type RawAsset = { id: string; publicUrl: string | null; alt: string | null; mime: string | null };
+type RawAsset = { id: string; publicUrl: string | null; alt: string | null; mime: string | null; meta: unknown; folder: string | null };
 
 type EntityContext = { entitySlug: string; source: "folders" | "tags" };
 
@@ -55,9 +56,10 @@ export default async function CollectionItem({ layout, lightbox, source: section
     }
 
     const rawAssets = await prisma.asset.findMany({
-      where: { folder: entitySlug, publicUrl: { not: null } },
+      // The project detail page is a dynamic gallery: hidden assets are members of transitions, not tiles.
+      where: { folder: entitySlug, publicUrl: { not: null }, hidden: false },
       orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-      select: { id: true, publicUrl: true, alt: true, mime: true },
+      select: { id: true, publicUrl: true, alt: true, mime: true, meta: true, folder: true },
     }) as RawAsset[];
     assets = rawAssets.filter(
       (a: RawAsset): a is RawAsset & { publicUrl: string } =>
@@ -76,9 +78,9 @@ export default async function CollectionItem({ layout, lightbox, source: section
       description = null;
       const folderSlugs = taggedFolders.map((f) => f.slug);
       const rawAssets = await prisma.asset.findMany({
-        where: { folder: { in: folderSlugs }, publicUrl: { not: null } },
+        where: { folder: { in: folderSlugs }, publicUrl: { not: null }, hidden: false },
         orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
-        select: { id: true, publicUrl: true, alt: true, mime: true },
+        select: { id: true, publicUrl: true, alt: true, mime: true, meta: true, folder: true },
       }) as RawAsset[];
       assets = rawAssets.filter(
         (a: RawAsset): a is RawAsset & { publicUrl: string } =>
@@ -91,7 +93,10 @@ export default async function CollectionItem({ layout, lightbox, source: section
     .filter((t) => t !== "before" && t !== "after")
     .map((s) => ({ slug: s, name: tagNameBySlug[s] ?? s }));
 
-  const collectionSlug = await findCollectionIndexPageSlug();
+  const [collectionSlug, transitions] = await Promise.all([
+    findCollectionIndexPageSlug(),
+    resolveTransitions(assets),
+  ]);
 
   return (
     <CollectionItemClient
@@ -100,6 +105,7 @@ export default async function CollectionItem({ layout, lightbox, source: section
       displayTags={displayTags}
       collectionSlug={collectionSlug}
       assets={assets}
+      transitions={transitions}
       layout={layout ?? "grid"}
       lightbox={lightbox ?? true}
     />
