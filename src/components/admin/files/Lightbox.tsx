@@ -56,9 +56,9 @@ export default function Lightbox({
           <div className="min-w-0">
             <div className="truncate font-medium text-(--color-brand-dark)">
               {filenameStem(asset)}
-              <span className="text-gray-400">{asset.filename?.slice(filenameStem(asset).length)}</span>
+              <span className="text-(--color-text-light)">{asset.filename?.slice(filenameStem(asset).length)}</span>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-(--color-text-light)">
               {formatBytes(asset.size)}
               {asset.width && asset.height ? ` · ${asset.width}×${asset.height}` : ""}
               {asset.folder ? ` · ${asset.folder}` : ""}
@@ -84,7 +84,7 @@ export default function Lightbox({
             <button
               type="button"
               onClick={onClose}
-              className="rounded px-2 py-1 text-xl leading-none text-gray-400 hover:text-gray-600"
+              className="rounded px-2 py-1 text-xl leading-none text-(--color-text-light) hover:text-(--color-text-dark)"
               aria-label="Close"
             >
               ×
@@ -107,11 +107,11 @@ export default function Lightbox({
               <img src={asset.publicUrl} alt={asset.alt ?? ""} className="max-h-[62vh] max-w-full object-contain" />
             )
           ) : (
-            <p className="text-sm text-gray-600">No preview available for this file.</p>
+            <p className="text-sm text-(--color-text-dark)">No preview available for this file.</p>
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-xs text-gray-600">
+        <div className="flex items-center justify-between gap-3 border-t px-4 py-3 text-xs text-(--color-text-light)">
           <div className="space-y-0.5">
             {asset.alt && <div>Alt: {asset.alt}</div>}
             {asset.usedOn && asset.usedOn.length > 0 && (

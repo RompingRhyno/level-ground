@@ -29,7 +29,7 @@ export default async function AdminPageDetail({ params }: Props) {
 
       <div>
         <h2 className="text-xl font-semibold">{page.label}</h2>
-        <p className="text-gray-600">/{page.slug}</p>
+        <p className="text-(--color-text-dark)">/{page.slug}</p>
       </div>
 
       <AdminPageEditor initialPage={page} />

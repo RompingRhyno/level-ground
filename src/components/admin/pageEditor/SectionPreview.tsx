@@ -78,7 +78,7 @@ export function SectionPreviewFrame({ section }: { section: PageSection }) {
           marginRight: containerWidth ? "auto" : undefined,
         }}
       >
-        <div className="block text-sm text-gray-500 mb-1">Preview</div>
+        <div className="block text-sm text-(--color-text-light) mb-1">Preview</div>
         <div
           style={{
             width: "100%",

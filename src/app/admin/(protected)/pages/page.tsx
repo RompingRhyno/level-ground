@@ -48,7 +48,7 @@ export default async function AdminPagesList() {
       <div style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', paddingBottom: '2rem' }}>
         <div className="mx-auto px-6">
           <h1 className="text-2xl font-semibold">Pages</h1>
-          <p className="text-sm text-gray-600">Create and manage pages, layouts, and section content.</p>
+          <p className="text-sm text-(--color-text-dark)">Create and manage pages, layouts, and section content.</p>
         </div>
       </div>
 

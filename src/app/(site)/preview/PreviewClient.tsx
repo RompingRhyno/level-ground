@@ -110,7 +110,7 @@ function GalleryPreview({ section }: { section: GallerySection }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(section.tagDisplay), section.mode, (section as any).filters?.folder]);
 
-  if (assets.length === 0) return <div className="py-12 text-center text-sm text-gray-400">No images</div>;
+  if (assets.length === 0) return <div className="py-12 text-center text-sm text-(--color-text-light)">No images</div>;
 
   return (
     <>
@@ -373,7 +373,7 @@ function renderContent(section: PageSection) {
         {s.videoUrl ? (
           <video src={s.videoUrl} className="w-full aspect-video object-cover" preload="metadata" muted playsInline />
         ) : (
-          <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-gray-400">
+          <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-(--color-text-light)">
             No video selected
           </div>
         )}

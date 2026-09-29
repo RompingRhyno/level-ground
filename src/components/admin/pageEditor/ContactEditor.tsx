@@ -276,7 +276,7 @@ export default function ContactEditor({
       <div className="field-group">
         <div className="font-medium text-sm mb-1">Recipients</div>
         {recipients.length === 0 && (
-          <p className="text-xs text-gray-500 mb-1">No recipients yet.</p>
+          <p className="text-xs text-(--color-text-light) mb-1">No recipients yet.</p>
         )}
         {recipients.map((r) => (
           <label key={r.id} className="flex items-center gap-2 text-sm cursor-pointer">

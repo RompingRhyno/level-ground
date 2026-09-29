@@ -97,7 +97,7 @@ export default function FolderPicker({
               {busy ? "Creating…" : "Create"}
             </button>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-(--color-text-dark)">
             <input type="checkbox" checked={hideNew} onChange={(event) => setHideNew(event.target.checked)} />
             Hide this folder from /projects
           </label>
@@ -105,7 +105,7 @@ export default function FolderPicker({
       )}
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-gray-600">{folders.length === 0 ? emptyLabel : "No folders match that search."}</p>
+        <p className="text-sm text-(--color-text-light)">{folders.length === 0 ? emptyLabel : "No folders match that search."}</p>
       ) : (
         <div className={`grid gap-3 pr-1 ${columnsClassName} ${maxHeightClassName}`.trim()}>
           {filtered.map((folder) => {
@@ -130,7 +130,7 @@ export default function FolderPicker({
                       className="object-cover"
                     />
                   ) : (
-                    <span className="absolute inset-0 flex items-center justify-center text-xs text-gray-500">
+                    <span className="absolute inset-0 flex items-center justify-center text-xs text-(--color-text-light)">
                       {folder.assetCount === 0 ? "empty" : "no cover"}
                     </span>
                   )}
@@ -144,7 +144,7 @@ export default function FolderPicker({
                   <div className="text-sm font-medium truncate" title={folder.name}>
                     {folder.name}
                   </div>
-                  <div className="text-xs text-gray-500">{folder.assetCount} file{folder.assetCount === 1 ? "" : "s"}</div>
+                  <div className="text-xs text-(--color-text-light)">{folder.assetCount} file{folder.assetCount === 1 ? "" : "s"}</div>
                 </div>
               </button>
             );

@@ -313,7 +313,7 @@ export default function Contact({
                 value={values[field.id] ?? ""}
                 onChange={(e) => updateValue(field.id, e.target.value)}
                 rows={3}
-                className="w-full rounded border px-3 py-2 text-sm bg-white placeholder:text-(--color-text-primary)"
+                className="w-full rounded border px-3 py-2 text-sm bg-white"
               />
             ) : (
               <input
@@ -323,7 +323,7 @@ export default function Contact({
                 placeholder={field.placeholder}
                 value={values[field.id] ?? ""}
                 onChange={(e) => updateValue(field.id, e.target.value)}
-                className="w-full rounded border px-3 py-2 text-sm bg-white placeholder:text-(--color-text-primary)"
+                className="w-full rounded border px-3 py-2 text-sm bg-white"
               />
             )}
           </div>
@@ -376,10 +376,10 @@ export default function Contact({
                   <li key={u.id} className="text-xs flex items-center gap-2">
                     <span className="truncate max-w-50">{u.file.name}</span>
                     {u.status === "converting" && (
-                      <span className="text-gray-500">Converting…</span>
+                      <span className="text-(--color-text-light)">Converting…</span>
                     )}
                     {u.status === "uploading" && (
-                      <span className="text-gray-500">{u.progress}%</span>
+                      <span className="text-(--color-text-light)">{u.progress}%</span>
                     )}
                     {u.status === "done" && <span className="text-green-600">✓</span>}
                     {u.status === "error" && (

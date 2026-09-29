@@ -42,7 +42,7 @@ export default async function UsersPage() {
         <a
           href="/admin/users/invite"
           className="rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-          style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+          style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
         >
           Invite user
         </a>

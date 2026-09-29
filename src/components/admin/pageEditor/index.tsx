@@ -236,7 +236,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700">Label</label>
+        <label className="block text-sm font-medium text-(--color-text-dark)">Label</label>
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -247,7 +247,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
       <div>
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-gray-700">Sections</label>
+          <label className="block text-sm font-medium text-(--color-text-dark)">Sections</label>
           <div className="flex items-center gap-2">
             <select
               defaultValue=""
@@ -277,7 +277,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
         {/* Preview size toggles */}
         <div className="flex items-center gap-2 mt-3 mb-1">
-          <span className="text-xs text-gray-500">Preview size:</span>
+          <span className="text-xs text-(--color-text-dark)">Preview size:</span>
           {PREVIEW_SIZES.map((ps) => (
             <button
               key={ps.label}
@@ -293,7 +293,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               {ps.label}
             </button>
           ))}
-          <span className="text-xs text-gray-400 ml-1">{previewWidth}px</span>
+          <span className="text-xs text-(--color-text-light) ml-1">{previewWidth}px</span>
         </div>
 
         {!showRaw && (
@@ -330,7 +330,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
       {/* Bottom save row */}
       <div className="flex items-center justify-end gap-3">
-        {message && <div className="text-sm text-gray-600">{message}</div>}
+        {message && <div className="text-sm text-(--color-text-light)">{message}</div>}
         <button onClick={save} disabled={!dirty || saving} className={saveClass}>
           {saving ? "Saving\u2026" : "Save"}
         </button>

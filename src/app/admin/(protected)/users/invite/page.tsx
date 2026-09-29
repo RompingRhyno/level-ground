@@ -91,7 +91,7 @@ export default async function InviteUserPage({ searchParams }: PageProps) {
           <button
             type="submit"
             className="w-full rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+            style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
           >
             Send invitation
           </button>

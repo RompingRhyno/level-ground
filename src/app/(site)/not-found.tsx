@@ -8,7 +8,7 @@ export default function NotFound() {
   return (
     <section className="min-h-[60vh] flex items-center justify-center px-6 py-24">
       <div className="max-w-xl text-center">
-        <p className="text-sm uppercase tracking-widest mb-3" style={{ color: "var(--color-brand-accent)" }}>
+        <p className="text-sm uppercase tracking-widest mb-3" style={{ color: "var(--color-text-dark)" }}>
           Not found
         </p>
         <h1 className="heading text-3xl sm:text-4xl font-light mb-4" style={{ color: "var(--color-text-heading)" }}>

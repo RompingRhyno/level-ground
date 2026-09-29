@@ -132,7 +132,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           <button
             type="submit"
             className="mt-1 self-start rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+            style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
           >
             Update password
           </button>
@@ -165,7 +165,7 @@ export default async function SettingsPage({ searchParams }: PageProps) {
           <button
             type="submit"
             className="mt-1 self-start rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+            style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
           >
             Request email change
           </button>

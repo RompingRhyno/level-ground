@@ -289,7 +289,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
               if (event.key === "Enter") void createFolder();
             }}
           />
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-(--color-text-dark)">
             <input type="checkbox" checked={hideNew} onChange={(event) => setHideNew(event.target.checked)} />
             Hide from /projects
           </label>
@@ -304,7 +304,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
         </div>
       )}
 
-      <p className="mb-4 text-sm text-gray-600">
+      <p className="mb-4 text-sm text-(--color-text-dark)">
         Drag cards to reorder how they appear on <Link href="/projects" className="underline">/projects</Link>. Drop image or
         video files straight onto a folder to upload into it.
       </p>
@@ -314,7 +314,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
           <p className="text-lg font-medium mb-1">
             {folders.length === 0 ? "No project folders yet" : "No folders match that search"}
           </p>
-          {folders.length > 0 && <p className="text-sm text-gray-600">Try a different name.</p>}
+          {folders.length > 0 && <p className="text-sm text-(--color-text-dark)">Try a different name.</p>}
         </div>
       ) : (
         <div className="space-y-8">
@@ -339,7 +339,7 @@ function AdminFilesClientInner({ initialFolders }: { initialFolders: FolderData[
                   </span>
                   Hidden from /projects ({hidden.length})
                 </button>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-(--color-text-dark)">
                   Kept in the library, not listed on the public portfolio.
                 </p>
               </div>

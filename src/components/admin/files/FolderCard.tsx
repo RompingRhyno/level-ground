@@ -130,7 +130,7 @@ export default function FolderCard({
             className="object-cover"
           />
         ) : (
-          <div className="absolute inset-0 bg-(--color-bg-secondary) flex items-center justify-center text-xs text-gray-500">
+          <div className="absolute inset-0 bg-(--color-bg-secondary) flex items-center justify-center text-xs text-(--color-text-light)">
             {folder.assetCount === 0 ? "Empty folder" : "No cover yet"}
           </div>
         )}

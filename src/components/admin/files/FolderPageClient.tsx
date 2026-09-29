@@ -429,10 +429,10 @@ function FolderPageClientInner({
               title="Click to rename"
             >
               {folder.name}
-              <span className="text-xs font-normal text-gray-500">click to rename</span>
+              <span className="text-xs font-normal text-(--color-text-light)">click to rename</span>
             </h1>
           )}
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-(--color-text-dark)">
             {assets.length} file{assets.length === 1 ? "" : "s"} · visible on{" "}
             <Link href={`/projects/${folder.slug}`} className="underline">
               /projects/{folder.slug}
@@ -481,7 +481,7 @@ function FolderPageClientInner({
           placeholder="Shown on the project page…"
           className="w-full rounded border bg-white px-2 py-1.5 text-sm"
         />
-        <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+        <div className="mt-1 flex items-center gap-2 text-xs text-(--color-text-light)">
           {descriptionDirty ? (
             <>
               <span>Unsaved changes</span>
@@ -534,7 +534,7 @@ function FolderPageClientInner({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {tags.length === 0 && <span className="text-sm text-gray-500">No tags yet.</span>}
+          {tags.length === 0 && <span className="text-sm text-(--color-text-light)">No tags yet.</span>}
           {tags.map((tag) => {
             const active = folder.tags.includes(tag.slug);
             return (
@@ -550,7 +550,7 @@ function FolderPageClientInner({
                 </button>
                 <Menu
                   className="-ml-1"
-                  buttonClassName="rounded-full px-1 py-1 text-xs text-gray-400 hover:text-gray-700"
+                  buttonClassName="rounded-full px-1 py-1 text-xs text-(--color-text-light) hover:text-(--color-text-dark)"
                   items={[
                     { label: "Rename tag…", onSelect: () => void renameTag(tag) },
                     { label: "Delete tag…", danger: true, onSelect: () => void deleteTag(tag) },
@@ -583,7 +583,7 @@ function FolderPageClientInner({
         </select>
 
         <div className="ml-auto flex items-center gap-2">
-          {selectedIds.length > 0 && <span className="text-sm text-gray-700">{selectedIds.length} selected</span>}
+          {selectedIds.length > 0 && <span className="text-sm text-(--color-text-dark)">{selectedIds.length} selected</span>}
           <button
             type="button"
             onClick={() => setSelected(Object.fromEntries(visible.map((asset) => [asset.id, true])))}
@@ -711,7 +711,7 @@ function FolderPageClientInner({
             <p className="text-lg font-medium mb-1">
               {assets.length === 0 ? "No files in this folder yet" : "No files match that search"}
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-(--color-text-dark)">
               Drop files here, or use the Upload button. Videos are converted to 720p + 1080p MP4.
             </p>
           </div>
@@ -787,7 +787,7 @@ function FolderPageClientInner({
       {prompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
-            <h2 className="mb-3 font-semibold text-gray-800">
+            <h2 className="mb-3 font-semibold text-(--color-text-dark)">
               {prompt.kind === "rename" ? "Rename file" : "Alt text"}
             </h2>
             {prompt.kind === "rename" ? (
