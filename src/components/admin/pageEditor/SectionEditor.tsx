@@ -737,7 +737,7 @@ export default function SectionEditor({
 
           </div>
 
-          <SectionPreview section={section} index={index} />
+          <SectionPreview section={section} />
         </div>
       )}
     </div>

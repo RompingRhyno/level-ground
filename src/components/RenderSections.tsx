@@ -32,12 +32,6 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
   return (
     <>
       {sections.map((section, index) => {
-        const isEven = index % 2 === 0;
-
-        const backgroundClass = isEven
-          ? "bg-[var(--color-bg-primary)]"
-          : "bg-[var(--color-bg-secondary)]";
-
         let content: React.ReactNode = null;
 
         switch (section.type) {
@@ -74,7 +68,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
 
           case "collection-index":
             return (
-              <section key={index} className={backgroundClass}>
+              <section key={index}>
                 <div className="section-container py-20">
                   <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
                 </div>
@@ -83,7 +77,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
 
           case "collection-item":
             return (
-              <section key={index} className={backgroundClass}>
+              <section key={index}>
                 <div className="section-container py-20">
                   <CollectionItem {...section} entityContext={entityContext} />
                 </div>
@@ -97,7 +91,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
         // The hero fills the viewport height (100svh minus the sticky header), so its wrapper must not add
         // vertical padding — that padding is what kept it from reaching the top of the screen.
         return (
-          <section key={index} className={backgroundClass}>
+          <section key={index}>
             <div className={section.type === "hero" ? "section-container" : "section-container py-20"}>
               {content}
             </div>

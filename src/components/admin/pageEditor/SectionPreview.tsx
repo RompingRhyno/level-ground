@@ -8,7 +8,7 @@ import { PreviewWidthContext } from "./PreviewWidthContext";
 // preview viewport width. Because iframes have their own viewport, CSS media
 // queries inside them fire based on the iframe's CSS width — not the browser
 // window width — giving an accurate mobile/tablet/desktop layout preview.
-export function SectionPreviewFrame({ section, bg }: { section: PageSection; bg?: string }) {
+export function SectionPreviewFrame({ section }: { section: PageSection }) {
   const previewWidth = useContext(PreviewWidthContext);
   const measureRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -44,10 +44,10 @@ export function SectionPreviewFrame({ section, bg }: { section: PageSection; bg?
   useEffect(() => {
     if (!iframeReady || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage(
-      { type: "preview-data", section, bg },
+      { type: "preview-data", section },
       window.location.origin,
     );
-  }, [iframeReady, section, bg]);
+  }, [iframeReady, section]);
 
   // Handle messages from the iframe (preview-ready + preview-height).
   // Empty dep array is intentional: iframeRef and scaleRef are stable refs.
@@ -114,14 +114,6 @@ export function SectionPreviewFrame({ section, bg }: { section: PageSection; bg?
 }
 
 // ── SectionPreview ─────────────────────────────────────────────────────────
-export default function SectionPreview({ section, index }: { section: PageSection; index: number }) {
-  const type = section.type;
-  // Banner is full-bleed — it manages its own bg
-  const bg = type === "banner"
-    ? undefined
-    : index % 2 === 0
-      ? "var(--color-bg-primary)"
-      : "var(--color-bg-secondary)";
-
-  return <SectionPreviewFrame section={section} bg={bg} />;
+export default function SectionPreview({ section }: { section: PageSection }) {
+  return <SectionPreviewFrame section={section} />;
 }
