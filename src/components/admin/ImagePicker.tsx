@@ -72,21 +72,21 @@ export function ImagePickerModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">Choose image</h2>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none" aria-label="Close">×</button>
+          <h2 className="font-semibold text-(--color-text-dark)">Choose image</h2>
+          <button type="button" onClick={onClose} className="text-(--color-text-light) hover:text-(--color-text-dark) text-xl leading-none" aria-label="Close">×</button>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Folder</label>
+            <label className="text-sm text-(--color-text-dark)">Folder</label>
             <select value={folder} onChange={(e) => setFolder(e.target.value)} className="rounded border px-2 py-1 text-sm">
               <option value="">All</option>
               {folders.map((f) => <option key={f.slug} value={f.slug}>{f.name}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Tag</label>
+            <label className="text-sm text-(--color-text-dark)">Tag</label>
             <select value={tag} onChange={(e) => setTag(e.target.value)} className="rounded border px-2 py-1 text-sm">
               <option value="">All</option>
               {allTags.map((t) => <option key={t.slug} value={t.slug}>{t.name}</option>)}
@@ -97,9 +97,9 @@ export function ImagePickerModal({
         {/* Grid */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading ? (
-            <div className="text-sm text-gray-500">Loading…</div>
+            <div className="text-sm text-(--color-text-light)">Loading…</div>
           ) : assets.length === 0 ? (
-            <div className="text-sm text-gray-500">No assets found.</div>
+            <div className="text-sm text-(--color-text-light)">No assets found.</div>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
               {assets.map((a) => {
@@ -123,7 +123,7 @@ export function ImagePickerModal({
                         onError={() => setBroken((prev) => new Set(prev).add(a.id))}
                       />
                     ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">no preview</div>
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-(--color-text-light)">no preview</div>
                     )}
                   </button>
                 );
@@ -166,7 +166,7 @@ export default function ImagePicker({
           <div className="absolute inset-x-0 bottom-0 bg-black/40 text-white text-[10px] text-center py-0.5 leading-none">auto</div>
         </div>
       ) : (
-        <div className="w-36 aspect-video rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-400 shrink-0">
+        <div className="w-36 aspect-video rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-(--color-text-light) shrink-0">
           No image
         </div>
       )}

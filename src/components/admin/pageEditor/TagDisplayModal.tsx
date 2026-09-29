@@ -47,11 +47,11 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[80vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">Select display tags</h2>
+          <h2 className="font-semibold text-(--color-text-dark)">Select display tags</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-(--color-text-light) hover:text-(--color-text-dark) text-xl leading-none"
             aria-label="Close"
           >
             ×
@@ -62,7 +62,7 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {suggested.length > 0 && (
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-2">Suggested</div>
+              <div className="text-sm font-medium text-(--color-text-dark) mb-2">Suggested</div>
               <div className="flex flex-wrap gap-1.5">
                 {suggested.map((t) => (
                   <button
@@ -72,7 +72,7 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
                     className={`rounded-full px-3 py-0.5 text-sm border ${
                       local.includes(t.slug)
                         ? "bg-blue-500 text-white border-blue-500"
-                        : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                        : "bg-white text-(--color-text-dark) border-gray-300 hover:border-gray-400"
                     }`}
                   >
                     {t.name}
@@ -83,9 +83,9 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
           )}
 
           <div>
-            <div className="text-sm font-medium text-gray-700 mb-2">All tags</div>
+            <div className="text-sm font-medium text-(--color-text-dark) mb-2">All tags</div>
             {remaining.length === 0 && suggested.length === 0 ? (
-              <p className="text-sm text-gray-400 italic">No tags available</p>
+              <p className="text-sm text-(--color-text-light) italic">No tags available</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {remaining.map((t) => (
@@ -96,7 +96,7 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
                     className={`rounded-full px-3 py-0.5 text-sm border ${
                       local.includes(t.slug)
                         ? "bg-blue-500 text-white border-blue-500"
-                        : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                        : "bg-white text-(--color-text-dark) border-gray-300 hover:border-gray-400"
                     }`}
                   >
                     {t.name}
@@ -109,7 +109,7 @@ export default function TagDisplayModal({ selected, suggestedSlugs, onSave, onCl
 
         {/* Footer */}
         <div className="flex items-center justify-between px-5 py-4 border-t">
-          <span className="text-sm text-gray-500">{local.length} selected</span>
+          <span className="text-sm text-(--color-text-light)">{local.length} selected</span>
           <div className="flex gap-3">
             <button
               type="button"

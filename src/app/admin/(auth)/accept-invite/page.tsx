@@ -99,7 +99,7 @@ export default async function AcceptInvitePage({ searchParams }: PageProps) {
         <button
           type="submit"
           className="mt-2 w-full rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-          style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+          style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
         >
           Set password &amp; sign in
         </button>

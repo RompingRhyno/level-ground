@@ -285,14 +285,14 @@ export default function UploadModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <div>
-            <h2 className="font-semibold text-gray-800">Upload media</h2>
-            <p className="text-xs text-gray-500">Photos upload as-is; videos are converted to web-friendly MP4 (720p + 1080p).</p>
+            <h2 className="font-semibold text-(--color-text-dark)">Upload media</h2>
+            <p className="text-xs text-(--color-text-light)">Photos upload as-is; videos are converted to web-friendly MP4 (720p + 1080p).</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={uploading}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none disabled:opacity-40"
+            className="text-(--color-text-light) hover:text-(--color-text-dark) text-xl leading-none disabled:opacity-40"
             aria-label="Close"
           >
             ×
@@ -300,7 +300,7 @@ export default function UploadModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-(--color-text-dark)">
             <span className="font-medium">Destination:</span>{" "}
             {targetFolder ? (
               <span className="text-(--color-brand-dark)">{targetFolder.name}</span>
@@ -334,7 +334,7 @@ export default function UploadModal({
               dragging ? "border-(--btn-select) bg-(--color-bg-secondary)" : "border-(--color-border)"
             }`}
           >
-            <p className="mb-2 text-gray-700">Drag files here, or</p>
+            <p className="mb-2 text-(--color-text-dark)">Drag files here, or</p>
             <label className="inline-flex items-center rounded px-3 py-1 text-sm btn-positive cursor-pointer">
               Select files…
               <input
@@ -359,7 +359,7 @@ export default function UploadModal({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.previewUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="flex h-full items-center justify-center text-[10px] text-gray-500">
+                      <span className="flex h-full items-center justify-center text-[10px] text-(--color-text-light)">
                         {item.file.name.split(".").pop()?.slice(0, 4)}
                       </span>
                     )}
@@ -367,7 +367,7 @@ export default function UploadModal({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 text-sm">
                       <span className="truncate" title={item.file.name}>{item.file.name}</span>
-                      <span className="text-xs text-gray-500 shrink-0">{formatBytes(item.file.size)}</span>
+                      <span className="text-xs text-(--color-text-light) shrink-0">{formatBytes(item.file.size)}</span>
                     </div>
                     <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div
@@ -375,7 +375,7 @@ export default function UploadModal({
                         style={{ width: `${item.status === "done" ? 100 : item.progress}%` }}
                       />
                     </div>
-                    <div className="mt-1 text-xs text-gray-500">
+                    <div className="mt-1 text-xs text-(--color-text-light)">
                       {item.status === "error" ? (
                         <span className="text-(--btn-negative-bg)">{item.error}</span>
                       ) : item.status === "done" ? (
@@ -399,7 +399,7 @@ export default function UploadModal({
                       if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
                       setItems((current) => current.filter((entry) => entry.id !== item.id));
                     }}
-                    className={`rounded px-2 py-1 text-xs ${uploading || item.status === "done" ? "bg-gray-300 text-gray-600" : "btn-negative"}`}
+                    className={`rounded px-2 py-1 text-xs ${uploading || item.status === "done" ? "bg-gray-300 text-(--color-text-dark)" : "btn-negative"}`}
                   >
                     Remove
                   </button>
@@ -409,7 +409,7 @@ export default function UploadModal({
           )}
 
           {storage && (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-(--color-text-light)">
               <div className="flex items-center justify-between">
                 <span>
                   Library: {formatBytes(storage.bytesUsed)} of {formatBytes(storage.freeTierBytes)} free tier
@@ -427,7 +427,7 @@ export default function UploadModal({
         </div>
 
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t">
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-(--color-text-light)">
             {readyItems.length > 0
               ? `${readyItems.length} file${readyItems.length === 1 ? "" : "s"} ready`
               : preparing

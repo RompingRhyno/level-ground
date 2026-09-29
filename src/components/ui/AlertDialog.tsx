@@ -55,9 +55,9 @@ export default function AlertDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={dismiss} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full mx-4 p-4">
-        <div className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</div>
-        {description ? <div className="text-sm text-gray-700 dark:text-gray-300 mb-4">{description}</div> : null}
+      <div className="relative bg-white rounded-lg shadow-lg max-w-sm w-full mx-4 p-4">
+        <div className="mb-2 text-lg font-semibold text-(--color-text-dark)">{title}</div>
+        {description ? <div className="text-sm text-(--color-text-dark) mb-4">{description}</div> : null}
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className={cancelClass}>{cancelLabel}</button>
           <button onClick={onConfirm} className={confirmClass}>{confirmLabel}</button>

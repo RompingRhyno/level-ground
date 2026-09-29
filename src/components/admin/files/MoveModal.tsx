@@ -103,10 +103,10 @@ export default function MoveModal({
       <div className="flex max-h-[88vh] w-[min(94vw,68rem)] flex-col overflow-hidden rounded-lg bg-white shadow-xl">
         <div className="flex shrink-0 items-center justify-between border-b px-5 py-4">
           <div>
-            <h2 className="font-semibold text-gray-800">
+            <h2 className="font-semibold text-(--color-text-dark)">
               Move {assetIds.length} file{assetIds.length === 1 ? "" : "s"}
             </h2>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-(--color-text-light)">
               Pick the destination project folder{fromFolder ? ` — currently in “${folders.find((f) => f.slug === fromFolder)?.name ?? fromFolder}”` : ""}.
             </p>
           </div>
@@ -114,7 +114,7 @@ export default function MoveModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="text-xl leading-none text-gray-400 hover:text-gray-600 disabled:opacity-40"
+            className="text-xl leading-none text-(--color-text-light) hover:text-(--color-text-dark) disabled:opacity-40"
             aria-label="Close"
           >
             ×

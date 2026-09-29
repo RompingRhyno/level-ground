@@ -41,11 +41,11 @@ function VideoPickerModal({
     >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[85vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">Choose video</h2>
+          <h2 className="font-semibold text-(--color-text-dark)">Choose video</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-(--color-text-light) hover:text-(--color-text-dark) text-xl leading-none"
             aria-label="Close"
           >
             ×
@@ -53,9 +53,9 @@ function VideoPickerModal({
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading ? (
-            <div className="text-sm text-gray-500">Loading…</div>
+            <div className="text-sm text-(--color-text-light)">Loading…</div>
           ) : assets.length === 0 ? (
-            <div className="text-sm text-gray-500">No video assets found.</div>
+            <div className="text-sm text-(--color-text-light)">No video assets found.</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {assets.map((a) => (
@@ -116,7 +116,7 @@ export default function VideoPicker({
           />
         </div>
       ) : (
-        <div className="w-48 aspect-video rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-400 shrink-0">
+        <div className="w-48 aspect-video rounded border border-dashed border-gray-300 flex items-center justify-center text-xs text-(--color-text-light) shrink-0">
           No video
         </div>
       )}

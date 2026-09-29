@@ -59,14 +59,14 @@ function StaticPicker({
   return (
     <div className="flex flex-col gap-3 h-full">
       {/* Status line — top, slightly larger */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-(--color-text-dark)">
         {selected.length} selected — click to toggle, order is preserved
       </div>
 
       {/* Filter controls */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Folder</label>
+          <label className="text-sm text-(--color-text-dark)">Folder</label>
           <select
             value={folder}
             onChange={(e) => setFolder(e.target.value)}
@@ -81,7 +81,7 @@ function StaticPicker({
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Tag</label>
+          <label className="text-sm text-(--color-text-dark)">Tag</label>
           <select
             value={tag}
             onChange={(e) => setTag(e.target.value)}
@@ -117,9 +117,9 @@ function StaticPicker({
       </div>
 
       {loading ? (
-        <div className="text-sm text-gray-500">Loading…</div>
+        <div className="text-sm text-(--color-text-light)">Loading…</div>
       ) : filteredAssets.length === 0 ? (
-        <div className="text-sm text-gray-500">No assets found.</div>
+        <div className="text-sm text-(--color-text-light)">No assets found.</div>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 overflow-y-auto flex-1 pr-1">
           {filteredAssets.map((a) => {
@@ -143,7 +143,7 @@ function StaticPicker({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-(--color-text-light)">
                     no preview
                   </div>
                 )}
@@ -215,7 +215,7 @@ function DynamicPicker({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <div className="text-sm font-medium text-gray-700 mb-2">Tags filter</div>
+        <div className="text-sm font-medium text-(--color-text-dark) mb-2">Tags filter</div>
         <div className="flex flex-wrap gap-2 mb-2">
           {activeTags.map((t) => (
             <button
@@ -229,7 +229,7 @@ function DynamicPicker({
             </button>
           ))}
           {activeTags.length === 0 && (
-            <span className="text-sm text-gray-400 italic">No tags selected — all assets match</span>
+            <span className="text-sm text-(--color-text-light) italic">No tags selected — all assets match</span>
           )}
         </div>
 
@@ -244,7 +244,7 @@ function DynamicPicker({
                 className={`rounded-full px-3 py-0.5 text-sm border ${
                   activeTags.includes(t.slug)
                     ? "bg-blue-500 text-white border-blue-500"
-                    : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                    : "bg-white text-(--color-text-dark) border-gray-300 hover:border-gray-400"
                 }`}
               >
                 {t.name}
@@ -292,7 +292,7 @@ function DynamicPicker({
       </div>
 
       <div>
-        <label className="text-sm font-medium text-gray-700">Folder filter</label>
+        <label className="text-sm font-medium text-(--color-text-dark)">Folder filter</label>
         <select
           value={activeFolder}
           onChange={(e) =>
@@ -356,13 +356,13 @@ export default function GalleryPicker({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">
+          <h2 className="font-semibold text-(--color-text-dark)">
             {mode === "static" ? "Select images" : "Configure filters"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+            className="text-(--color-text-light) hover:text-(--color-text-dark) text-xl leading-none"
             aria-label="Close"
           >
             ×

@@ -136,7 +136,7 @@ export default function AssetTile({
             playsInline
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-gray-500">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-(--color-text-light)">
             <DocumentIcon />
             <span className="text-[11px] uppercase tracking-wide">{(filenameExt(asset) || ".file").replace(".", "")}</span>
           </div>
@@ -192,11 +192,11 @@ export default function AssetTile({
             {group ? asset.filename : (
               <>
                 {filenameStem(asset) || asset.filename}
-                <span className="text-gray-400">{filenameExt(asset)}</span>
+                <span className="text-(--color-text-light)">{filenameExt(asset)}</span>
               </>
             )}
           </span>
-          <span className="block text-[11px] text-gray-500">
+          <span className="block text-[11px] text-(--color-text-light)">
             {group
               ? `${group.members.length} images · transition`
               : (

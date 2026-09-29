@@ -189,7 +189,7 @@ export default function TransitionModal({
                         )}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm">{group.name}</span>
-                      <span className="shrink-0 text-xs text-gray-500">
+                      <span className="shrink-0 text-xs text-(--color-text-light)">
                         {group.transition?.members.length ?? 0} images
                         {group.transition ? ` · ${TRANSITION_ANIMATION_LABELS[group.transition.animation]}` : ""}
                       </span>
@@ -235,7 +235,7 @@ export default function TransitionModal({
                         className="object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-400">
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-(--color-text-light)">
                         missing
                       </div>
                     )}
@@ -259,12 +259,12 @@ export default function TransitionModal({
                 );
               })}
               {members.length < TRANSITION_MAX_MEMBERS && (
-                <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded border border-dashed border-(--color-border) px-2 text-center text-[11px] text-gray-500">
+                <div className="flex h-20 w-32 shrink-0 items-center justify-center rounded border border-dashed border-(--color-border) px-2 text-center text-[11px] text-(--color-text-light)">
                   Select more files and reopen to add
                 </div>
               )}
             </div>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-(--color-text-light)">
               {members.length} of {TRANSITION_MAX_MEMBERS} · drag to reorder
             </p>
           </div>

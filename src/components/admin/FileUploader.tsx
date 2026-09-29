@@ -301,7 +301,7 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
           />
         </label>
 
-        <div className="flex-1 text-sm text-gray-700">
+        <div className="flex-1 text-sm text-(--color-text-dark)">
           {items.length
             ? `${items.length} file(s) ready`
             : "No files selected"}
@@ -342,7 +342,7 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-(--color-text-light)">
                   {it.file.name.split(".").pop()}
                 </span>
               )}
@@ -351,7 +351,7 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
             <div className="flex-1">
               <div className="flex items-center justify-between text-sm">
                 <div className="font-medium">{it.file.name}</div>
-                <div className="text-gray-500 text-xs">
+                <div className="text-(--color-text-light) text-xs">
                   {Math.round(it.file.size / 1024)} KB
                 </div>
               </div>
@@ -371,7 +371,7 @@ export default function FileUploader({ folder = "", onUploadComplete }: { folder
                     />
                   )}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-(--color-text-light) mt-1">
                   {it.status === "converting"
                     ? (it.convertingLabel
                         ? `${it.convertingLabel}${it.progress > 0 ? ' ' + it.progress + '%' : ''}`

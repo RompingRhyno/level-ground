@@ -137,7 +137,7 @@ export default async function UnlockPage({ searchParams }: PageProps) {
               name="action"
               value="unlock"
               className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-              style={{ backgroundColor: "var(--color-brand-logo)", color: "#fff" }}
+              style={{ backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }}
             >
               Unlock only
             </button>
@@ -149,7 +149,7 @@ export default async function UnlockPage({ searchParams }: PageProps) {
             className="flex-1 rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
             style={
               isReset
-                ? { backgroundColor: "var(--color-brand-logo)", color: "#fff" }
+                ? { backgroundColor: "var(--color-brand-logo)", color: "var(--color-text-inverse)" }
                 : {
                     borderColor: "var(--color-border)",
                     color: "var(--color-text-heading)",

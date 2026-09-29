@@ -56,7 +56,7 @@ function SortableThumbnail({
       {asset?.publicUrl ? (
         <Image src={asset.publicUrl} alt={asset.alt ?? ""} fill sizes="80px" className="object-cover" />
       ) : (
-        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-(--color-text-light)">
           {asset ? "no preview" : "…"}
         </div>
       )}
@@ -234,10 +234,10 @@ export default function GalleryEditor({
 
       <div className="space-y-1">
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-(--color-text-dark)">
             {gs.mode === "static" && (
               assetCount === 0
-                ? <span className="italic text-gray-400">No images selected</span>
+                ? <span className="italic text-(--color-text-light)">No images selected</span>
                 : <span>{assetCount} image{assetCount !== 1 ? "s" : ""} selected</span>
             )}
             {gs.mode === "dynamic" && (
@@ -371,9 +371,9 @@ export default function GalleryEditor({
 
             {tagDisplay.mode === "manual" && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-(--color-text-dark)">
                   {(tagDisplay.tags?.length ?? 0) === 0
-                    ? <span className="italic text-gray-400">No tags selected</span>
+                    ? <span className="italic text-(--color-text-light)">No tags selected</span>
                     : <span>{tagDisplay.tags!.length} tag{tagDisplay.tags!.length !== 1 ? "s" : ""} selected</span>
                   }
                 </span>

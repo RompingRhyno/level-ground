@@ -113,7 +113,7 @@ export default function LoginPage() {
           className="mt-2 w-full rounded-md px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
           style={{
             backgroundColor: "var(--color-brand-logo)",
-            color: "#fff",
+            color: "var(--color-text-inverse)",
           }}
         >
           {loading ? "Signing in…" : "Sign in"}

@@ -14,7 +14,7 @@ export default async function AdminFilesPage() {
     <div>
       <div className="mx-auto max-w-7xl px-1 pb-6">
         <h1 className="text-2xl font-semibold">Media</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-(--color-text-dark)">
           Project folders hold the photos and videos used across the site. Create a folder per job.
         </p>
       </div>

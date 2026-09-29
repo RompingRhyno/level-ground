@@ -220,7 +220,7 @@ export default function AdminPagesClient({ initialPages }: { initialPages: PageR
                       {tpl.label}
                       <span
                         className="text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide"
-                        style={{ backgroundColor: "var(--color-brand-dark)", color: "white", opacity: 0.55 }}
+                        style={{ backgroundColor: "var(--color-brand-dark)", color: "var(--color-text-inverse)", opacity: 0.55 }}
                       >
                         template
                       </span>

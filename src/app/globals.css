@@ -7,33 +7,45 @@
   --color-bg-primary: #FAF4F1;
   --color-bg-secondary: #EAE4E2;
 
-  /* Text colors */
-  --color-text-primary: #616161;  /* body text */
-  --color-text-heading: #304C50;  /* headings / titles */
-  --color-text-inverse: #ffffff;  /* text on dark backgrounds / buttons */
+  /* Text colors: three tokens, everything else below aliases them.
+   *   dark    — every piece of readable text: body, headings, labels, values, nav, footer, admin
+   *   light   — placeholders, disabled labels, hints, metadata, affordances (close ×, kebabs)
+   *   inverse — text on dark or coloured surfaces: buttons, badges, hero, lightbox, toasts
+   * `light` is the heading colour at double its lightness (hsl(188 25% 50%)) so the two read as one family. */
+  --color-text-dark: #304C50;
+  --color-text-light: #60979f;
+  --color-text-inverse: #ffffff;
+
+  /* Legacy names, kept only because call sites use them. Point them at the three tokens above; never
+   * give one of them a value of its own — that is how the palette drifted into seven greys. */
+  --color-text-heading: var(--color-text-dark);
+  --color-text-primary: var(--color-text-dark);
+  --color-text-muted: var(--color-text-light);
+  --color-brand-dark: var(--color-text-dark);
+  --btn-primary-text: var(--color-text-dark);
+  --tag-badge-text: var(--color-text-dark);
+  --btn-select-text: var(--color-text-inverse);
+  --btn-positive-text: var(--color-text-inverse);
+  --btn-negative-text: var(--color-text-inverse);
 
   /* Brand colors */
   --color-brand-primary: #59772C;        /* default CTA button */
   --color-brand-primary-hover: #435921;  /* hover CTA button */
-  --color-brand-accent: #597772;         /* accents, highlights */
-  --color-brand-dark: #304C50;           /* reused for headings if needed */
+  --color-brand-accent: #597772;         /* storage bar fill, accents */
   --color-brand-logo: #687a52;           /* logo green / nav active underline */
 
-  /* Admin button colors (shared) */
+  /* Admin button colors (shared) — backgrounds only; labels come from the text tokens above. */
   --btn-primary-bg: #ffffff;
-  --btn-primary-text: #000000;
   --btn-primary-hover-bg: #90a873;
 
   /* Selected state shorthand (controls selected tags/folders) */
   --btn-select: #304C50;
-  --btn-select-text: #ffffff;
 
   /* Media admin: whole-card outline for selected files */
   --media-select-color: #ffd400;
 
   /* Tag badge colors (count background + text) */
   --tag-badge-bg: lab(90% -0.52 -4.6); /* emerald-600 */
-  --tag-badge-text: #393d47;
 
   /* Tag border color */
   --tag-border-color: rgba(0, 0, 0, 0.25);
@@ -43,17 +55,12 @@
 
   /* Positive action button (select/upload/create) */
   --btn-positive-bg: #059669; /* emerald-600 */
-  --btn-positive-text: #ffffff;
   --btn-positive-hover-bg: #07cc94; /* emerald-700 */
   /* Negative action button (delete/remove/confirm) */
   --btn-negative-bg: #cf6161; /* red-500 */
-  --btn-negative-text: #ffffff;
   --btn-negative-hover-bg: #f84040; /* red-600 */
   /* Default control hover background (used on white backgrounds) */
   --btn-default-hover-bg: rgba(108,157,48,0.06);
-
-  /* Section editor */
-  --color-editor-bg: #e9e9e9;
 
   /* Typography */
   --font-heading: "Jost", sans-serif;
@@ -76,8 +83,16 @@ body {
   font-family: var(--font-body);
   font-size: var(--text-body);
   line-height: var(--line-body);
-  color: var(--color-text-primary);
+  color: var(--color-text-dark);
   background-color: var(--color-bg-primary);
+}
+
+/* Placeholders are the one sanctioned lighter text. One rule for every field on the site and in the
+ * admin, so a placeholder can never drift back to Tailwind's default (a 50% mix of the field's own
+ * colour, which would have made it dark once the field text became dark). */
+::placeholder {
+  color: var(--color-text-light);
+  opacity: 1;
 }
 
 h1, h2, h3, h4, h5 {
