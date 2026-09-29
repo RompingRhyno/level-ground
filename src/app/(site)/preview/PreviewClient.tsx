@@ -309,16 +309,14 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   );
 }
 
-function renderContent(section: PageSection, bg?: string) {
+function renderContent(section: PageSection) {
   const type = section.type;
 
   if (type === "hero") {
     const s = section as HeroSection;
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="section-container">
-          <Hero {...s} fillViewport={false} />
-        </div>
+      <div className="section-container">
+        <Hero {...s} fillViewport={false} />
       </div>
     );
   }
@@ -328,10 +326,8 @@ function renderContent(section: PageSection, bg?: string) {
   if (type === "twoColumn") {
     const s = section as TwoColumnSection;
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="section-container py-20">
-          <TwoColumn {...s} />
-        </div>
+      <div className="section-container py-20">
+        <TwoColumn {...s} />
       </div>
     );
   }
@@ -339,75 +335,63 @@ function renderContent(section: PageSection, bg?: string) {
     const s = section as ServicesSection;
     const previewServices = (s as any).services?.filter((sv: any) => sv.image) ?? [];
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="section-container py-20">
-          <Services {...s} services={previewServices} />
-        </div>
+      <div className="section-container py-20">
+        <Services {...s} services={previewServices} />
       </div>
     );
   }
   if (type === "gallery") {
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="py-12">
-          <GalleryPreview section={section as GallerySection} />
-        </div>
+      <div className="py-12">
+        <GalleryPreview section={section as GallerySection} />
       </div>
     );
   }
   if (type === "video") {
     const s = section as VideoSection;
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="section-container py-20">
-          {(s.heading || s.subheading) && (
-            <div className="px-4 md:px-8 mb-8">
-              {s.heading && (
-                <h2
-                  className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-                  dangerouslySetInnerHTML={{ __html: s.heading }}
-                  style={{ color: "var(--color-text-heading)" }}
-                />
-              )}
-              {s.subheading && (
-                <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
-                  {s.subheading}
-                </p>
-              )}
-            </div>
-          )}
-          {s.videoUrl ? (
-            <video src={s.videoUrl} className="w-full aspect-video object-cover" preload="metadata" muted playsInline />
-          ) : (
-            <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-gray-400">
-              No video selected
-            </div>
-          )}
-        </div>
+      <div className="section-container py-20">
+        {(s.heading || s.subheading) && (
+          <div className="px-4 md:px-8 mb-8">
+            {s.heading && (
+              <h2
+                className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+                dangerouslySetInnerHTML={{ __html: s.heading }}
+                style={{ color: "var(--color-text-heading)" }}
+              />
+            )}
+            {s.subheading && (
+              <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
+                {s.subheading}
+              </p>
+            )}
+          </div>
+        )}
+        {s.videoUrl ? (
+          <video src={s.videoUrl} className="w-full aspect-video object-cover" preload="metadata" muted playsInline />
+        ) : (
+          <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-gray-400">
+            No video selected
+          </div>
+        )}
       </div>
     );
   }
   if (type === "contact") {
     const s = section as any;
     return (
-      <div style={{ backgroundColor: bg }}>
-        <div className="section-container py-20">
-          <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
-        </div>
+      <div className="section-container py-20">
+        <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
       </div>
     );
   }
   if (type === "collection-index") {
-    return (
-      <div style={{ backgroundColor: bg }}>
-        <CollectionIndexPreview section={section as CollectionIndexSection} />
-      </div>
-    );
+    return <CollectionIndexPreview section={section as CollectionIndexSection} />;
   }
   if (type === "collection-item") {
     const s = section as CollectionItemSection;
     return (
-      <div style={{ backgroundColor: bg }} className="section-container py-20">
+      <div className="section-container py-20">
         <CollectionItemPreview section={s} />
       </div>
     );
@@ -416,7 +400,7 @@ function renderContent(section: PageSection, bg?: string) {
 }
 
 export default function PreviewClient() {
-  const [data, setData] = useState<{ section: PageSection; bg?: string } | null>(null);
+  const [data, setData] = useState<PageSection | null>(null);
 
   useEffect(() => {
     // Hide site nav/footer when rendered inside the admin preview iframe
@@ -424,7 +408,7 @@ export default function PreviewClient() {
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "preview-data") {
-        setData({ section: event.data.section as PageSection, bg: event.data.bg });
+        setData(event.data.section as PageSection);
       }
     };
     window.addEventListener("message", handler);
@@ -465,5 +449,5 @@ export default function PreviewClient() {
 
   if (!data) return null;
 
-  return <>{renderContent(data.section, data.bg)}</>;
+  return <>{renderContent(data)}</>;
 }
