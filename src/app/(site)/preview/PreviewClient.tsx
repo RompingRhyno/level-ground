@@ -112,10 +112,10 @@ function GalleryPreview({ section }: { section: GallerySection }) {
   return (
     <>
       {(section.heading || section.body) && (
-        <div className="max-w-7xl mx-auto px-4 mb-8">
+        <div className="w-full px-4 md:px-8 mb-8">
           {section.heading && (
             <h2
-              className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+              className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
               dangerouslySetInnerHTML={{ __html: section.heading }}
               style={{ color: "var(--color-text-heading)" }}
             />
@@ -128,7 +128,7 @@ function GalleryPreview({ section }: { section: GallerySection }) {
         </div>
       )}
       {displayTags.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 mb-6 flex flex-wrap gap-2">
+        <div className="w-full px-4 md:px-8 mb-6 flex flex-wrap gap-2">
           {displayTags.map((tag) => (
             <span key={tag.slug} className="admin-btn text-sm px-3 py-1 rounded-full">
               {tag.name}
