@@ -22,7 +22,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
       {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
           (all corners square) and at two columns the left tile squares its left pair, the right tile its
           right pair. */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5">
         {assets.map((asset, i) => (
           <button
             key={asset.id}
@@ -48,7 +48,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
       {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Corners on the screen edge
           are square (edgeCornerClasses); the rest stay rounded. Hover is a subtle zoom clipped by the
           tile's own overflow, not an opacity overlay. */}
-      <div className="hidden md:grid md:grid-cols-6 gap-2">
+      <div className="hidden md:grid md:grid-cols-6 gap-1.5">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
           return (

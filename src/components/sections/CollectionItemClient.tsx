@@ -19,7 +19,7 @@ type Props = {
   lightbox: boolean;
 };
 
-// Full-bleed tiles with a 16px gutter, like Gallery.tsx. Every image needs its own `sizes`: without one
+// Full-bleed tiles with a 6px gutter, like Gallery.tsx. Every image needs its own `sizes`: without one
 // next/image assumes 100vw and the browser fetches the largest candidate for a third-width tile.
 const TILE_SIZES = "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
 
@@ -28,9 +28,9 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
     // Rounded throughout: which column an item lands in is the browser's column balancing, so an item
     // cannot know whether it sits on the screen edge.
     return (
-      <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-2">
+      <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5">
         {assets.map((a) => (
-          <div key={a.id} className="break-inside-avoid mb-2 rounded overflow-hidden">
+          <div key={a.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
             <Image
               src={a.publicUrl}
               alt={a.alt ?? ""}
@@ -50,7 +50,7 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
   // breakpoint: at one column a tile touches both edges, at two the left tile squares its left pair and
   // the right tile its right pair, and at three the same logic applies to first/middle/last.
   return (
-    <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+    <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5">
       {assets.map((a, i) => {
         const sm = i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l";
         const md =
