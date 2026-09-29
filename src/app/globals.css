@@ -11,10 +11,10 @@
    *   dark    — every piece of readable text: body, headings, labels, values, nav, footer, admin
    *   light   — placeholders, disabled labels, hints, metadata, affordances (close ×, kebabs)
    *   inverse — text on dark or coloured surfaces: buttons, badges, hero, lightbox, toasts
-   * `light` is the heading colour with its lightness raised to hsl(188 25% 42%) — lighter than `dark` but
-   * solid enough to read on white and cream. */
+   * `light` is the heading colour turned near-neutral (hsl(188 10% 38%)) — a dark grey carrying a trace of
+   * the heading's teal, darker than the first two attempts and no longer reading green. */
   --color-text-dark: #304C50;
-  --color-text-light: #507f86;
+  --color-text-light: #57686b;
   --color-text-inverse: #ffffff;
 
   /* Legacy names, kept only because call sites use them. Point them at the three tokens above; never
