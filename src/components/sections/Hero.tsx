@@ -7,12 +7,19 @@ export type HeroProps = {
   buttonText: string;
   buttonHref: string;
   image: string;
+  /**
+   * Fill the viewport height (minus the sticky header). Must be off inside an auto-height iframe — the page
+   * editor's preview is one — because `100svh` there resolves to the iframe's own height, which the iframe
+   * derives from its content, so each pass grows the frame: the preview visibly creeps taller as you scroll.
+   * A fixed height breaks the loop; the band still crops with object-cover either way.
+   */
+  fillViewport?: boolean;
 };
 
-// The sticky header (Navigation.tsx) is 67px: py-4 (32) + the 35px logo. The hero takes the rest of the
-// viewport so the first screen is exactly header + hero. `svh` (not `vh`) keeps that true on mobile when
-// the URL bar retracts.
+// The sticky header (Navigation.tsx) is 67px: py-4 (32) + the 35px logo. `svh` (not `vh`) keeps the fill
+// correct on mobile when the URL bar retracts.
 const NAV_H = "67px";
+const PREVIEW_H = "560px";
 
 export default function Hero({
   heading,
@@ -20,13 +27,14 @@ export default function Hero({
   buttonText,
   buttonHref,
   image,
+  fillViewport = true,
 }: HeroProps) {
   const hasImage = Boolean(image);
 
   return (
     <section
       className="relative w-full flex items-center overflow-hidden min-h-[420px]"
-      style={{ height: `calc(100svh - ${NAV_H})` }}
+      style={{ height: fillViewport ? `calc(100svh - ${NAV_H})` : PREVIEW_H }}
     >
       {/* Full-bleed image with the copy on top, so it needs a scrim: a gradient from the left keeps the
           text legible while the photo stays visible on the right. `object-cover object-center` is what
@@ -37,7 +45,7 @@ export default function Hero({
           `sizes` follows the same rule the crop does: while the viewport is wider than 16:9 the width is
           what limits the scale, so 100vw is right; once it is taller than wide, object-cover scales by
           height, and the image needs roughly (height x 1.78) pixels of width — declaring only 100vw there
-          would fetch a candidate that has to be upscaled. */}
+          would fetch a candidate that has to be upscaled. A fixed-height band is always width-limited. */}
       {hasImage ? (
         <>
           <Image
@@ -45,7 +53,11 @@ export default function Hero({
             alt=""
             fill
             priority
-            sizes="(min-aspect-ratio: 16/9) 100vw, calc((100svh - 67px) * 1.78)"
+            sizes={
+              fillViewport
+                ? "(min-aspect-ratio: 16/9) 100vw, calc((100svh - 67px) * 1.78)"
+                : "100vw"
+            }
             quality={95}
             className="object-cover object-center"
           />

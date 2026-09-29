@@ -244,7 +244,7 @@ export default function Contact({
   if (success) {
     return (
       <div className="flex-1 flex">
-        <div className="mx-auto max-w-2xl px-6 text-center" style={{ minHeight: "50svh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div className="mx-auto max-w-2xl px-6 text-center" style={{ minHeight: "clamp(320px, 50svh, 640px)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <h2
             className="heading text-3xl md:text-5xl font-light leading-tight mb-4"
             style={{ color: "var(--color-text-heading)" }}
