@@ -94,9 +94,13 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
             return null;
         }
 
+        // The hero fills the viewport height (100svh minus the sticky header), so its wrapper must not add
+        // vertical padding — that padding is what kept it from reaching the top of the screen.
         return (
           <section key={index} className={backgroundClass}>
-            <div className="section-container py-20">{content}</div>
+            <div className={section.type === "hero" ? "section-container" : "section-container py-20"}>
+              {content}
+            </div>
           </section>
         );
       })}
