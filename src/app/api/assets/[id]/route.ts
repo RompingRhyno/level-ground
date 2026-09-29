@@ -8,11 +8,10 @@ import { requireSession, unauthorized } from "@/lib/api-auth";
 import {
   TRANSITION_MAX_MEMBERS,
   TRANSITION_MIN_MEMBERS,
-  groupsContaining,
   isTransition,
   readTransition,
-  removeMemberFromGroups,
 } from "@/lib/transition";
+import { groupsContaining, removeMemberFromGroups } from "@/lib/transition-db";
 
 /** assetId → page slugs that display it, plus the transition groups it is a member of. */
 export async function GET(_request: NextRequest, context: any) {

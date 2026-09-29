@@ -76,9 +76,9 @@ export type ResolvedTransition = { transition: TransitionMeta; members: Transiti
  * have no URL are dropped, so a half-deleted group renders nothing rather than breaking.
  */
 export function transitionsFromRows(
-  rows: { id: string; publicUrl: string | null; alt: string | null; meta: unknown }[],
+  rows: { id: string; publicUrl: string | null; alt: string | null; meta?: unknown }[],
 ): Record<string, ResolvedTransition> {
-  type Row = { id: string; publicUrl: string | null; alt: string | null; meta: unknown };
+  type Row = { id: string; publicUrl: string | null; alt: string | null; meta?: unknown };
   const byId = new Map<string, Row>(rows.map((r) => [r.id, r]));
   const out: Record<string, ResolvedTransition> = {};
   for (const row of rows) {
