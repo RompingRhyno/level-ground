@@ -361,10 +361,10 @@ function renderContent(section: PageSection, bg?: string) {
       <div style={{ backgroundColor: bg }}>
         <div className="section-container py-20">
           {(s.heading || s.subheading) && (
-            <div className="mb-8">
+            <div className="px-4 md:px-8 mb-8">
               {s.heading && (
                 <h2
-                  className="heading text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
+                  className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
                   dangerouslySetInnerHTML={{ __html: s.heading }}
                   style={{ color: "var(--color-text-heading)" }}
                 />
