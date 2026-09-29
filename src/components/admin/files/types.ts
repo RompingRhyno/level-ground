@@ -25,6 +25,8 @@ export type AssetData = {
   alt: string | null;
   /** Prisma JSON: may be null, an object, or anything JSON-serialisable. */
   meta?: unknown;
+  /** Hidden from dynamic galleries; ordered last. Rendered in its own section by the media manager. */
+  hidden?: boolean;
   usedOn?: string[];
   createdAt?: string | Date;
   updatedAt?: string | Date;
