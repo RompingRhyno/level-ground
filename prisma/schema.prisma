@@ -102,6 +102,9 @@ model Asset {
   alt        String?
   meta       Json?
   migrated   Boolean  @default(false)
+  /// Hidden from dynamic galleries (folder/tag filtered, collection index, /projects detail) and ordered
+  /// last so it can never become a folder cover. Still renders in static galleries and in the pickers.
+  hidden     Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
