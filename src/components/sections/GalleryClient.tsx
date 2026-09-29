@@ -3,13 +3,23 @@
 import { useState } from "react";
 import Image from "next/image";
 import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
+import type { ResolvedTransition } from "@/lib/transition";
+import TransitionTile from "./TransitionTile";
 import GalleryLightbox from "./GalleryLightbox";
 
 import type { GalleryLayout } from "@/types/sections";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
-export default function GalleryClient({ assets, layoutMode = "bento" }: { assets: Asset[]; layoutMode?: GalleryLayout }) {
+export default function GalleryClient({
+  assets,
+  transitions = {},
+  layoutMode = "bento",
+}: {
+  assets: Asset[];
+  transitions?: Record<string, ResolvedTransition>;
+  layoutMode?: GalleryLayout;
+}) {
   const [open, setOpen] = useState<number | null>(null);
 
   const prev = () => setOpen((i) => (i !== null ? (i > 0 ? i - 1 : assets.length - 1) : null));
@@ -32,15 +42,25 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
             onClick={() => setOpen(i)}
             aria-label={asset.alt ?? `Image ${i + 1}`}
           >
-            <Image
-              src={asset.publicUrl}
-              alt={asset.alt ?? ""}
-              fill
-              sizes="(min-width:640px) 50vw, 100vw"
-              quality={85}
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
-            />
+            {transitions[asset.id] ? (
+              <TransitionTile
+                members={transitions[asset.id].members}
+                transition={transitions[asset.id].transition}
+                sizes="(min-width:640px) 50vw, 100vw"
+                quality={85}
+                showPills={false}
+              />
+            ) : (
+              <Image
+                src={asset.publicUrl}
+                alt={asset.alt ?? ""}
+                fill
+                sizes="(min-width:640px) 50vw, 100vw"
+                quality={85}
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+            )}
           </button>
         ))}
       </div>
@@ -51,6 +71,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
       <div className="hidden md:grid md:grid-cols-6 gap-1.5">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
+          const group = transitions[asset.id];
           return (
             <button
               key={asset.id}
@@ -65,15 +86,24 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
               onClick={() => setOpen(cell.assetIndex)}
               aria-label={asset.alt ?? `Image ${cell.assetIndex + 1}`}
             >
-              <Image
-                src={asset.publicUrl}
-                alt={asset.alt ?? ""}
-                fill
-                sizes={getCellSizes(cell.cellType, cell.colSpan)}
-                quality={cell.cellType === "small" ? 85 : 95}
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
+              {group ? (
+                <TransitionTile
+                  members={group.members}
+                  transition={group.transition}
+                  sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                  quality={cell.cellType === "small" ? 85 : 95}
+                />
+              ) : (
+                <Image
+                  src={asset.publicUrl}
+                  alt={asset.alt ?? ""}
+                  fill
+                  sizes={getCellSizes(cell.cellType, cell.colSpan)}
+                  quality={cell.cellType === "small" ? 85 : 95}
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+              )}
             </button>
           );
         })}
@@ -81,6 +111,7 @@ export default function GalleryClient({ assets, layoutMode = "bento" }: { assets
 
       <GalleryLightbox
         assets={assets}
+        transitions={transitions}
         openIndex={open}
         onClose={() => setOpen(null)}
         onGotoIndex={setOpen}

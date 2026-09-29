@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import GalleryClient from "./GalleryClient";
+import TransitionTile from "./TransitionTile";
 import type { GalleryLayout } from "@/types/sections";
+import type { ResolvedTransition } from "@/lib/transition";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
@@ -15,6 +17,7 @@ type Props = {
   displayTags: TagRow[];
   collectionSlug?: string | null;
   assets: Asset[];
+  transitions?: Record<string, ResolvedTransition>;
   layout: GalleryLayout;
   lightbox: boolean;
 };
@@ -23,26 +26,48 @@ type Props = {
 // next/image assumes 100vw and the browser fetches the largest candidate for a third-width tile.
 const TILE_SIZES = "(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw";
 
-function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout }) {
+function StaticGrid({
+  assets,
+  transitions,
+  layout,
+}: {
+  assets: Asset[];
+  transitions: Record<string, ResolvedTransition>;
+  layout: GalleryLayout;
+}) {
   if (layout === "masonry") {
     // Rounded throughout: which column an item lands in is the browser's column balancing, so an item
     // cannot know whether it sits on the screen edge.
     return (
       <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5">
-        {assets.map((a) => (
-          <div key={a.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
-            <Image
-              src={a.publicUrl}
-              alt={a.alt ?? ""}
-              width={800}
-              height={600}
-              sizes={TILE_SIZES}
-              quality={85}
-              className="w-full object-cover"
-              loading="lazy"
-            />
-          </div>
-        ))}
+        {assets.map((a) => {
+          const group = transitions[a.id];
+          return (
+            <div key={a.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
+              {group ? (
+                <div className="relative w-full aspect-video">
+                  <TransitionTile
+                    members={group.members}
+                    transition={group.transition}
+                    sizes={TILE_SIZES}
+                    quality={85}
+                  />
+                </div>
+              ) : (
+                <Image
+                  src={a.publicUrl}
+                  alt={a.alt ?? ""}
+                  width={800}
+                  height={600}
+                  sizes={TILE_SIZES}
+                  quality={85}
+                  className="w-full object-cover"
+                  loading="lazy"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -59,17 +84,27 @@ function StaticGrid({ assets, layout }: { assets: Asset[]; layout: GalleryLayout
             : i % 3 === 1
               ? "md:rounded"
               : "md:rounded-l md:rounded-r-none";
+        const group = transitions[a.id];
         return (
           <div key={a.id} className={`relative aspect-video overflow-hidden rounded-none ${sm} ${md}`}>
-            <Image
-              src={a.publicUrl}
-              alt={a.alt ?? ""}
-              fill
-              sizes={TILE_SIZES}
-              quality={85}
-              className="object-cover"
-              loading="lazy"
-            />
+            {group ? (
+              <TransitionTile
+                members={group.members}
+                transition={group.transition}
+                sizes={TILE_SIZES}
+                quality={85}
+              />
+            ) : (
+              <Image
+                src={a.publicUrl}
+                alt={a.alt ?? ""}
+                fill
+                sizes={TILE_SIZES}
+                quality={85}
+                className="object-cover"
+                loading="lazy"
+              />
+            )}
           </div>
         );
       })}
@@ -83,6 +118,7 @@ export default function CollectionItemClient({
   displayTags,
   collectionSlug,
   assets,
+  transitions = {},
   layout,
   lightbox,
 }: Props) {
@@ -127,9 +163,9 @@ export default function CollectionItemClient({
 
       {assets.length > 0 && (
         lightbox ? (
-          <GalleryClient assets={assets} layoutMode={layout} />
+          <GalleryClient assets={assets} transitions={transitions} layoutMode={layout} />
         ) : (
-          <StaticGrid assets={assets} layout={layout} />
+          <StaticGrid assets={assets} transitions={transitions} layout={layout} />
         )
       )}
     </div>

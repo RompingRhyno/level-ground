@@ -104,6 +104,10 @@ export function pickCover(assets: CoverAsset[]): string | null {
   let poster: string | null = null;
   for (const asset of assets) {
     if (!asset.publicUrl) continue;
+    // A transition group is never a cover (it has no single frame to show on a card) — `image/x-transition`
+    // is TRANSITION_MIME in src/lib/transition.ts. Hidden assets are already ordered last, so the first
+    // image here is a visible one.
+    if (asset.mime === "image/x-transition") continue;
     const isImage = !asset.mime || asset.mime.startsWith("image/");
     if (isImage) return asset.publicUrl;
     if (asset.mime?.startsWith("video/") && !poster) poster = posterUrlOf(asset.meta);
