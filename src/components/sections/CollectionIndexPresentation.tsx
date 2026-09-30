@@ -38,7 +38,7 @@ function ItemGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6">
       {items.map((item) => {
         const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
         const tags = source === "folders" ? (folderTags[item.slug] ?? []) : [];
@@ -46,11 +46,11 @@ function ItemGrid({
           <Link
             key={item.slug}
             href={`${effectiveRouteBase}/${item.slug}`}
-            className="group block border border-(--color-border) rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+            className="group block rounded-lg overflow-hidden"
           >
             <div className="relative aspect-video w-full">
               {image ? (
-                <Image src={image} alt={item.name} fill sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw" quality={85} className="object-cover" />
+                <Image src={image} alt={item.name} fill sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw" quality={85} className="object-cover transition-transform duration-[800ms] group-hover:scale-105" />
               ) : (
                 <div className="absolute inset-0 bg-(--color-bg-secondary)" />
               )}
@@ -64,8 +64,8 @@ function ItemGrid({
                 </div>
               )}
             </div>
-            <div className="p-4 bg-white transition-colors duration-200 group-hover:bg-(--color-brand-dark)">
-              <h3 className="text-lg font-medium transition-colors duration-200 group-hover:text-white">{item.name}</h3>
+            <div className="p-4">
+              <h3 className="text-lg font-medium">{item.name}</h3>
             </div>
           </Link>
         );
@@ -140,7 +140,7 @@ function CollectionIndexPresentationInner(props: CollectionIndexPresentationProp
     <div>
       {/* Tag filter + See More row */}
       {(showTagFilter || mode === "reference") && (
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div className="px-4 md:px-8 flex flex-wrap items-center justify-between gap-2 mb-6">
           {showTagFilter && allTagsForFilter.length > 0 && (
             <TagFilterPills
               allTagsForFilter={allTagsForFilter}
