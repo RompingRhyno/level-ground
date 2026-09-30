@@ -5,7 +5,7 @@ import Image from "next/image";
 import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
 import type { ResolvedTransition } from "@/lib/transition";
 import TransitionTile from "./TransitionTile";
-import GalleryLightbox from "./GalleryLightbox";
+import GalleryLightbox, { type LightboxProject } from "./GalleryLightbox";
 
 import type { GalleryLayout } from "@/types/sections";
 
@@ -14,10 +14,14 @@ type Asset = { id: string; publicUrl: string; alt: string | null };
 export default function GalleryClient({
   assets,
   transitions = {},
+  projects = {},
+  showProjectLink = true,
   layoutMode = "bento",
 }: {
   assets: Asset[];
   transitions?: Record<string, ResolvedTransition>;
+  projects?: Record<string, LightboxProject>;
+  showProjectLink?: boolean;
   layoutMode?: GalleryLayout;
 }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -26,7 +30,6 @@ export default function GalleryClient({
   const next = () => setOpen((i) => (i !== null ? (i < assets.length - 1 ? i + 1 : 0) : null));
 
   const cells = getLayoutCells(assets.length, layoutMode);
-
   return (
     <>
       {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
@@ -112,6 +115,8 @@ export default function GalleryClient({
       <GalleryLightbox
         assets={assets}
         transitions={transitions}
+        projects={projects}
+        showProjectLink={showProjectLink}
         openIndex={open}
         onClose={() => setOpen(null)}
         onGotoIndex={setOpen}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import GalleryClient from "./GalleryClient";
 import TransitionTile from "./TransitionTile";
+import type { LightboxProject } from "./GalleryLightbox";
 import type { GalleryLayout } from "@/types/sections";
 import type { ResolvedTransition } from "@/lib/transition";
 
@@ -122,6 +123,15 @@ export default function CollectionItemClient({
   layout,
   lightbox,
 }: Props) {
+  // The page is this project's own, so its lightbox panel is built from the props already in hand — no
+  // per-asset lookup — and "See full project" would link to the page you are on, so it is dropped here.
+  const project: LightboxProject | null = collectionSlug
+    ? { name, slug: collectionSlug, description: description ?? null, tags: displayTags }
+    : null;
+  const projects: Record<string, LightboxProject> = project
+    ? Object.fromEntries(assets.map((a) => [a.id, project]))
+    : {};
+
   return (
     <div>
       {/* Text carries its own padding — the section wrapper is full-bleed with no edge inset — while the
@@ -163,7 +173,13 @@ export default function CollectionItemClient({
 
       {assets.length > 0 && (
         lightbox ? (
-          <GalleryClient assets={assets} transitions={transitions} layoutMode={layout} />
+          <GalleryClient
+            assets={assets}
+            transitions={transitions}
+            projects={projects}
+            showProjectLink={false}
+            layoutMode={layout}
+          />
         ) : (
           <StaticGrid assets={assets} transitions={transitions} layout={layout} />
         )
