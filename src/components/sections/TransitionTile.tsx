@@ -96,7 +96,7 @@ export default function TransitionTile({
   };
 
   return (
-    <div ref={rootRef} className="absolute inset-0 overflow-hidden bg-black/5">
+    <div ref={rootRef} className="absolute inset-0 overflow-hidden bg-white">
       {members.map((member, i) => (
         <div key={member.id} className="absolute inset-0" style={layerStyle(i)}>
           <Image

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ResolvedTransition } from "@/lib/transition";
@@ -52,6 +52,11 @@ function ExpandIcon() {
     </svg>
   );
 }
+
+// The pill is the collection index's "See More" button: outlined until hover, then the brand
+// background with white text.
+const PILL_CLASS =
+  "shrink-0 px-5 py-2 rounded-full text-base font-medium transition-colors border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)";
 
 export default function GalleryLightbox({
   assets,
@@ -137,6 +142,38 @@ export default function GalleryLightbox({
     container.scrollTo({ left: scrollLeft, behavior: "smooth" });
   }, [open]);
 
+  // Drag to scroll the thumbnail strip (pointer events cover a real mouse drag; touch keeps its
+  // native scroll, which is why the handlers only act on mouse pointers). A drag never selects a
+  // thumbnail.
+  const dragRef = useRef({ active: false, startX: 0, startScroll: 0, moved: false });
+
+  const onStripPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse" || !thumbsContainerRef.current) return;
+    dragRef.current = {
+      active: true,
+      startX: e.clientX,
+      startScroll: thumbsContainerRef.current.scrollLeft,
+      moved: false,
+    };
+  };
+
+  const onStripPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d.active || !thumbsContainerRef.current) return;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 3) d.moved = true;
+    thumbsContainerRef.current.scrollLeft = d.startScroll - dx;
+  };
+
+  const endStripDrag = () => {
+    dragRef.current.active = false;
+  };
+
+  const onThumbClick = (idx: number) => {
+    if (dragRef.current.moved) return;
+    onGotoIndex(idx);
+  };
+
   if (open === null || !asset) return null;
 
   return (
@@ -160,36 +197,24 @@ export default function GalleryLightbox({
       </button>
 
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-        {/* Photo + navigation — two thirds of the width on desktop, below the panel on mobile. */}
-        <div className="relative order-2 lg:order-1 lg:w-2/3 min-h-0 flex items-center justify-center">
-          {/* Each arrow's hit area is the whole vertical strip beside the photo, so there is no missing
-              it; the visible affordance is a small circle around the glyph. */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              nav(onPrev);
-            }}
-            aria-label="Previous image"
-            className="group absolute left-0 top-0 h-full w-20 lg:w-28 z-10 flex items-center justify-start pl-3 lg:justify-center lg:pl-0"
-          >
-            <span className="rounded-full p-2 text-(--color-text-dark) transition-colors group-hover:bg-black/5">
+        {/* Photo + navigation — two thirds of the width on desktop, below the panel on mobile. The
+            arrows sit in their own columns beside the photo, never on top of it. */}
+        <div className="order-2 lg:order-1 lg:w-2/3 min-h-0 flex items-stretch">
+          {/* The arrow is a rectangle sized to its glyph — the whole rectangle is the hover target, so
+              its extent is visible — vertically centred beside the photo. */}
+          <div className="w-20 lg:w-28 shrink-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                nav(onPrev);
+              }}
+              aria-label="Previous image"
+              className="group h-24 w-16 lg:w-20 rounded-lg flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+            >
               <ChevronLeftIcon />
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              nav(onNext);
-            }}
-            aria-label="Next image"
-            className="group absolute right-0 top-0 h-full w-20 lg:w-28 z-10 flex items-center justify-end pr-3 lg:justify-center lg:pr-0"
-          >
-            <span className="rounded-full p-2 text-(--color-text-dark) transition-colors group-hover:bg-black/5">
-              <ChevronRightIcon />
-            </span>
-          </button>
+            </button>
+          </div>
 
           <div
             role="button"
@@ -205,15 +230,13 @@ export default function GalleryLightbox({
                 setExpanded(true);
               }
             }}
-            className={`relative w-full h-full min-h-0 flex items-center justify-center px-20 lg:px-28 py-2 ${
-              expanded ? "" : "cursor-zoom-in"
-            }`}
+            className={`relative flex-1 min-w-0 flex items-center justify-center py-2 ${expanded ? "" : "cursor-zoom-in"}`}
           >
             {group ? (
               <TransitionTile
                 members={group.members}
                 transition={group.transition}
-                sizes="(min-width: 1024px) 66vw, 100vw"
+                sizes="(min-width: 1024px) 52vw, 100vw"
                 quality={95}
                 fit="contain"
               />
@@ -223,11 +246,17 @@ export default function GalleryLightbox({
                 alt={asset.alt ?? ""}
                 fill
                 className="object-contain"
-                sizes="(min-width: 1024px) 66vw, 100vw"
+                sizes="(min-width: 1024px) 52vw, 100vw"
                 quality={95}
                 priority
               />
             )}
+          </div>
+
+          {/* Right column: the next arrow is vertically centred, and the expand control sits at the
+              midpoint between the top of the screen and that arrow — which is a quarter of the column
+              height less half the arrow plus the button's own half: calc(25% - 44px). */}
+          <div className="relative w-20 lg:w-28 shrink-0 flex flex-col items-center">
             <button
               type="button"
               onClick={(e) => {
@@ -235,10 +264,23 @@ export default function GalleryLightbox({
                 setExpanded(true);
               }}
               aria-label="Expand image"
-              className="absolute top-3 right-3 h-10 w-10 rounded-full border border-(--color-border) bg-white/90 flex items-center justify-center text-(--color-text-dark) hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+              className="absolute left-1/2 -translate-x-1/2 top-[calc(25%-44px)] h-10 w-10 rounded-full border border-(--color-border) bg-white flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
             >
               <ExpandIcon />
             </button>
+            <div className="flex-1 w-full flex items-center justify-center">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nav(onNext);
+                }}
+                aria-label="Next image"
+                className="group h-24 w-16 lg:w-20 rounded-lg flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+              >
+                <ChevronRightIcon />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -249,13 +291,13 @@ export default function GalleryLightbox({
             className="order-1 lg:order-2 lg:w-1/3 overflow-y-auto px-5 py-5 lg:py-12 lg:px-8 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* min-h-full + justify-center centres the panel's content, and unlike auto margins it never
+                clips the top when the description is longer than the column. */}
+            <div className="min-h-full flex flex-col justify-center">
             <div className="flex flex-wrap items-baseline gap-3">
-              <h2 className="heading text-2xl font-light leading-tight">{project.name}</h2>
+              <h2 className="heading text-4xl font-light leading-tight">{project.name}</h2>
               {showProjectLink && project.slug && (
-                <Link
-                  href={`/projects/${project.slug}`}
-                  className="shrink-0 rounded-full border border-(--tag-border-color) px-3 py-1 text-sm text-(--color-text-dark) hover:bg-black/5"
-                >
+                <Link href={`/projects/${project.slug}`} className={PILL_CLASS}>
                   See full project
                 </Link>
               )}
@@ -277,15 +319,21 @@ export default function GalleryLightbox({
                 {project.description}
               </p>
             )}
+            </div>
           </aside>
         )}
       </div>
 
-      {/* Thumbnail strip — always at the bottom, full width. The active one carries the highlight. */}
+      {/* Thumbnail strip — always at the bottom, full width, draggable to scroll. The active one
+          carries the highlight. */}
       <div
         ref={thumbsContainerRef}
-        className="shrink-0 border-t border-(--color-border) bg-white overflow-x-auto"
+        className="shrink-0 overflow-x-auto cursor-grab active:cursor-grabbing select-none"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={onStripPointerDown}
+        onPointerMove={onStripPointerMove}
+        onPointerUp={endStripDrag}
+        onPointerLeave={endStripDrag}
       >
         <div className="flex gap-2 px-4 py-3 w-fit mx-auto">
           {assets.map((a, idx) => (
@@ -295,7 +343,7 @@ export default function GalleryLightbox({
               ref={(el) => {
                 thumbsRef.current[idx] = el;
               }}
-              onClick={() => onGotoIndex(idx)}
+              onClick={() => onThumbClick(idx)}
               aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
               aria-current={open === idx}
               className="relative shrink-0 rounded overflow-hidden border border-(--color-border) bg-black/5 aspect-video w-28"
@@ -317,7 +365,10 @@ export default function GalleryLightbox({
           role="dialog"
           aria-modal="true"
           aria-label="Expanded image"
-          onClick={() => setExpanded(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(false);
+          }}
         >
           {group ? (
             <TransitionTile members={group.members} transition={group.transition} sizes="100vw" quality={95} fit="contain" />
