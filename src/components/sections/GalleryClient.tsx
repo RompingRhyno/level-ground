@@ -60,7 +60,7 @@ export default function GalleryClient({
                 fill
                 sizes="(min-width:640px) 50vw, 100vw"
                 quality={85}
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                className="object-cover transition-transform duration-[800ms] group-hover:scale-105"
                 loading="lazy"
               />
             )}
@@ -103,7 +103,7 @@ export default function GalleryClient({
                   fill
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
                   quality={cell.cellType === "small" ? 85 : 95}
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-transform duration-[800ms] group-hover:scale-105"
                   loading="lazy"
                 />
               )}
