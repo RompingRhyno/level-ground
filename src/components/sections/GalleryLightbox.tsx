@@ -1,15 +1,25 @@
 "use client";
 
-import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { ResolvedTransition } from "@/lib/transition";
 import TransitionTile from "./TransitionTile";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
+/** What the lightbox's right panel shows for one asset: its project's name, route slug, description and
+ *  tags. Built server-side (Gallery.tsx) or from the project page's own props (CollectionItemClient). */
+export type LightboxProject = {
+  name: string;
+  slug: string;
+  description: string | null;
+  tags: { slug: string; name: string }[];
+};
+
 function ChevronLeftIcon() {
   return (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="15 18 9 12 15 6" />
     </svg>
   );
@@ -17,7 +27,7 @@ function ChevronLeftIcon() {
 
 function ChevronRightIcon() {
   return (
-    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="9 18 15 12 9 6" />
     </svg>
   );
@@ -25,33 +35,29 @@ function ChevronRightIcon() {
 
 function CloseIcon() {
   return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
 
-function LightboxButton({ onClick, label, className, children }: {
-  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
-  label: string;
-  className: string;
-  children: ReactNode;
-}) {
+function ExpandIcon() {
   return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className={`w-12 h-12 rounded-full flex items-center justify-center text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white backdrop-blur-sm ${className}`}
-    >
-      {children}
-    </button>
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
   );
 }
 
 export default function GalleryLightbox({
   assets,
   transitions,
+  projects = {},
+  showProjectLink = true,
   openIndex,
   onClose,
   onGotoIndex,
@@ -60,6 +66,8 @@ export default function GalleryLightbox({
 }: {
   assets: Asset[];
   transitions: Record<string, ResolvedTransition>;
+  projects?: Record<string, LightboxProject>;
+  showProjectLink?: boolean;
   openIndex: number | null;
   onClose: () => void;
   onGotoIndex: (i: number) => void;
@@ -67,45 +75,27 @@ export default function GalleryLightbox({
   onNext: () => void;
 }) {
   const open = openIndex;
-
-  // Auto landscape: true when a touch device is in landscape orientation
-  const [isLandscape, setIsLandscape] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const thumbsContainerRef = useRef<HTMLDivElement | null>(null);
   const thumbsRef = useRef<Array<HTMLButtonElement | null>>([]);
 
-  useEffect(() => {
-    const mql = window.matchMedia("(orientation: landscape) and (pointer: coarse)");
-    const handler = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
-    setIsLandscape(mql.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
-  }, []);
+  const asset = open !== null ? assets[open] : null;
+  const project = asset ? projects[asset.id] : undefined;
+  const group = asset ? transitions[asset.id] : undefined;
 
+  // A new image means a fresh, non-expanded view.
   useEffect(() => {
-    if (open === null) return;
-    const container = thumbsContainerRef.current;
-    const btn = thumbsRef.current[open];
-    if (!container || !btn) return;
-
-    if (isLandscape) {
-      const containerRect = container.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      const scrollTop = container.scrollTop + btnRect.top - containerRect.top + btnRect.height / 2 - container.clientHeight / 2;
-      container.scrollTo({ top: scrollTop, behavior: "smooth" });
-    } else {
-      const containerRect = container.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      const scrollLeft = container.scrollLeft + btnRect.left - containerRect.left + btnRect.width / 2 - container.clientWidth / 2;
-      container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-    }
-  }, [open, isLandscape]);
+    setExpanded(false);
+  }, [open]);
 
   // Prevent body scroll while lightbox is open
   useEffect(() => {
     if (open === null) return;
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = original; };
+    return () => {
+      document.body.style.overflow = original;
+    };
   }, [open]);
 
   // Prevent rapid double-fire on touch (touchend + synthetic click)
@@ -117,114 +107,225 @@ export default function GalleryLightbox({
     fn();
   };
 
-  // Close on Escape (desktop)
+  // Escape minimises an expanded image first (browser convention), then closes the lightbox.
+  // Left/Right navigate.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (expanded) setExpanded(false);
+        else onClose();
+      } else if (e.key === "ArrowLeft") {
+        nav(onPrev);
+      } else if (e.key === "ArrowRight") {
+        nav(onNext);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  });
 
-  if (open === null) return null;
+  // Keep the active thumbnail in view.
+  useEffect(() => {
+    if (open === null) return;
+    const container = thumbsContainerRef.current;
+    const btn = thumbsRef.current[open];
+    if (!container || !btn) return;
+    const containerRect = container.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const scrollLeft =
+      container.scrollLeft + btnRect.left - containerRect.left + btnRect.width / 2 - container.clientWidth / 2;
+    container.scrollTo({ left: scrollLeft, behavior: "smooth" });
+  }, [open]);
+
+  if (open === null || !asset) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-white flex flex-col"
       role="dialog"
       aria-modal="true"
       onClick={onClose}
     >
-      <div
-        className={`w-screen ${isLandscape ? "flex flex-row h-screen overflow-hidden" : "flex flex-col items-center"}`}
-        onClick={(e) => e.stopPropagation()}
+      {/* Close — top right of the overlay, above everything. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label="Close lightbox"
+        className="absolute top-3 right-3 z-20 h-11 w-11 rounded-full flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
       >
-        {/* Main image — a transition group cycles in place, at its members' own aspect */}
-        <div className={isLandscape ? "relative flex-1 min-w-0 h-full" : "relative w-full mt-3 max-h-[75vh] xl:max-h-[calc(100vh-200px)] aspect-video"}>
-          {transitions[assets[open].id] ? (
-            <TransitionTile
-              members={transitions[assets[open].id].members}
-              transition={transitions[assets[open].id].transition}
-              sizes="100vw"
-              quality={95}
-              fit="contain"
-            />
-          ) : (
-            <Image
-              src={assets[open].publicUrl}
-              alt={assets[open].alt ?? ""}
-              fill
-              className="object-contain"
-              sizes="100vw"
-              priority
-            />
-          )}
-          {/* Buttons overlaid — landscape only */}
-          {isLandscape && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex flex-row items-center gap-3 z-10">
-              <LightboxButton onClick={(e) => { e.stopPropagation(); nav(onPrev); }} label="Previous image" className="bg-black/45 hover:bg-black/65"><ChevronLeftIcon /></LightboxButton>
-              <LightboxButton onClick={(e) => { e.stopPropagation(); onClose(); }} label="Close lightbox" className="bg-black/55 hover:bg-black/70"><CloseIcon /></LightboxButton>
-              <LightboxButton onClick={(e) => { e.stopPropagation(); nav(onNext); }} label="Next image" className="bg-black/45 hover:bg-black/65"><ChevronRightIcon /></LightboxButton>
-            </div>
-          )}
+        <CloseIcon />
+      </button>
+
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
+        {/* Photo + navigation — two thirds of the width on desktop, below the panel on mobile. */}
+        <div className="relative order-2 lg:order-1 lg:w-2/3 min-h-0 flex items-center justify-center">
+          {/* Each arrow's hit area is the whole vertical strip beside the photo, so there is no missing
+              it; the visible affordance is a small circle around the glyph. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              nav(onPrev);
+            }}
+            aria-label="Previous image"
+            className="group absolute left-0 top-0 h-full w-20 lg:w-28 z-10 flex items-center justify-start pl-3 lg:justify-center lg:pl-0"
+          >
+            <span className="rounded-full p-2 text-(--color-text-dark) transition-colors group-hover:bg-black/5">
+              <ChevronLeftIcon />
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              nav(onNext);
+            }}
+            aria-label="Next image"
+            className="group absolute right-0 top-0 h-full w-20 lg:w-28 z-10 flex items-center justify-end pr-3 lg:justify-center lg:pr-0"
+          >
+            <span className="rounded-full p-2 text-(--color-text-dark) transition-colors group-hover:bg-black/5">
+              <ChevronRightIcon />
+            </span>
+          </button>
+
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Expand image"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(true);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setExpanded(true);
+              }
+            }}
+            className={`relative w-full h-full min-h-0 flex items-center justify-center px-20 lg:px-28 py-2 ${
+              expanded ? "" : "cursor-zoom-in"
+            }`}
+          >
+            {group ? (
+              <TransitionTile
+                members={group.members}
+                transition={group.transition}
+                sizes="(min-width: 1024px) 66vw, 100vw"
+                quality={95}
+                fit="contain"
+              />
+            ) : (
+              <Image
+                src={asset.publicUrl}
+                alt={asset.alt ?? ""}
+                fill
+                className="object-contain"
+                sizes="(min-width: 1024px) 66vw, 100vw"
+                quality={95}
+                priority
+              />
+            )}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+              }}
+              aria-label="Expand image"
+              className="absolute top-3 right-3 h-10 w-10 rounded-full border border-(--color-border) bg-white/90 flex items-center justify-center text-(--color-text-dark) hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+            >
+              <ExpandIcon />
+            </button>
+          </div>
         </div>
 
-        {/* Portrait: buttons below image, above thumbnails */}
-        {!isLandscape && (
-          <div className="flex flex-row items-center gap-3 py-3 px-4">
-            <LightboxButton onClick={(e) => { e.stopPropagation(); nav(onPrev); }} label="Previous image" className="bg-white/15 hover:bg-white/25"><ChevronLeftIcon /></LightboxButton>
-            <LightboxButton onClick={(e) => { e.stopPropagation(); onClose(); }} label="Close lightbox" className="bg-white/15 hover:bg-white/25"><CloseIcon /></LightboxButton>
-            <LightboxButton onClick={(e) => { e.stopPropagation(); nav(onNext); }} label="Next image" className="bg-white/15 hover:bg-white/25"><ChevronRightIcon /></LightboxButton>
-          </div>
-        )}
-
-        {/* Thumbnails */}
-        {isLandscape ? (
-          <div
-            ref={thumbsContainerRef}
-            className="shrink-0 w-48 flex flex-col gap-3 h-full overflow-y-auto py-3 px-2"
+        {/* Info panel — the right third on desktop, above the photo on mobile. Collapses away entirely
+            when the asset has no project data (a static gallery with no folder behind it). */}
+        {project && (
+          <aside
+            className="order-1 lg:order-2 lg:w-1/3 overflow-y-auto px-5 py-5 lg:py-12 lg:px-8 shrink-0"
+            onClick={(e) => e.stopPropagation()}
           >
-            {assets.map((a, idx) => (
-              <button
-                key={a.id}
-                ref={(el) => { thumbsRef.current[idx] = el; }}
-                onClick={(e) => { e.stopPropagation(); onGotoIndex(idx); }}
-                aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
-                aria-current={open === idx}
-                className="relative shrink-0 w-full rounded overflow-hidden border bg-black/5 aspect-video"
-              >
-                <div className="absolute inset-0">
-                  <Image src={a.publicUrl} alt={a.alt ?? ""} fill className="object-cover" loading="lazy" />
-                </div>
-                <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? 'thumbnail-selected' : ''}`} />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div
-            ref={thumbsContainerRef}
-            className="w-full overflow-x-auto pb-3"
-          >
-            <div className="flex gap-4 px-4 w-fit mx-auto">
-              {assets.map((a, idx) => (
-                <button
-                  key={a.id}
-                  ref={(el) => { thumbsRef.current[idx] = el; }}
-                  onClick={(e) => { e.stopPropagation(); onGotoIndex(idx); }}
-                  aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
-                  aria-current={open === idx}
-                  className="relative shrink-0 rounded overflow-hidden border bg-black/5 aspect-video w-40 md:w-48"
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h2 className="heading text-2xl font-light leading-tight">{project.name}</h2>
+              {showProjectLink && project.slug && (
+                <Link
+                  href={`/projects/${project.slug}`}
+                  className="shrink-0 rounded-full border border-(--tag-border-color) px-3 py-1 text-sm text-(--color-text-dark) hover:bg-black/5"
                 >
-                  <div className="absolute inset-0">
-                    <Image src={a.publicUrl} alt={a.alt ?? ""} fill className="object-cover" loading="lazy" />
-                  </div>
-                  <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? 'thumbnail-selected' : ''}`} />
-                </button>
-              ))}
+                  See full project
+                </Link>
+              )}
             </div>
-          </div>
+            {project.tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {project.tags.map((tag) => (
+                  <span
+                    key={tag.slug}
+                    className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark)"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {project.description && (
+              <p className="mt-5 leading-relaxed" style={{ color: "var(--color-text-dark)" }}>
+                {project.description}
+              </p>
+            )}
+          </aside>
         )}
       </div>
+
+      {/* Thumbnail strip — always at the bottom, full width. The active one carries the highlight. */}
+      <div
+        ref={thumbsContainerRef}
+        className="shrink-0 border-t border-(--color-border) bg-white overflow-x-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex gap-2 px-4 py-3 w-fit mx-auto">
+          {assets.map((a, idx) => (
+            <button
+              key={a.id}
+              type="button"
+              ref={(el) => {
+                thumbsRef.current[idx] = el;
+              }}
+              onClick={() => onGotoIndex(idx)}
+              aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
+              aria-current={open === idx}
+              className="relative shrink-0 rounded overflow-hidden border border-(--color-border) bg-black/5 aspect-video w-28"
+            >
+              <div className="absolute inset-0">
+                <Image src={a.publicUrl} alt="" fill className="object-cover" loading="lazy" sizes="112px" />
+              </div>
+              <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? "thumbnail-selected" : ""}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Expanded: the image fills the viewport on white. Click anywhere (zoom-out cursor) or Escape
+          minimises back to the two-column view. */}
+      {expanded && (
+        <div
+          className="fixed inset-0 z-[60] bg-white flex items-center justify-center cursor-zoom-out"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded image"
+          onClick={() => setExpanded(false)}
+        >
+          {group ? (
+            <TransitionTile members={group.members} transition={group.transition} sizes="100vw" quality={95} fit="contain" />
+          ) : (
+            <Image src={asset.publicUrl} alt={asset.alt ?? ""} fill className="object-contain" sizes="100vw" quality={95} priority />
+          )}
+        </div>
+      )}
     </div>
   );
 }

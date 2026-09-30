@@ -7,6 +7,7 @@ import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-l
 import { resolveTransitions } from "@/lib/transition-db";
 import TransitionTile from "./TransitionTile";
 import GalleryClient from "./GalleryClient";
+import type { LightboxProject } from "./GalleryLightbox";
 
 type AssetRow = {
   id: string;
@@ -108,6 +109,37 @@ async function resolveTags(section: GallerySection, assets: AssetRow[]): Promise
   return [];
 }
 
+/** Per-asset project info for the lightbox's right panel: one folder row per folder, keyed per asset, so a
+ *  tag-driven gallery spanning several folders shows the right panel for whichever image is open. */
+async function resolveProjects(assets: AssetRow[]): Promise<Record<string, LightboxProject>> {
+  const slugs = [...new Set(assets.map((a) => a.folder).filter(Boolean))] as string[];
+  if (!slugs.length) return {};
+
+  const folders = await prisma.folder.findMany({
+    where: { slug: { in: slugs } },
+    select: { name: true, slug: true, description: true, tags: true },
+  });
+  const tagSlugs = [...new Set(folders.flatMap((f) => f.tags))];
+  const tagRows = tagSlugs.length
+    ? await prisma.tag.findMany({ where: { slug: { in: tagSlugs } }, select: { slug: true, name: true } })
+    : [];
+
+  const bySlug = new Map(folders.map((f) => [f.slug, f]));
+  const byTag = new Map(tagRows.map((t) => [t.slug, t]));
+  const out: Record<string, LightboxProject> = {};
+  for (const a of assets) {
+    const f = a.folder ? bySlug.get(a.folder) : undefined;
+    if (!f) continue;
+    out[a.id] = {
+      name: f.name,
+      slug: f.slug,
+      description: f.description,
+      tags: f.tags.map((s) => byTag.get(s)).filter((t): t is { slug: string; name: string } => Boolean(t)),
+    };
+  }
+  return out;
+}
+
 async function findCollectionIndexPageSlug(): Promise<string | null> {
   const pages = await prisma.page.findMany({ select: { slug: true, sections: true } });
   for (const page of pages) {
@@ -181,12 +213,19 @@ export default async function Gallery(section: GallerySection) {
     resolveTransitions(valid),
   ]);
 
+  const projects = await resolveProjects(valid);
+
   if (section.lightbox) {
     return (
       <section>
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
-        <GalleryClient assets={valid} transitions={transitions} layoutMode={layout === "bento" ? "bento" : "grid"} />
+        <GalleryClient
+          assets={valid}
+          transitions={transitions}
+          projects={projects}
+          layoutMode={layout === "bento" ? "bento" : "grid"}
+        />
       </section>
     );
   }
