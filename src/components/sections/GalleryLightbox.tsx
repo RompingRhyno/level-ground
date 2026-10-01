@@ -385,12 +385,20 @@ export default function GalleryLightbox({
               onClick={() => onThumbClick(idx)}
               aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
               aria-current={open === idx}
-              className="relative shrink-0 rounded overflow-hidden border border-(--color-border) bg-black/5 aspect-video w-28"
+              className="relative shrink-0 rounded overflow-hidden bg-black/5 aspect-video w-28"
             >
               <div className="absolute inset-0">
                 <Image src={a.publicUrl} alt="" fill className="object-cover" loading="lazy" sizes="112px" />
               </div>
-              <div className={`absolute inset-0 pointer-events-none rounded ${open === idx ? "thumbnail-selected" : ""}`} />
+              {/* The ring rides on an overlay above the image: an inset box-shadow paints below the
+                  element's children, so putting it on the button hides it behind the thumbnail. No
+                  rounded here on purpose — the button's overflow-hidden and border-radius clip this
+                  overlay to the exact rounded padding box, so the ring fills right up to the border's
+                  inner edge including the corners. A rounded on the overlay would give it a second,
+                  slightly different arc and leave slivers at each corner. */}
+              {open === idx && (
+                <div aria-hidden className="absolute inset-0 pointer-events-none thumbnail-selected" />
+              )}
             </button>
           ))}
         </div>
