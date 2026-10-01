@@ -190,8 +190,12 @@ h1, h2, h3, h4, h5 {
   color: var(--tag-badge-text);
 }
 
-/* Thumbnail selected utility: inset ring/shadow using the thumbnail select color */
+/* Thumbnail selected utility: an inset ring in the highlight colour. It belongs on an overlay ABOVE the
+ * thumbnail image — an inset box-shadow paints below the element's own children, so a ring on the button
+ * itself is hidden behind the image. The thumbnail's border takes the same colour so the ring runs all
+ * the way to the outer edge; a differently coloured border leaves a 1px seam. */
 .thumbnail-selected {
+  border-color: var(--thumbnail-select-color);
   box-shadow: inset 0 0 0 8px var(--thumbnail-select-color);
 }
 
