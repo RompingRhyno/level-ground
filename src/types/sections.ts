@@ -17,11 +17,19 @@ export type HeroSection = {
   image: string;
 };
 
+export type TwoColumnLink = {
+  label: string;
+  href: string;
+};
+
 export type TwoColumnSection = {
   type: "twoColumn";
   title: string;
   body: string;
+  links?: TwoColumnLink[];
   image: string;
+  /** false (default) = image first, text second; true = text first, image second. */
+  textFirst?: boolean;
 };
 
 export type GalleryLayout = "grid" | "bento" | "masonry";

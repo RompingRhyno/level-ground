@@ -410,16 +410,73 @@ export default function SectionEditor({
           {type === "twoColumn" && (
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="block text-sm">Title</label>
+                <label className="block text-sm">Heading</label>
                 <input value={(section as any).title || ""} onChange={(e) => update("title", e.target.value)} className="w-full rounded border px-2 py-1" />
               </div>
               <div className="space-y-1">
                 <label className="block text-sm">Body</label>
                 <textarea value={(section as any).body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" />
               </div>
+              <div className="field-group">
+                <div className="font-medium text-sm mb-1">Links</div>
+                {((section as any).links || []).map((l: any, li: number) => (
+                  <div key={li} className="mt-3 rounded border p-2 flex gap-2 items-center" style={{ backgroundColor: "var(--color-editor-bg)" }}>
+                    <input value={l.label || ""} placeholder="Label" onChange={(e) => {
+                      const links = [...((section as any).links || [])];
+                      links[li] = { ...links[li], label: e.target.value };
+                      update("links", links);
+                    }} className="rounded border px-2 py-1 flex-1" />
+                    <select value={l.href || ""} onChange={(e) => {
+                      const links = [...((section as any).links || [])];
+                      links[li] = { ...links[li], href: e.target.value };
+                      update("links", links);
+                    }} className="rounded border px-2 py-1 flex-1">
+                      <option value="">(none)</option>
+                      {pagesList.filter(p => p.type === undefined || p.type === 'page').map((p) => (
+                        <option key={p.slug} value={`/${p.slug}`}>{p.label || p.slug}</option>
+                      ))}
+                    </select>
+                    <button onClick={() => {
+                      const links = [...((section as any).links || [])];
+                      links.splice(li, 1);
+                      update("links", links);
+                    }} className="text-sm btn-negative px-2 py-1 rounded shrink-0">Remove</button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const links = [...((section as any).links || []), { label: "", href: "" }];
+                    update("links", links);
+                  }}
+                  className="mt-2 rounded border px-3 py-1 text-sm transition-colors self-start"
+                  style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+                >
+                  Add link
+                </button>
+              </div>
               <div className="space-y-1">
                 <label className="block text-sm">Image</label>
                 <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!(section as any).textFirst}
+                  aria-label="Text block first"
+                  onClick={() => update("textFirst", !(section as any).textFirst)}
+                  className={`relative h-6 w-11 shrink-0 rounded-full cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark) ${
+                    (section as any).textFirst ? "bg-(--btn-select)" : "bg-(--color-bg-secondary)"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      (section as any).textFirst ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+                <span className="text-sm">Text block first</span>
               </div>
             </div>
           )}
