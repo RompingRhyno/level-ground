@@ -1,6 +1,6 @@
 import type { VideoSection } from "@/types/sections";
 import { prisma } from "@/lib/prisma";
-import VideoClient from "./VideoClient";
+import VideoStage from "./VideoStage";
 
 type VideoMeta = { poster?: string; variants?: { "720p"?: string; "1080p"?: string } };
 
@@ -21,26 +21,13 @@ export default async function Video(section: VideoSection) {
 
   return (
     <section>
-      {(section.heading || section.subheading) && (
-        <div className="w-full px-4 md:px-8 mb-8">
-          {section.heading && (
-            <h2
-              className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-              dangerouslySetInnerHTML={{ __html: section.heading }}
-              style={{ color: "var(--color-text-heading)" }}
-            />
-          )}
-          {section.subheading && (
-            <p
-              className="mt-4 max-w-3xl text-left"
-              style={{ color: "var(--color-text-primary)" }}
-            >
-              {section.subheading}
-            </p>
-          )}
-        </div>
-      )}
-      <VideoClient src={section.videoUrl} poster={poster} variants={variants} />
+      <VideoStage
+        heading={section.heading}
+        subheading={section.subheading}
+        src={section.videoUrl}
+        poster={poster}
+        variants={variants}
+      />
     </section>
   );
 }
