@@ -9,6 +9,7 @@ import { transitionsFromRows } from "@/lib/transition";
 import Contact from "@/components/sections/Contact";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import CollectionIndexPresentation from "@/components/sections/CollectionIndexPresentation";
+import VideoStage from "@/components/sections/VideoStage";
 import type {
   PageSection,
   HeroSection,
@@ -354,29 +355,7 @@ function renderContent(section: PageSection) {
     const s = section as VideoSection;
     return (
       <div className="section-container pt-12">
-        {(s.heading || s.subheading) && (
-          <div className="px-4 md:px-8 mb-8">
-            {s.heading && (
-              <h2
-                className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-                dangerouslySetInnerHTML={{ __html: s.heading }}
-                style={{ color: "var(--color-text-heading)" }}
-              />
-            )}
-            {s.subheading && (
-              <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
-                {s.subheading}
-              </p>
-            )}
-          </div>
-        )}
-        {s.videoUrl ? (
-          <video src={s.videoUrl} className="w-full aspect-video object-cover" preload="metadata" muted playsInline />
-        ) : (
-          <div className="w-full aspect-video rounded bg-gray-100 flex items-center justify-center text-sm text-(--color-text-light)">
-            No video selected
-          </div>
-        )}
+        <VideoStage heading={s.heading} subheading={s.subheading} src={s.videoUrl} />
       </div>
     );
   }
