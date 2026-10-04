@@ -5,24 +5,39 @@ import VideoClient from "./VideoClient";
 type Variants = { "720p"?: string; "1080p"?: string };
 
 /**
- * The video stage: a full-span 16:9 video with the section's text layered over it.
+ * Distance from the viewport top at which the text starts being pushed down. The sticky header covers
+ * the top of the screen, so keying the drift to the stage's top reaching viewport y=0 would let the
+ * text sit under the header before it moved; it starts at the header's lower edge plus a gap instead.
+ * 67px mirrors the hero's `calc(100svh - 67px)` — `py-4` plus the 35px logo in Navigation.tsx.
+ */
+const STICKY_HEADER = 67;
+const START_GAP = 32;
+const DRIFT_START = STICKY_HEADER + START_GAP;
+
+/**
+ * The video stage: a 16:9 video with the section's text layered over it.
  *
- * Text travels down the video as the page scrolls. The mapping is deliberately "the text holds still
- * on screen while the video slides under it": y = -(stage.top), so once the stage's top reaches the
- * viewport top the two move at the same rate and the text reads as pinned to the eye while the footage
- * passes. It is clamped at 0 above that (the text sits at the top-left while the video scrolls into
- * view) and at `stageHeight - textHeight - inset` below, so it comes to rest just inside the bottom
- * edge rather than sliding off the video. Transform-only, rAF-throttled, passive listener.
+ * Size: the stage is `min(100%, 133.333svh)` wide. At 16:9 that makes its height `min(56.25vw, 75svh)`,
+ * so the video stays full-span while a full-span one fits inside 75% of the viewport height, and past
+ * that point it stops growing and becomes a centred block instead. 133.333svh is 75svh * 16/9 — the
+ * width form of the same cap. Corners follow the same boundary: the cap bites exactly when the
+ * viewport is wider than 16/9 * 0.75 = 1.3333, so that is the media query, with no JS and no resize
+ * listener. Full-span keeps square corners at the screen edge (the full-bleed convention); a capped
+ * video is a card and takes rounded-2xl.
  *
- * Corners: the video is exactly 16:9 and full-span, so its height is vw*9/16 and "taller than 80% of
- * the viewport" is equivalent to the *viewport* being wider than 16/9*0.8 = 1.4223 — a pure media
- * query, no JS, no resize listener. Below that it stays square-cornered at the screen edge, matching
- * the full-bleed convention; past it, it reads as a card and takes rounded-2xl. Note the editor
- * preview cannot show this faithfully: its iframe is sized to its content, so its own aspect ratio is
- * never the real page's.
+ * Text travels down the video as the page scrolls, from the mapping y = DRIFT_START - stage.top
+ * clamped to [0, stageHeight - textHeight - paddingTop]. Above DRIFT_START the text holds at the
+ * top-left; from there it and the video move at the same rate, so the text reads as pinned to the eye
+ * just under the header while the footage passes beneath it, and it comes to rest just inside the
+ * bottom edge rather than sliding off. Transform-only, rAF-throttled, passive listener, and nothing
+ * attaches at all under prefers-reduced-motion.
  *
- * Below md the text block would not fit a full-span 16:9 video (219px tall on a 390px screen), so the
- * text stays above the video there and only overlays from md up.
+ * The editor preview cannot show the drift (its iframe is sized to its own content and does not scroll
+ * internally) or the corner rule (its aspect ratio is never the real page's) — that is the preview, not
+ * the live page.
+ *
+ * Below md the text stays above the video: a full-span 16:9 video is only 219px tall on a 390px screen
+ * and the block cannot fit over it.
  */
 export default function VideoStage({
   heading,
@@ -55,12 +70,13 @@ export default function VideoStage({
       frame = 0;
       if (!stage || !text) return;
       const rect = stage.getBoundingClientRect();
-      // Skip the maths while the stage is nowhere near the viewport.
+      // Skip the maths while the stage is nowhere near the viewport. Note this leaves the last
+      // transform in place, so a probe that scrolls far past the stage reads a stale value.
       if (rect.bottom < -200 || rect.top > window.innerHeight + 200) return;
 
       const inset = parseFloat(getComputedStyle(text).paddingTop) || 0;
       const travel = Math.max(0, rect.height - text.offsetHeight - inset);
-      const y = Math.min(travel, Math.max(0, -rect.top));
+      const y = Math.min(travel, Math.max(0, DRIFT_START - rect.top));
       text.style.transform = `translate3d(0, ${y}px, 0)`;
     }
 
@@ -100,7 +116,7 @@ export default function VideoStage({
 
       <div
         ref={stageRef}
-        className="relative w-full overflow-hidden [@media(min-aspect-ratio:1.4223)]:rounded-2xl"
+        className="relative mx-auto w-[min(100%,133.333svh)] overflow-hidden [@media(min-aspect-ratio:1.3334)]:rounded-2xl"
       >
         <VideoClient src={src} poster={poster} variants={variants} />
         {text && (
