@@ -69,7 +69,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
           case "collection-index":
             return (
               <section key={index}>
-                <div className="section-container py-20">
+                <div className="section-container pt-12">
                   <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
                 </div>
               </section>
@@ -78,7 +78,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
           case "collection-item":
             return (
               <section key={index}>
-                <div className="section-container py-20">
+                <div className="section-container pt-12">
                   <CollectionItem {...section} entityContext={entityContext} />
                 </div>
               </section>
@@ -92,7 +92,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
         // vertical padding — that padding is what kept it from reaching the top of the screen.
         return (
           <section key={index}>
-            <div className={section.type === "hero" ? "section-container" : "section-container py-20"}>
+            <div className={section.type === "hero" ? "section-container" : "section-container pt-12"}>
               {content}
             </div>
           </section>
