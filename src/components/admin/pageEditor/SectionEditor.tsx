@@ -208,25 +208,26 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 export default function SectionEditor({
+  id,
   section,
   index,
   allSections,
   onChange,
   onRemove,
-  onMoveUp,
-  onMoveDown,
 }: {
+  /** Stable identity from the parent; the card is the sortable item. */
+  id: string;
   section: PageSection;
   index: number;
   allSections?: PageSection[];
   onChange: (s: PageSection, i: number) => void;
   onRemove: (i: number) => void;
-  onMoveUp: (i: number) => void;
-  onMoveDown: (i: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { confirm, dialogProps } = useConfirm();
   const type = section.type;
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const [collectionFolders, setCollectionFolders] = useState<EntityItem[]>([]);
   const [collectionTags, setCollectionTags] = useState<EntityItem[]>([]);
@@ -345,11 +346,34 @@ export default function SectionEditor({
   }
 
   return (
-    <div className="border rounded overflow-hidden" style={{ backgroundColor: "var(--color-bg-secondary)", borderColor: "var(--color-brand-dark)" }}>
+    <div
+      ref={setNodeRef}
+      className="border rounded overflow-hidden"
+      style={{
+        backgroundColor: "var(--color-bg-secondary)",
+        borderColor: "var(--color-brand-dark)",
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.85 : 1,
+        position: "relative",
+        zIndex: isDragging ? 20 : undefined,
+      }}
+    >
       <AlertDialog {...dialogProps} />
 
       {/* Header bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b" style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}>
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder section"
+          title="Drag to reorder"
+          className="px-1.5 py-1 text-sm rounded shrink-0 cursor-grab active:cursor-grabbing touch-none transition-colors"
+          style={{ color: "var(--color-text-light)" }}
+        >
+          ⠿
+        </button>
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
@@ -359,8 +383,6 @@ export default function SectionEditor({
           <span>{SECTION_LABELS[type] ?? type}</span>
         </button>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => onMoveUp(index)} className="px-2 py-1 text-sm rounded admin-btn" title="Move up">↑</button>
-          <button type="button" onClick={() => onMoveDown(index)} className="px-2 py-1 text-sm rounded admin-btn" title="Move down">↓</button>
           <button type="button" onClick={async () => { if (await confirm(`Remove ${SECTION_LABELS[type] ?? type} section?`, "This section will be permanently removed from the page.", "danger", "Remove")) onRemove(index); }} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>
         </div>
       </div>
