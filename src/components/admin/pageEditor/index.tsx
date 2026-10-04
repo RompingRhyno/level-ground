@@ -1,6 +1,21 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import type { PageConfig, PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { PreviewWidthContext } from "./PreviewWidthContext";
@@ -28,6 +43,27 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedLabel, setSavedLabel] = useState(initialPage.label || "");
   const [sections, setSections] = useState<PageSection[]>(initialPage.sections || []);
   const [savedSections, setSavedSections] = useState<PageSection[]>(initialPage.sections || []);
+  /**
+   * Stable per-section identity, used for React keys and by dnd-kit. Seeded in an effect rather than a
+   * useState initialiser on purpose: crypto.randomUUID() cannot return the same value on the server
+   * render and again at hydration, so seeding it during render is a hydration mismatch. Nothing can be
+   * dragged before this runs.
+   */
+  const [sectionIds, setSectionIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSectionIds(sections.map(() => crypto.randomUUID()));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  /** Positional fallback until the seeding effect has run (server render and the first paint). */
+  const sectionKeys =
+    sectionIds.length === sections.length ? sectionIds : sections.map((_, i) => `position-${i}`);
   const [previewSizeLabel, setPreviewSizeLabel] = useState<PreviewSizeLabel>("FHD");
   const previewWidth = PREVIEW_SIZES.find((s) => s.label === previewSizeLabel)!.width;
   const [showRaw, setShowRaw] = useState(false);
@@ -135,20 +171,19 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
     const arr = [...sections];
     arr.splice(i, 1);
     setSections(arr);
+    setSectionIds((prev) => prev.filter((_, j) => j !== i));
   }
 
-  function moveUp(i: number) {
-    if (i === 0) return;
-    const arr = [...sections];
-    [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
-    setSections(arr);
+  /** Reorder by position. `sectionIds` moves with the array so each card keeps its identity. */
+  function moveSection(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return;
+    setSections((prev) => arrayMove(prev, from, to));
+    setSectionIds((prev) => arrayMove(prev, from, to));
   }
 
-  function moveDown(i: number) {
-    if (i === sections.length - 1) return;
-    const arr = [...sections];
-    [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-    setSections(arr);
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    moveSection(sectionKeys.indexOf(String(active.id)), sectionKeys.indexOf(String(over.id)));
   }
 
   function addSection(type: string) {
@@ -175,6 +210,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         }
       }
       setSections([...sections, defaults[type]]);
+      setSectionIds((prev) => [...prev, crypto.randomUUID()]);
     }
   }
 
@@ -298,20 +334,28 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
         {!showRaw && (
           <PreviewWidthContext.Provider value={previewWidth}>
-            <div className="space-y-3 mt-3">
-              {sections.map((s, i) => (
-                <SectionEditor
-                  key={i}
-                  section={s}
-                  index={i}
-                  allSections={sections}
-                  onChange={updateSection}
-                  onRemove={removeSection}
-                  onMoveUp={moveUp}
-                  onMoveDown={moveDown}
-                />
-              ))}
-            </div>
+            <DndContext
+              id="page-sections"
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={sectionKeys} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3 mt-3">
+                  {sections.map((s, i) => (
+                    <SectionEditor
+                      key={sectionKeys[i]}
+                      id={sectionKeys[i]}
+                      section={s}
+                      index={i}
+                      allSections={sections}
+                      onChange={updateSection}
+                      onRemove={removeSection}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           </PreviewWidthContext.Provider>
         )}
 
