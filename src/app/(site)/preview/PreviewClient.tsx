@@ -293,7 +293,7 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   const visibleItems = maxItems ? filteredItems.slice(0, maxItems) : filteredItems;
 
   return (
-    <div className="section-container py-12">
+    <div className="section-container pt-12">
       <CollectionIndexPresentation
         heading={heading}
         items={visibleItems}
@@ -329,7 +329,7 @@ function renderContent(section: PageSection) {
   if (type === "twoColumn") {
     const s = section as TwoColumnSection;
     return (
-      <div className="section-container py-20">
+      <div className="section-container pt-12">
         <TwoColumn {...s} />
       </div>
     );
@@ -338,7 +338,7 @@ function renderContent(section: PageSection) {
     const s = section as ServicesSection;
     const previewServices = (s as any).services?.filter((sv: any) => sv.image) ?? [];
     return (
-      <div className="section-container py-20">
+      <div className="section-container pt-12">
         <Services {...s} services={previewServices} />
       </div>
     );
@@ -353,7 +353,7 @@ function renderContent(section: PageSection) {
   if (type === "video") {
     const s = section as VideoSection;
     return (
-      <div className="section-container py-20">
+      <div className="section-container pt-12">
         {(s.heading || s.subheading) && (
           <div className="px-4 md:px-8 mb-8">
             {s.heading && (
@@ -383,7 +383,7 @@ function renderContent(section: PageSection) {
   if (type === "contact") {
     const s = section as any;
     return (
-      <div className="section-container py-20">
+      <div className="section-container pt-12">
         <Contact {...s} pageSlug={typeof s.pageSlug === "string" ? s.pageSlug : "preview"} />
       </div>
     );
@@ -394,7 +394,7 @@ function renderContent(section: PageSection) {
   if (type === "collection-item") {
     const s = section as CollectionItemSection;
     return (
-      <div className="section-container py-20">
+      <div className="section-container pt-12">
         <CollectionItemPreview section={s} />
       </div>
     );
