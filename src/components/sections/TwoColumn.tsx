@@ -18,6 +18,11 @@ import { TwoColumnSection } from "@/types/sections";
  * `textFirst` swaps which block leads: false (default) puts the image first — left at md+, top when
  * stacked — true puts the text block first.
  *
+ * `sizes` carries the cover crop: the box is square but the stored photos are landscape, so `object-cover`
+ * scales by height and the source needs `box × sourceAspect` px of width (×1.78 for a 16:9 photo, the
+ * widest common case — under-declaring here is what makes the tile look soft next to the q95 full-span
+ * images). Do not "fix" it down to the box width.
+ *
  * All three text parts are optional and render only when present.
  */
 export default function TwoColumn({ title, body, links, image, textFirst }: TwoColumnSection) {
@@ -32,8 +37,8 @@ export default function TwoColumn({ title, body, links, image, textFirst }: TwoC
           src={image}
           alt={title || ""}
           fill
-          sizes="(min-width: 1600px) 704px, (min-width: 768px) calc(45vw - 16px), 90vw"
-          quality={90}
+          sizes="(min-width: 1600px) 1252px, (min-width: 768px) calc(80vw - 28px), 160vw"
+          quality={95}
           className="object-cover"
           loading="lazy"
         />
