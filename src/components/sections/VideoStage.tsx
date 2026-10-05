@@ -15,22 +15,30 @@ const START_GAP = 32;
 const DRIFT_START = STICKY_HEADER + START_GAP;
 
 /**
+ * Smoothing time constant in ms. The text chases its scroll position instead of being pinned to it, so a
+ * wheel notch becomes a glide rather than a jump. 140ms is enough to absorb discrete wheel steps and
+ * still feel attached to the scroll — raise it for a lazier, floatier feel, lower it for a tighter one.
+ */
+const FOLLOW_MS = 140;
+
+/**
  * The video stage: a 16:9 video with the section's text layered over it.
  *
  * Size: the stage is `min(100%, 133.333svh)` wide. At 16:9 that makes its height `min(56.25vw, 75svh)`,
  * so the video stays full-span while a full-span one fits inside 75% of the viewport height, and past
  * that point it stops growing and becomes a centred block instead. 133.333svh is 75svh * 16/9 — the
- * width form of the same cap. Corners follow the same boundary: the cap bites exactly when the
- * viewport is wider than 16/9 * 0.75 = 1.3333, so that is the media query, with no JS and no resize
- * listener. Full-span keeps square corners at the screen edge (the full-bleed convention); a capped
- * video is a card and takes rounded-2xl.
+ * width form of the same cap. Corners follow the same boundary: the cap bites exactly when the viewport
+ * is wider than 16/9 * 0.75 = 1.3333, so that is the media query, with no JS and no resize listener.
+ * Full-span keeps square corners at the screen edge (the full-bleed convention); a capped video is a
+ * card and takes rounded-2xl.
  *
- * Text travels down the video as the page scrolls, from the mapping y = DRIFT_START - stage.top
- * clamped to [0, stageHeight - textHeight - paddingTop]. Above DRIFT_START the text holds at the
- * top-left; from there it and the video move at the same rate, so the text reads as pinned to the eye
- * just under the header while the footage passes beneath it, and it comes to rest just inside the
- * bottom edge rather than sliding off. Transform-only, rAF-throttled, passive listener, and nothing
- * attaches at all under prefers-reduced-motion.
+ * Text travels down the video as the page scrolls. The target is y = DRIFT_START - stage.top clamped to
+ * [0, stageHeight - textHeight - paddingTop]: above DRIFT_START the text holds at the top-left, from
+ * there it and the video move at the same rate, so the text reads as pinned to the eye just under the
+ * header while the footage passes beneath it, and it comes to rest just inside the bottom edge rather
+ * than sliding off. The painted position eases toward that target (exponential, frame-rate independent)
+ * and the rAF loop stops as soon as it has settled, so an idle page costs nothing. Transform-only,
+ * passive listener, and nothing attaches at all under prefers-reduced-motion.
  *
  * The editor preview cannot show the drift (its iframe is sized to its own content and does not scroll
  * internally) or the corner rule (its aspect ratio is never the real page's) — that is the preview, not
@@ -64,33 +72,75 @@ export default function VideoStage({
     // Respect reduced-motion: leave the text at the top of the video and attach nothing.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let frame = 0;
+    let raf = 0;
+    let running = false;
+    let painted = 0;
+    let lastFrame = 0;
+    let inset = parseFloat(getComputedStyle(text).paddingTop) || 0;
 
-    function place() {
-      frame = 0;
-      if (!stage || !text) return;
-      const rect = stage.getBoundingClientRect();
-      // Skip the maths while the stage is nowhere near the viewport. Note this leaves the last
-      // transform in place, so a probe that scrolls far past the stage reads a stale value.
-      if (rect.bottom < -200 || rect.top > window.innerHeight + 200) return;
-
-      const inset = parseFloat(getComputedStyle(text).paddingTop) || 0;
-      const travel = Math.max(0, rect.height - text.offsetHeight - inset);
-      const y = Math.min(travel, Math.max(0, DRIFT_START - rect.top));
-      text.style.transform = `translate3d(0, ${y}px, 0)`;
+    function paint(y: number) {
+      text!.style.transform = `translate3d(0, ${y}px, 0)`;
     }
 
-    function onScroll() {
-      if (!frame) frame = requestAnimationFrame(place);
+    /** Where the text should sit for the current scroll position, or null when far off screen. */
+    function target(): number | null {
+      const rect = stage!.getBoundingClientRect();
+      // Skipping leaves the last transform in place, so a probe that scrolls far past the stage reads a
+      // stale value rather than a moving one.
+      if (rect.bottom < -200 || rect.top > window.innerHeight + 200) return null;
+      const travel = Math.max(0, rect.height - text!.offsetHeight - inset);
+      return Math.min(travel, Math.max(0, DRIFT_START - rect.top));
     }
 
-    place();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    function tick(now: number) {
+      const goal = target();
+      if (goal === null) {
+        running = false;
+        return;
+      }
+
+      const dt = Math.min(64, Math.max(1, now - lastFrame));
+      lastFrame = now;
+      const ease = 1 - Math.exp(-dt / FOLLOW_MS);
+      const next = painted + (goal - painted) * ease;
+
+      if (Math.abs(goal - next) < 0.4) {
+        painted = goal;
+        paint(painted);
+        running = false;
+        return;
+      }
+
+      painted = next;
+      paint(painted);
+      raf = requestAnimationFrame(tick);
+    }
+
+    function schedule() {
+      if (running) return;
+      running = true;
+      lastFrame = performance.now();
+      raf = requestAnimationFrame(tick);
+    }
+
+    // First paint is immediate, so the text does not glide in from 0 on load.
+    const start = target();
+    if (start !== null) {
+      painted = start;
+      paint(painted);
+    }
+
+    function onResize() {
+      inset = parseFloat(getComputedStyle(text!).paddingTop) || 0;
+      schedule();
+    }
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", onResize);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", onResize);
+      if (raf) cancelAnimationFrame(raf);
     };
   }, [hasText]);
 
