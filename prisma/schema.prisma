@@ -135,10 +135,16 @@ model Tag {
   name        String
   slug        String   @unique
   description String?
+  /// The service this tag sits under (a service slug). Tags are the specific covers a project
+  /// earned; services are the categories above them. This field is the wiring: a service page or
+  /// the gallery picker gathers its covers by looking up tags whose `service` matches.
+  /// Vocabulary: docs/services-revamp-plan.md and docs/services-revamp-tags.csv.
+  service     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([slug])
+  @@index([service])
 }
 
 model MediaUsage {

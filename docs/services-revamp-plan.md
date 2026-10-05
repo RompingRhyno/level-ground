@@ -220,18 +220,26 @@ so a project could carry both. Worth being precise about the precedent though: i
 **one** project was ever tagged (Elliott Street, 6 install terms) and **no** project carried both
 vocabularies, so this is a design intent rather than something the old data proves.
 
-**Grouping and the picker wiring (decided 2026-10-04).** Services get their own grouping. The use case that
-fixes the shape of it: **on a services page, each service shows a hand-picked gallery of images, drawn from
-tags belonging to that service's group.** So the admin's gallery picker needs to filter to the service's
-group — select a service, and the picker offers only the images tagged for it. The same grouping is what
-would later allow front-end filtering by service, so it should be modelled as data rather than hardcoded in
-the picker.
+**Two layers, and they are not the same thing (corrected 2026-10-05).** Earlier this was written as a
+grouping of services; the operator's intent is sharper:
 
-`Tag` on the new site is flat — `name`, `slug`, `description` — and is already shared by folder tags and the
-gallery filters, so dropping services straight in would put them in the same pool and let them surface in
-unrelated tag filters. Give services their own grouping before importing any of this: either a
-`group` / `kind` column on `Tag`, or a separate model. The per-page split and the picker filter both depend
-on it.
+- **Tags are the specific covers** — the consolidated, deduplicated items in `docs/services-revamp-tags.csv`
+  (`detail` column): Patio, Walkway, Interlocking brick, Hedges, Micro clover, River rock, Tree pruning.
+  33 of them, and a project earns the ones it actually involved.
+- **Services are the categories above them** — Pavers & Patios, Planting, Lawn installation, Garden beds &
+  boxes, Retaining walls, Rock & gravel features, Decking, Fencing, Outdoor Lighting, Irrigation, plus
+  Garden maintenance on the maintenance side. A service is not a tag; it is what a tag sits under.
+
+`Tag.service` (a service slug) is the wiring between the two. A services page or the gallery picker gathers
+its covers by querying the tags whose `service` matches, then resolves those through the folders carrying
+them — `getFirstAssetUrlsByTagSlugs()` in `src/lib/tags.ts` already does that resolution per tag, so the
+data is the only piece that had to exist. Material rows in the CSV carry a `material: ` prefix that the
+applier strips before matching.
+
+Applied by `npx tsx scripts/apply-cover-tags.ts` (dry run by default): it creates the 33 cover tags with
+their service, assigns each folder the covers it earned, and removes the service-level tags the earlier
+pass created — nothing else referenced them. Landscape design, the processes and the water feature stay
+tagless by design, and Lawn maintenance has no covers yet.
 
 ## 7. Sequence
 
