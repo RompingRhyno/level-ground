@@ -44,7 +44,12 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
             break;
 
           case "banner":
-            return <Banner key={index} {...section} />;
+            // Routed through the section wrapper like every other type. It used to return directly,
+            // which left it with no vertical spacing of its own: the wrapper's padding is what separates
+            // sections here, and a Banner's own padding is invisible because its image is
+            // `absolute inset-0` and paints over the padding box.
+            content = <Banner {...section} />;
+            break;
 
           case "gallery":
             content = <Gallery {...section} />;

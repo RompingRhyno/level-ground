@@ -325,7 +325,11 @@ function renderContent(section: PageSection) {
     );
   }
   if (type === "banner") {
-    return <Banner {...(section as BannerSection)} />;
+    return (
+      <div className="section-container pt-12">
+        <Banner {...(section as BannerSection)} />
+      </div>
+    );
   }
   if (type === "twoColumn") {
     const s = section as TwoColumnSection;
