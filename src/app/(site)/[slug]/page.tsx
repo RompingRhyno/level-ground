@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import JumpToTop from "@/components/JumpToTop";
 import RenderSections from "@/components/RenderSections";
 import { getPageBySlug, getAllPageSlugs } from "@/lib/pages";
 import { prisma } from "@/lib/prisma";
@@ -69,6 +70,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         />
       ) : null}
       <RenderSections sections={page.sections} pageSlug={slug} />
+      {page.jumpToTop ? <JumpToTop /> : null}
     </>
   );
 }

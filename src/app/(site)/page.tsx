@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import JumpToTop from "@/components/JumpToTop";
 import RenderSections from "@/components/RenderSections";
 import { getPageBySlug } from "@/lib/pages";
 import { buildMetadata, pageDescription, pageOgImage, pageTitle } from "@/lib/seo";
@@ -24,5 +25,10 @@ export const dynamicParams = true;
 export default async function HomePage() {
   const page = await getPageBySlug("home");
   if (!page) return notFound();
-  return <RenderSections sections={page.sections} pageSlug="home" />;
+  return (
+    <>
+      <RenderSections sections={page.sections} pageSlug="home" />
+      {page.jumpToTop ? <JumpToTop /> : null}
+    </>
+  );
 }

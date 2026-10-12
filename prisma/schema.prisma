@@ -87,6 +87,9 @@ model Page {
   /// of the underlined link, for extra emphasis. Per page: the nav shows every page, so the emphasis is
   /// chosen one entry at a time.
   navPill   Boolean  @default(false)
+  /// Render a floating "jump to top" circle button (bottom-right) on this page's public view once
+  /// the visitor has scrolled past the first viewport.
+  jumpToTop Boolean  @default(false)
   /// SEO title, used verbatim (bypassing the site's "| Level Ground Landscape" suffix). Falls back to
   /// `<label> | Level Ground Landscape` when unset. Seeded from the legacy site's titles.
   metaTitle       String?
