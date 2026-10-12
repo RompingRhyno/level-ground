@@ -30,8 +30,8 @@
   --btn-negative-text: var(--color-text-inverse);
 
   /* Brand colors */
-  --color-brand-primary: #59772C;        /* default CTA button */
-  --color-brand-primary-hover: #435921;  /* hover CTA button */
+  --color-brand-primary: #67952e;        /* default CTA button — matches the logo green */
+  --color-brand-primary-hover: #4d7023;  /* hover CTA button — same 25% darken as before */
   --color-brand-accent: #597772;         /* storage bar fill, accents */
   --color-brand-logo: #687a52;           /* logo green / nav active underline */
 
@@ -137,6 +137,14 @@ h1, h2, h3, h4, h5 {
   background-color: var(--color-brand-primary-hover);
 }
 
+/* Hero copy over a photo: a two-layer text shadow instead of a scrim, so the picture keeps its own
+   contrast. The tight layer defines the letter edges, the wider soft one separates the text from busy
+   areas of the image. Applied only when the hero has an image; the button opts out with [text-shadow:none]
+   because its own fill is already solid. */
+.hero-text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 2px 16px rgba(0, 0, 0, 0.5);
+}
+
 /* Utility class for admin buttons that uses the shared variables above */
 .admin-btn {
   background-color: var(--btn-primary-bg);
@@ -226,5 +234,13 @@ body.preview-bare > main {
 }
 
 .heading strong {
+  font-weight: 500;
+}
+
+/* The page editor's bold button writes `<b>` (execCommand("bold") in Chrome), not `<strong>`. Without a
+   rule the UA default `bolder` computes to 400 off the heading's 300 — a whisper, and silently different
+   from the strong path. Matching the weight here makes the editor's B a real emphasis, and keeps it the
+   only way bold gets set: no per-section code, tick it on and off per heading in the admin. */
+.heading b {
   font-weight: 500;
 }
