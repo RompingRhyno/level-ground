@@ -518,6 +518,13 @@ publish domain is retired; and the **Vercel custom domain** with `NEXT_PUBLIC_BA
 already lists the production hostnames, so it needs nothing at that point — the widget only changes if a
 preview deployment needs to run the form.
 
+0. **Before anything DNS-shaped:** push and deploy this repo so the **legacy 301 map** is live on the new
+   host (`src/lib/legacy-redirects.ts` + `redirects()` in `next.config.ts`; verified against all 102
+   source rows locally). The map only executes where this site is served, so deploying it early is
+   harmless — but it must be live *before* the nameserver flip, or the old URLs 404 for the window
+   between. The canonical host is **apex, not www** (measured on the old site: `www` 301s to the apex and
+   its canonical is the apex) — mirror that in the Vercel domain settings.
+
 1. **Add the zone** in the new Cloudflare account and review what Cloudflare imports. The old site's
    A/CNAME (and any TXT verification records) must survive — the old site keeps serving as long as
    those records still point at the old host. Anything Cloudflare proxies for a host it does not host
