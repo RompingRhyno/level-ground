@@ -1,8 +1,21 @@
 # Retired terms — the projects behind them
 
-Kept for future reference, per the operator: these three legacy terms were dropped from the cover
+Kept for future reference, per the operator: these legacy terms were dropped from the cover
 vocabulary, but their project associations are worth having on hand (e.g. if "excavation" ever
 becomes a service line, this is the ready-made proof of experience).
+
+The complete list of dropped mentions comes from `docs/services-revamp-tags.csv` (rows whose
+`service` column is empty — 27 rows across 7 distinct terms):
+
+| Retired term | Mentions | Bucket in the migration |
+|---|---|---|
+| Excavation | 18 projects | Processes / Site preparation & excavation |
+| Bobcat work | 3 projects (West Vancouver, West 31st, Cypress St) | Processes / Site preparation & excavation |
+| Landscape design plan | 2 projects (Dunbar Street, Cartier Street) | Design info section (reference only) |
+| Landscape design | 1 project (West Vancouver) | Design info section (reference only) |
+| Remove stump | 1 project (Alder Street) | Processes / Removal & clearing |
+| Bamboo removal | 1 project (West 35th) | Processes / Removal & clearing |
+| Water feature | 1 project (Duke Street) | Preserved for reference — not tagged |
 
 Source: `docs/services-revamp-tags.csv` (the migration mapping, where each project's raw mentions
 were recorded before consolidation).
@@ -33,6 +46,13 @@ Every project the old site attached "Excavation" to. Three of them also carried 
 | East 12th | `low-maintenance-backyard` | East 12th Avenue |
 | Cartier St | `renewed-backyard-with-putting-green` | Cartier Street |
 
+## Design and removal mentions (not tagged)
+
+`Landscape design` (West Vancouver) and `landscape design plan` (Dunbar Street, Cartier Street) were
+recorded as reference-only design info — the design work is implied by every project rather than
+tagged. `Remove stump` (Alder Street) and `Bamboo removal` (West 35th) sit under Removal & clearing;
+both are site-preparation work the same way excavation is.
+
 ## Boulevard — no projects
 
 The term existed only as a legacy archive URL (`/residential_landscaping_install/boulevard/`); no
@@ -45,7 +65,7 @@ One mention, on Duke St (`duke-street-decking`), and the migration explicitly re
 
 ## Redirects
 
-All three legacy archive URLs still need 301s at cutover. Since the terms were not kept, the
-destinations are the closest service section (see `docs/seo-metadata-proposal.md`):
-`boulevard` → planting, `excavation` → the installation page (no matching service section),
-`water_feature` → rock-and-gravel-features.
+All three legacy archive URLs are 301s at cutover, and all three land at the **top of
+`/landscape-design-installation`** — decided 2026-10-12 (they are processes or concepts with no
+cover and no service section to land on). Implemented in `src/lib/legacy-redirects.ts` and verified
+with the rest of the map.
