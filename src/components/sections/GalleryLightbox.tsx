@@ -4,7 +4,7 @@ import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "
 import Image from "next/image";
 import Link from "next/link";
 import type { ResolvedTransition } from "@/lib/transition";
-import { serviceAnchorHref } from "@/lib/services";
+import { useServiceHref } from "./useServiceLinks";
 import TransitionTile from "./TransitionTile";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
@@ -83,6 +83,7 @@ export default function GalleryLightbox({
   onNext: () => void;
 }) {
   const open = openIndex;
+  const serviceHref = useServiceHref();
   const [expanded, setExpanded] = useState(false);
   const thumbsContainerRef = useRef<HTMLDivElement | null>(null);
   const thumbsRef = useRef<Array<HTMLButtonElement | null>>([]);
@@ -347,7 +348,7 @@ export default function GalleryLightbox({
                 {/* Covers link to their service category's section, the same as the project page's own
                     pills; one without a service stays a plain chip. */}
                 {project.tags.map((tag) => {
-                  const href = serviceAnchorHref(tag.service);
+                  const href = serviceHref(tag.service);
                   const className =
                     "text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)";
                   return href ? (

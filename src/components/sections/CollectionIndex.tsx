@@ -1,7 +1,7 @@
 import { getVisibleFolders, getFolderCovers, getTagsByFolderSlugs } from "@/lib/folders";
 import { getTags, getFirstAssetUrlsByTagSlugs } from "@/lib/tags";
 import { getPrimaryCollectionRouteBase } from "@/lib/pages";
-import { SERVICES } from "@/lib/services";
+import { getServices } from "@/lib/services-db";
 import CollectionIndexPresentation from "./CollectionIndexPresentation";
 
 import type { CollectionIndexSection } from "@/types/sections";
@@ -10,6 +10,8 @@ type Item = { slug: string; name: string };
 
 export default async function CollectionIndex(props: CollectionIndexSection & { resolvedRouteBase?: string }) {
   const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems, mode } = props;
+  // Live service list (a service can be created from the tag modal), cached.
+  const services = await getServices();
   let effectiveRouteBase = routeBase || resolvedRouteBase || "";
   // Cross-page fallback: if this is a reference collection-index on a page
   // without a sibling primary, look up the primary across all pages.
@@ -95,7 +97,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       entityImages={entityImages}
       source={source}
       folderTags={folderTags}
-      services={SERVICES}
+      services={services}
       coverTags={coverTags}
       showTagFilter={showTagFilter}
       effectiveRouteBase={effectiveRouteBase}

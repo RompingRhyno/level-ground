@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidateFor } from "@/lib/revalidate";
 import { regenerateAltsForTags, regenerateFolderAlts } from "@/lib/alt-db";
 import { requireSession, unauthorized } from "@/lib/api-auth";
-import { SERVICE_NAME_BY_SLUG } from "@/lib/services";
+import { getServices } from "@/lib/services-db";
 
 const TAG_NAME_MAX_LENGTH = 100;
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     // A tag belongs to a service category (that is what files it under a service everywhere else),
     // so a slug that is not part of the vocabulary is rejected rather than stored as an orphan.
     const serviceSlug = typeof service === "string" && service.trim() ? service.trim() : null;
-    if (serviceSlug && !SERVICE_NAME_BY_SLUG[serviceSlug]) {
+    if (serviceSlug && !(await getServices()).some((s) => s.slug === serviceSlug)) {
       return NextResponse.json({ error: "unknown service" }, { status: 400 });
     }
 

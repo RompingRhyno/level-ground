@@ -96,6 +96,19 @@ model Page {
   updatedAt DateTime @updatedAt
 }
 
+/// The service vocabulary — categories that cover tags sit under. Seeded from the static list in
+/// src/lib/services.ts (that file remains the runtime fallback for client components and the
+/// redirect map); this table is the live source, so the admin can create services from the tag
+/// modal. Always one of the two groups, matching the two service pages.
+model Service {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  name      String
+  group     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
 model Asset {
   id         String   @id @default(uuid())
   storageKey String
