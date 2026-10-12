@@ -41,6 +41,7 @@ export default async function CollectionItem({ layout, lightbox, source: section
   let folderTags: string[] = [];
   let assets: (RawAsset & { publicUrl: string })[] = [];
   let tagNameBySlug: Record<string, string> = {};
+  let tagServiceBySlug: Record<string, string | null> = {};
 
   if (source === "folders") {
     const folder = await prisma.folder.findUnique({ where: { slug: entitySlug } });
@@ -51,8 +52,12 @@ export default async function CollectionItem({ layout, lightbox, source: section
     folderTags = Array.isArray((folder as any).tags) ? [...(folder as any).tags].sort() : [];
 
     if (folderTags.length) {
-      const tagRows = await prisma.tag.findMany({ where: { slug: { in: folderTags } }, select: { slug: true, name: true } });
+      const tagRows = await prisma.tag.findMany({
+        where: { slug: { in: folderTags } },
+        select: { slug: true, name: true, service: true },
+      });
       tagNameBySlug = Object.fromEntries(tagRows.map((t) => [t.slug, t.name]));
+      tagServiceBySlug = Object.fromEntries(tagRows.map((t) => [t.slug, t.service]));
     }
 
     const rawAssets = await prisma.asset.findMany({
@@ -91,7 +96,7 @@ export default async function CollectionItem({ layout, lightbox, source: section
 
   const displayTags = folderTags
     .filter((t) => t !== "before" && t !== "after")
-    .map((s) => ({ slug: s, name: tagNameBySlug[s] ?? s }));
+    .map((s) => ({ slug: s, name: tagNameBySlug[s] ?? s, service: tagServiceBySlug[s] ?? null }));
 
   const [collectionSlug, transitions] = await Promise.all([
     findCollectionIndexPageSlug(),

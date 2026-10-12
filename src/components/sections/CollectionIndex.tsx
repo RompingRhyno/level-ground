@@ -1,6 +1,7 @@
 import { getVisibleFolders, getFolderCovers, getTagsByFolderSlugs } from "@/lib/folders";
 import { getTags, getFirstAssetUrlsByTagSlugs } from "@/lib/tags";
 import { getPrimaryCollectionRouteBase } from "@/lib/pages";
+import { SERVICES } from "@/lib/services";
 import CollectionIndexPresentation from "./CollectionIndexPresentation";
 
 import type { CollectionIndexSection } from "@/types/sections";
@@ -20,8 +21,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
   let items: Item[] = [];
   let firstAssets: Record<string, string> = {};
   let folderTags: Record<string, string[]> = {};
-  let tagNameBySlug: Record<string, string> = {};
-  let allTagsForFilter: { slug: string; name: string }[] = [];
+  let coverTags: { slug: string; name: string; service: string | null }[] = [];
 
   if (source === "folders") {
     // Manual order from the media admin (Folder.order); hidden folders are excluded.
@@ -55,11 +55,12 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       getTagsByFolderSlugs(allSlugs),
     ]);
     const allTags = await getTags();
-    tagNameBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.name]));
 
-    // Build tag list: only tags that appear on at least one folder
+    // The filter's second level: covers in use, each carrying the service it belongs to.
     const usedTagSlugs = new Set(sorted.flatMap((f) => f.tags));
-    allTagsForFilter = allTags.filter((t) => usedTagSlugs.has(t.slug));
+    coverTags = allTags
+      .filter((t) => usedTagSlugs.has(t.slug))
+      .map((t) => ({ slug: t.slug, name: t.name, service: t.service }));
   } else if (source === "tags") {
     const tags = await getTags();
 
@@ -94,8 +95,8 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       entityImages={entityImages}
       source={source}
       folderTags={folderTags}
-      tagNameBySlug={tagNameBySlug}
-      allTagsForFilter={allTagsForFilter}
+      services={SERVICES}
+      coverTags={coverTags}
       showTagFilter={showTagFilter}
       effectiveRouteBase={effectiveRouteBase}
       mode={mode}
