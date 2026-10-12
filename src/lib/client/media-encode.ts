@@ -95,6 +95,56 @@ export async function convertIfHeic(file: File): Promise<File> {
 }
 
 /**
+ * Convert opaque PNGs to JPEG q95 (matching the offline batch conversion: quality 95, EXIF
+ * orientation applied, sRGB, metadata stripped — the last two come free with canvas).
+ *
+ * Transparency is the one thing JPEG cannot carry: a sampled alpha scan decides, and any PNG
+ * with even one transparent sample passes through untouched (logos stay PNG). The scan samples
+ * every 4th pixel, so any transparent region wider than ~4px is caught; a lone stray pixel may
+ * not be, which is harmless.
+ *
+ * Output is baseline JPEG (canvas cannot emit progressive); irrelevant in practice because
+ * next/image re-encodes every derivative that reaches visitors.
+ */
+export async function convertIfPng(file: File, onLabel: (label: string) => void): Promise<File> {
+  const isPng = file.type === "image/png" || (/\.png$/i.test(file.name) && !file.type);
+  if (!isPng || typeof document === "undefined") return file;
+  try {
+    onLabel("Analyzing PNG…");
+    let bitmap: ImageBitmap;
+    try {
+      // `from-image` applies EXIF orientation — the `--auto-orient` equivalent.
+      bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    } catch {
+      bitmap = await createImageBitmap(file);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 3; i < data.length; i += 16) {
+      if (data[i] < 255) return file; // transparent PNG — keep alpha, keep PNG
+    }
+
+    onLabel("Converting PNG → JPEG…");
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.png$/i, ".jpg"), { type: "image/jpeg" });
+  } catch (err) {
+    console.warn("[media] PNG conversion failed, keeping original", err);
+    return file;
+  }
+}
+
+/**
  * Re-encode a video to web-safe renditions + poster.
  * Falls back to the original file (with a warning) when the WASM core cannot be loaded.
  */
@@ -203,7 +253,8 @@ export async function prepareMedia(
   onProgress: (percent: number) => void,
   onLabel: (label: string) => void,
 ): Promise<PreparedMedia> {
-  const image = await convertIfHeic(file);
+  const heic = await convertIfHeic(file);
+  const image = await convertIfPng(heic, onLabel); // opaque PNG → JPEG q95; transparent PNG stays PNG
   if (image.type.startsWith("image/")) {
     const size = await new Promise<{ width: number; height: number } | null>((resolve) => {
       const url = URL.createObjectURL(image);
