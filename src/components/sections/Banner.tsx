@@ -31,9 +31,10 @@ export default function Banner({
         </div>
       )}
 
-      {/* Text content */}
+      {/* Text content. An image-backed banner gets the same letter-edge underlay the hero uses when it
+          has a photo — the class name is hero-era, the effect is identical and inherits to both lines. */}
       <div
-        className="relative max-w-4xl mx-auto text-center"
+        className={`relative max-w-4xl mx-auto text-center${hasImage ? " hero-text-shadow" : ""}`}
         style={{
           "--heading-color": hasImage
             ? "var(--color-text-inverse)"
