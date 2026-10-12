@@ -567,7 +567,7 @@ function FolderPageClientInner({
         </div>
         <p className="mb-2 text-xs text-(--color-text-light)">
           The first {ALT_TAGS} tags name this project&rsquo;s photo alt text. Click one to add or remove it;
-          drag its ⋮ handle to reorder — green marks the tags in use.
+          drag its ⋮ handle to reorder — light green marks the tags in use.
         </p>
         <DndContext sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
           <SortableContext items={folder.tags} strategy={horizontalListSortingStrategy}>

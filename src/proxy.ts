@@ -19,6 +19,10 @@ export function proxy(request: NextRequest) {
   // ── /api/contact — public form submission endpoint.
   if (pathname.startsWith('/api/contact')) return NextResponse.next()
 
+  // ── /api/services — public read: the service vocabulary renders on public pages, and client
+  //    components fetch it to resolve cover links. The POST handler guards itself with a session.
+  if (pathname === '/api/services') return NextResponse.next()
+
   // ── Public admin auth pages (login, unlock, etc.)
   if (PUBLIC_ADMIN.some((p) => pathname.startsWith(p))) return NextResponse.next()
 

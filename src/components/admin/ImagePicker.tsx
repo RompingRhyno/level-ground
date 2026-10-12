@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { SERVICES } from "@/lib/services";
+import { useServices } from "@/components/sections/useServiceLinks";
 
 type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
 
@@ -25,6 +26,8 @@ export function ImagePickerModal({
   const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>(defaultTag ?? "");
   const [service, setService] = useState<string>("");
+  const liveServices = useServices();
+  const serviceOptions = liveServices ?? SERVICES;
   const [broken, setBroken] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -99,7 +102,7 @@ export function ImagePickerModal({
             <label className="text-sm text-(--color-text-dark)">Service</label>
             <select value={service} onChange={(e) => setService(e.target.value)} className="rounded border px-2 py-1 text-sm">
               <option value="">All</option>
-              {SERVICES.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+              {serviceOptions.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
             </select>
           </div>
         </div>

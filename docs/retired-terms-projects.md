@@ -1,8 +1,10 @@
 # Retired terms — the projects behind them
 
-Kept for future reference, per the operator: these legacy terms were dropped from the cover
-vocabulary, but their project associations are worth having on hand (e.g. if "excavation" ever
-becomes a service line, this is the ready-made proof of experience).
+**Status 2026-10-13: brought back as a live service.** The operator created a **Processes** service
+(installation group) with covers **Excavation**, **Custom design**, **Stump removal** and
+**Bamboo removal**; every project below is tagged accordingly. `Bobcat work` folded into Excavation,
+the two design terms into Custom design, and **water feature stays dropped for now**. This file
+remains the record of which projects carried each mention, and the redirect destinations still apply.
 
 The complete list of dropped mentions comes from `docs/services-revamp-tags.csv` (rows whose
 `service` column is empty — 27 rows across 7 distinct terms):

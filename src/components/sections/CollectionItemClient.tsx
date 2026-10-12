@@ -7,7 +7,7 @@ import TransitionTile from "./TransitionTile";
 import type { LightboxProject } from "./GalleryLightbox";
 import type { GalleryLayout } from "@/types/sections";
 import type { ResolvedTransition } from "@/lib/transition";
-import { serviceAnchorHref } from "@/lib/services";
+import { useServiceHref } from "./useServiceLinks";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
@@ -124,6 +124,8 @@ export default function CollectionItemClient({
   layout,
   lightbox,
 }: Props) {
+  const serviceHref = useServiceHref();
+
   // The page is this project's own, so its lightbox panel is built from the props already in hand — no
   // per-asset lookup — and "See full project" would link to the page you are on, so it is dropped here.
   const project: LightboxProject | null = collectionSlug
@@ -152,7 +154,7 @@ export default function CollectionItemClient({
                 no collection route) falls back to the tag filter, then to plain text. */}
             {displayTags.map((tag) => {
               const href =
-                serviceAnchorHref(tag.service) ??
+                serviceHref(tag.service) ??
                 (collectionSlug ? `/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}` : null);
               return href ? (
                 <Link

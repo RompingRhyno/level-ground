@@ -85,6 +85,7 @@ export const RENAMED_SLUG_REDIRECTS: [string, string][] = [
   ["/projects/dunbar-st---patio", "/projects/dunbar-st-patio"],
   ["/projects/east-broadway---condo", "/projects/east-broadway-condo"],
   ["/projects/west-35th---curb", "/projects/west-35th-curb"],
+  ["/projects/west-11th---patio", "/projects/west-11th-patio"],
 ];
 
 /** The prefix all 21 archive URLs share. */

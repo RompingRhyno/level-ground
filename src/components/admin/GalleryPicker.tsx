@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { SERVICES } from "@/lib/services";
+import { useServices } from "@/components/sections/useServiceLinks";
 import { TRANSITION_MIME } from "@/lib/transition";
 
 type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
@@ -23,6 +24,8 @@ function StaticPicker({
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>("");
   const [service, setService] = useState<string>("");
+  const liveServices = useServices();
+  const serviceOptions = liveServices ?? SERVICES;
   const [allTags, setAllTags] = useState<TagRecord[]>([]);
 
   const filteredAssets = assets.filter(
@@ -109,7 +112,7 @@ function StaticPicker({
             className="rounded border px-2 py-1 text-sm"
           >
             <option value="">All</option>
-            {SERVICES.map((s) => (
+            {serviceOptions.map((s) => (
               <option key={s.slug} value={s.slug}>
                 {s.name}
               </option>
