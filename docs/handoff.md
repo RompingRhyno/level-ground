@@ -602,12 +602,29 @@ into chat — those go into env files or the vault instead.
 - Worker: a token signed with the current secret gets `200 {"ok":true}`; the leaked/old value gets 401.
 - Cloudflare worker logs: `npx wrangler tail`.
 
+## Revisit at cutover: the old `/wp-content/uploads/` image URLs
+
+The old site's image URLs will 404 once the domain moves. Whether to map any of them to their R2
+equivalents is **deliberately parked until GSC access exists**, because:
+
+- **The indexable set is only visible in Search Console.** The old Yoast sitemaps list just 38 image
+  URLs (13 page images, 25 project images — one per entry). Every project's gallery is *not* in any
+  sitemap; Google only found those by crawling. Only GSC's Image report shows which old image URLs
+  actually earned impressions, and mapping without that evidence is guesswork.
+- **The pairing is not mechanical.** The migration upscaled and renamed the images, so old filename →
+  new R2 key has no derivable relationship. Building the mapping would mean visually matching old
+  uploads against the new library — an expensive pass, pointless to do blind.
+
+So: at cutover, read GSC's Image report. If a handful of old image URLs show real traffic, map those
+individually (a short manual list); if nothing shows, leave them 404 and close the item.
+
 ## Open items
 
 - [ ] Client accounts created (incl. **Neon** — first omission, plus Turnstile under Cloudflare).
 - [ ] Resend domain verified for the client domain.
 - [ ] `NEXT_PUBLIC_BASE_URL` set to the production origin in Vercel (flip to
       `https://levelgroundlandscape.com` at cutover, together with the removal below).
+- [ ] Decide on legacy image URLs from GSC's Image report (see the section above; parked 2026-10-12).
 - [x] `SITE_NOINDEX=1` set on the Vercel project (2026-10-12, `production` target) — **remove at cutover**
       (step 6 above). Pre-launch guard so the Vercel origin cannot be indexed as a duplicate; preview
       deployments are covered automatically by `VERCEL_ENV`.

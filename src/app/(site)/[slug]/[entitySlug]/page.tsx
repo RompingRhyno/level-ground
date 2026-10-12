@@ -4,7 +4,7 @@ import RenderSections from "@/components/RenderSections";
 import { getCollectionRouteConfig, getPageBySlug, getAllCollectionRoutes } from "@/lib/pages";
 import { getFolderBySlug } from "@/lib/folders";
 import { prisma } from "@/lib/prisma";
-import { buildMetadata, projectDescription, projectTitle } from "@/lib/seo";
+import { buildMetadata, projectDescription, projectSchemaNode, projectTitle } from "@/lib/seo";
 
 type Props = { params: Promise<{ slug: string; entitySlug: string }> };
 
@@ -55,19 +55,51 @@ export default async function CollectionItemPage({ params }: Props) {
 
   // Folders removed from /projects (hidden) — and renamed slugs — resolve to the 404 page
   // rather than rendering a page that the index no longer links to.
+  let projectNode: Record<string, unknown> | null = null;
   if (routeConfig.source === "folders") {
     const folder = await getFolderBySlug(entitySlug);
     if (!folder || folder.hidden) return notFound();
+
+    // The project's CreativeWork: its own copy, its cover photo, and the covers (tag names) it
+    // demonstrates — the same data its title/description/og:image are built from.
+    const coverSlugs = folder.tags.filter((t) => t !== "before" && t !== "after");
+    const tagRows = coverSlugs.length
+      ? await prisma.tag.findMany({ where: { slug: { in: coverSlugs } }, select: { slug: true, name: true } })
+      : [];
+    const coverNames = coverSlugs.map((s) => tagRows.find((t) => t.slug === s)?.name ?? s);
+    const firstAsset = await prisma.asset.findFirst({
+      where: { folder: entitySlug, publicUrl: { not: null }, hidden: false, mime: { startsWith: "image/" } },
+      orderBy: [{ orderIndex: "asc" }, { createdAt: "asc" }],
+      select: { publicUrl: true },
+    });
+
+    projectNode = projectSchemaNode({
+      entityPath: `/${slug}/${entitySlug}`,
+      name: folder.name,
+      description: projectDescription(folder.name, folder.description ?? null, coverNames),
+      image: firstAsset?.publicUrl ?? null,
+      coverNames,
+    });
   }
 
   const templatePage = await getPageBySlug(routeConfig.detailTemplateSlug);
   if (!templatePage) return notFound();
 
   return (
-    <RenderSections
-      sections={templatePage.sections}
-      pageSlug={templatePage.slug}
-      entityContext={{ entitySlug, source: routeConfig.source }}
-    />
+    <>
+      {projectNode ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({ "@context": "https://schema.org", ...projectNode }),
+          }}
+        />
+      ) : null}
+      <RenderSections
+        sections={templatePage.sections}
+        pageSlug={templatePage.slug}
+        entityContext={{ entitySlug, source: routeConfig.source }}
+      />
+    </>
   );
 }
