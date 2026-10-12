@@ -11,6 +11,7 @@ import AssetTile from "./AssetTile";
 import Lightbox from "./Lightbox";
 import Menu from "./Menu";
 import MoveModal from "./MoveModal";
+import NewTagModal from "./NewTagModal";
 import UploadModal from "./UploadModal";
 import TransitionModal from "./TransitionModal";
 import { ToastProvider, useToast } from "./Toast";
@@ -56,8 +57,7 @@ function FolderPageClientInner({
   const [savingDescription, setSavingDescription] = useState(false);
   const [prompt, setPrompt] = useState<LightboxPrompt>(null);
   const [promptValue, setPromptValue] = useState("");
-  const [creatingTag, setCreatingTag] = useState(false);
-  const [newTagName, setNewTagName] = useState("");
+  const [newTagOpen, setNewTagOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -226,18 +226,10 @@ function FolderPageClientInner({
     }
   }
 
-  async function createTag() {
-    const name = newTagName.trim();
-    if (!name) return;
-    try {
-      const created = await api<TagData>("/api/tags", { method: "POST", body: JSON.stringify({ name }) });
-      setTags((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
-      setNewTagName("");
-      setCreatingTag(false);
-      await toggleTag(created.slug);
-    } catch (err: any) {
-      toast({ kind: "error", message: "Could not create tag", detail: err?.message });
-    }
+  /** Called by NewTagModal once the tag exists; the new tag is attached to this folder. */
+  async function tagCreated(created: TagData) {
+    setTags((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
+    await toggleTag(created.slug);
   }
 
   async function renameTag(tag: TagData) {
@@ -508,29 +500,9 @@ function FolderPageClientInner({
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">Tags</span>
           <div className="flex items-center gap-2">
-            {creatingTag ? (
-              <>
-                <input
-                  value={newTagName}
-                  onChange={(event) => setNewTagName(event.target.value)}
-                  placeholder="New tag"
-                  className="rounded border bg-white px-2 py-1 text-sm"
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void createTag();
-                  }}
-                />
-                <button type="button" onClick={createTag} className="rounded px-2 py-1 text-sm btn-positive">
-                  Create
-                </button>
-                <button type="button" onClick={() => setCreatingTag(false)} className="rounded px-2 py-1 text-sm admin-btn">
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <button type="button" onClick={() => setCreatingTag(true)} className="rounded px-2 py-1 text-sm btn-positive">
-                ＋ New tag
-              </button>
-            )}
+            <button type="button" onClick={() => setNewTagOpen(true)} className="rounded px-2 py-1 text-sm btn-positive">
+              ＋ New tag
+            </button>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -892,6 +864,8 @@ function FolderPageClientInner({
           router.refresh();
         }}
       />
+
+      <NewTagModal open={newTagOpen} onClose={() => setNewTagOpen(false)} onCreated={tagCreated} />
     </div>
   );
 }
