@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import RenderSections from "@/components/RenderSections";
 import { getPageBySlug } from "@/lib/pages";
-import { buildMetadata, heroImage, pageDescription, pageTitle } from "@/lib/seo";
+import { buildMetadata, pageDescription, pageOgImage, pageTitle } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: pageTitle(page),
     description: pageDescription(page, page.sections),
     path: "/",
-    image: heroImage(page.sections),
+    image: pageOgImage(page.sections),
   });
 }
 
