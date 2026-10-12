@@ -63,6 +63,52 @@ Two invariants that make this hold:
    in particular, maintenance scripts must call the same revalidation helpers or restart the server,
    since `unstable_cache` is file-backed and survives restarts (learned the hard way this week).
 
+## A service is born incomplete (operator's finding, 2026-10-13)
+
+Creating a service today writes the vocabulary row and **nothing else**. But everything that links
+to a service needs a **section** to land on, so a fresh service is immediately broken in at least:
+
+- **Project pages' cover chips** → `page#<service>` matches no id; the browser jumps nowhere.
+- **Lightbox pills** → same dead hash.
+- **The home page's two-column service lists** → hand-typed data; a new service never appears.
+- **The Service schema** → one `Service` node per *section anchor*; a sectionless service has no node.
+
+A service therefore has four parts, and creation must produce all of them (or the admin must say
+which are missing):
+
+1. the vocabulary row (exists),
+2. **a section on its page** — a skeleton gallery with the service reference and a default heading,
+3. **covers** — tags filed under it (can lag; alt text just skips it),
+4. **listing entries** — wherever the site lists services, which should be vocabulary-driven, not
+   hand-typed.
+
+### The create cascade (proposed)
+
+`POST /api/services` additionally appends a section to the right service page (installation or
+maintenance, by group): a gallery with `service: <slug>` bound, an empty pick list, and a heading
+defaulted to the service name — so every link written the moment the service exists resolves to a
+real anchor. The page's editor then treats it like any other section (reorder, retitle, add picks).
+
+### Listings become vocabulary-driven (proposed)
+
+The home page's two columns are a *service menu*; today their twelve links are hand-typed. Give the
+TwoColumn a list mode — "links: from the service vocabulary, group X" — so a new service appears
+automatically and a rename propagates. Manual entries stay available for anything not a service.
+
+### Everywhere a service surfaces (the sweep)
+
+| Surface | Source today | Reads the live vocabulary? |
+|---|---|---|
+| Project chips + lightbox pills | the tag's `service` → resolver | yes (fixed this week) |
+| Home two columns | hand-typed links | **no** → item 4 above |
+| `/projects` service pills | live list | yes |
+| Page-editor pickers (service dropdowns) | live list + static fallback | yes |
+| Service schema nodes | section anchors | yes, once a section exists |
+| Alt generator | the tag's service (names only) | yes |
+| Tag modal's service select | live list | yes |
+| **Tag's service reassignment** | — | **no UI exists** to move a tag to another service |
+| Redirect map (`next.config.ts`) | static, frozen legacy set | deliberately not coupled |
+
 ## Target design
 
 1. **One resolver, server-side:** `getServiceLinkMap()` → `slug → { name, group, page, anchor, href,
