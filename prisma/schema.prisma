@@ -83,6 +83,10 @@ model Page {
   sections  Json
   order     Int      @default(0)
   type      String   @default("page")
+  /// Render this page's entry in the sticky header nav as a pill button (the `.btn-primary` style) instead
+  /// of the underlined link, for extra emphasis. Per page: the nav shows every page, so the emphasis is
+  /// chosen one entry at a time.
+  navPill   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

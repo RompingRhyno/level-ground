@@ -8,7 +8,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
     <div className="min-h-dvh flex flex-col">
       <SiteHeader navPages={navPages} />
       <main className="flex-1">{children}</main>
-      <footer className="bg-(--color-bg-secondary) px-6 py-4">
+      <footer className="bg-(--color-bg-primary) px-6 py-4">
         © {new Date().getFullYear()} Level Ground Landscaping
       </footer>
     </div>

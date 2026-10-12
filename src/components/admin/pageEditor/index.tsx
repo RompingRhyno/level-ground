@@ -43,6 +43,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedLabel, setSavedLabel] = useState(initialPage.label || "");
   const [sections, setSections] = useState<PageSection[]>(initialPage.sections || []);
   const [savedSections, setSavedSections] = useState<PageSection[]>(initialPage.sections || []);
+  const [navPill, setNavPill] = useState<boolean>(!!initialPage.navPill);
+  const [savedNavPill, setSavedNavPill] = useState<boolean>(!!initialPage.navPill);
   /**
    * Stable per-section identity, used for React keys and by dnd-kit. Seeded in an effect rather than a
    * useState initialiser on purpose: crypto.randomUUID() cannot return the same value on the server
@@ -76,7 +78,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
   const dirty =
     !saving &&
-    (label !== savedLabel || JSON.stringify(sections) !== JSON.stringify(savedSections));
+    (label !== savedLabel || navPill !== savedNavPill || JSON.stringify(sections) !== JSON.stringify(savedSections));
 
   const saveClass = dirty
     ? "btn-positive px-4 py-2 rounded text-sm"
@@ -223,7 +225,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       const res = await fetch(`/api/pages/${initialPage.slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: initialPage.slug, label, sections }),
+        body: JSON.stringify({ slug: initialPage.slug, label, sections, navPill }),
       });
 
       if (!res.ok) {
@@ -234,6 +236,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       setMessage("Saved");
       setSavedSections([...sections]);
       setSavedLabel(label);
+      setSavedNavPill(navPill);
       return true;
     } catch (err: any) {
       setMessage(err.message || String(err));
@@ -280,6 +283,15 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
           style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
         />
       </div>
+
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input
+          type="checkbox"
+          checked={navPill}
+          onChange={(e) => setNavPill(e.target.checked)}
+        />
+        Pill button in nav
+      </label>
 
       <div>
         <div className="flex items-center justify-between">
