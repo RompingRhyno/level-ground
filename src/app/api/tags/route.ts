@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
+import { SERVICE_NAME_BY_SLUG } from "@/lib/services";
 
 const TAG_NAME_MAX_LENGTH = 100;
 
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, description } = body;
+    const { name, description, service } = body;
 
     const trimmedName = typeof name === "string" ? name.trim() : "";
 
@@ -78,6 +79,13 @@ export async function POST(request: Request) {
 
     if (trimmedName.length > TAG_NAME_MAX_LENGTH) {
       return NextResponse.json({ error: "name too long" }, { status: 400 });
+    }
+
+    // A tag belongs to a service category (that is what files it under a service everywhere else),
+    // so a slug that is not part of the vocabulary is rejected rather than stored as an orphan.
+    const serviceSlug = typeof service === "string" && service.trim() ? service.trim() : null;
+    if (serviceSlug && !SERVICE_NAME_BY_SLUG[serviceSlug]) {
+      return NextResponse.json({ error: "unknown service" }, { status: 400 });
     }
 
     const slug = trimmedName
@@ -90,6 +98,7 @@ export async function POST(request: Request) {
         name: trimmedName,
         slug,
         description: description ?? null,
+        service: serviceSlug,
       },
     });
 

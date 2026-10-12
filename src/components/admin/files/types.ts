@@ -39,6 +39,8 @@ export type TagData = {
   slug: string;
   name: string;
   description: string | null;
+  /** Service category slug (see lib/services) — tags are the covers under a service. */
+  service: string | null;
 };
 
 export type StorageInfo = {
