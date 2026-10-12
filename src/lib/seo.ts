@@ -23,6 +23,16 @@ export const SITE_URL = RAW_SITE
 export const SUFFIX = "Level Ground Landscape";
 
 /**
+ * Pre-launch indexing lock. Every page carries `<meta name="robots" content="noindex, nofollow">`
+ * while this is on. Set `SITE_NOINDEX=1` in the deployment's environment until cutover — Vercel
+ * preview deployments are covered automatically via `VERCEL_ENV`. robots.txt deliberately stays
+ * permissive: crawlers must be able to fetch a page to see the directive. Removal is one of the
+ * cutover steps in `docs/handoff.md`; env changes only apply to new deployments, so the flip needs
+ * a redeploy.
+ */
+export const NOINDEX = process.env.SITE_NOINDEX === "1" || process.env.VERCEL_ENV === "preview";
+
+/**
  * Confirmed business facts (the operator supplied these; they match the Google listing). Keep them
  * here so the schema block and any future surface read from one place.
  */

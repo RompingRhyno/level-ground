@@ -505,6 +505,10 @@ absent from production. Never add it to Vercel — the account it acts on is pin
 
 ## Domain migration day (levelgroundlandscape.com)
 
+**Confirmed 2026-10-12:** the WordPress site's domain (`levelgroundlandscape.com`) is the future home of
+this project after cutover, so canonicals, the sitemap, the schema `@id`s and Search Console all key off
+it. Development continues on the Vercel origin until then — see `NEXT_PUBLIC_BASE_URL` below.
+
 The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
 task queues up for one session — in this order, because the old site must not drop out along the way:
 
@@ -537,8 +541,14 @@ preview deployment needs to run the form.
    `meta.poster` hold absolute URLs (5 + 28 references), and until they point at the new domain the
    site keeps serving from the old bucket. Verify zero old-domain references remain afterwards, and
    purge the affected cache tags.
-6. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin, then the
-   smoke checks (home, /projects, both detail pages, a 404, /sitemap.xml, /admin redirect).
+6. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin
+   (`https://levelgroundlandscape.com`), **remove `SITE_NOINDEX` from the Vercel env** (Project →
+   Settings → Environment Variables; it was added 2026-10-12), then the smoke checks (home, /projects,
+   both detail pages, a 404, /sitemap.xml, /admin redirect). Env changes apply to new deployments only,
+   so the cutover deployment carries both flips.
+   Verify after deploying: `curl -s https://levelgroundlandscape.com/ | grep -c 'name="robots"'` should
+   print **0** (the noindex meta is gone), and the canonical in the same page's `<head>` should read the
+   new origin.
 
 ## What can be scripted from the dev machine
 
@@ -589,7 +599,11 @@ into chat — those go into env files or the vault instead.
 
 - [ ] Client accounts created (incl. **Neon** — first omission, plus Turnstile under Cloudflare).
 - [ ] Resend domain verified for the client domain.
-- [ ] `NEXT_PUBLIC_BASE_URL` set to the production origin in Vercel.
+- [ ] `NEXT_PUBLIC_BASE_URL` set to the production origin in Vercel (flip to
+      `https://levelgroundlandscape.com` at cutover, together with the removal below).
+- [x] `SITE_NOINDEX=1` set on the Vercel project (2026-10-12, `production` target) — **remove at cutover**
+      (step 6 above). Pre-launch guard so the Vercel origin cannot be indexed as a duplicate; preview
+      deployments are covered automatically by `VERCEL_ENV`.
 - [ ] Old Neon project retired; local dump and `.env.pre-cutover-backup` deleted.
 - [ ] Deciding whether R2 gets a custom domain (then `R2_BASE_URL` changes; `r2KeysFromMeta` already
       copes with either form).
