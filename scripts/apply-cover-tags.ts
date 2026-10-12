@@ -2,15 +2,17 @@
  * Tag folders with the specific covers they earned, each tag sitting under a service.
  *
  * The two layers are deliberately distinct:
- *   - **tags** are the specific covers, taken from the consolidated list in
- *     `docs/services-revamp-tags.csv` (one row per mention, `detail` column) — Patio, Hedges,
- *     Micro clover, Interlocking brick …
+ *   - **tags** are the specific covers, taken from `docs/services-revamp-tags.csv` (the `detail`
+ *     column, one row per mention scraped from the old site) — Patio, Hedges, Micro clover …
  *   - **services** are the categories above them (`Tag.service`) — Pavers & Patios, Planting,
  *     Lawn installation … A service page or the gallery picker gathers its covers by asking for the
  *     tags whose `service` matches, then resolves those through the folders carrying them.
  *
- * The earlier pass tagged folders with service names and left the covers unrepresented; this script
- * creates the covers, assigns them, and removes the service-level tags (nothing else references them).
+ * Assignments come from the CSV, so the audit stays the source of truth: edit the CSV, re-run.
+ * A `detail` of `—` means the mention is intentionally not a cover (dropped), and is skipped.
+ *
+ * Coverage names live in COVERS, which is also what retires old vocabulary: any slug listed in
+ * RETIRE that no folder references afterwards is deleted, so renames do not leave orphans behind.
  *
  * Dry run by default. Flags:
  *   --apply    write the changes
@@ -48,63 +50,78 @@ function parseCsv(text: string): Record<string, string>[] {
 }
 
 /**
- * The consolidated covers. `detail` must match the CSV exactly — that is the join key — while
- * `name`/`slug` are the tag's identity in the admin and in a public query.
+ * The cover vocabulary. `detail` is the join key into the CSV (exact, after the `material: `
+ * prefix is stripped); `name`/`slug` are the tag's identity in the admin and in a query.
  */
 type Cover = { detail: string; name: string; slug: string; service: string };
+const PAVERS = "pavers-and-patios";
+const PLANTING = "planting";
+const LAWN = "lawn-installation";
+const BEDS = "garden-beds-and-boxes";
+const RETAIN = "retaining-walls";
+const ROCK = "rock-and-gravel-features";
+const DECKING = "decking";
+const FENCING = "fencing";
+const LIGHTING = "outdoor-lighting";
+const IRRIGATION = "irrigation";
+const MAINT = "garden-maintenance";
+const cover = (detail: string, name: string, slug: string, service: string): Cover => ({ detail, name, slug, service });
+
 const COVERS: Cover[] = [
   // Pavers & Patios
-  { detail: "Patio", name: "Patio", slug: "patio", service: "pavers-and-patios" },
-  { detail: "Walkway", name: "Walkway", slug: "walkway", service: "pavers-and-patios" },
-  { detail: "Driveway", name: "Driveway", slug: "driveway", service: "pavers-and-patios" },
-  { detail: "interlocking brick", name: "Interlocking brick", slug: "interlocking-brick", service: "pavers-and-patios" },
-  { detail: "concrete slab", name: "Concrete slab", slug: "concrete-slab", service: "pavers-and-patios" },
-  { detail: "natural stone (granite)", name: "Natural stone (granite)", slug: "natural-stone", service: "pavers-and-patios" },
-  { detail: "paving stone", name: "Paving stone", slug: "paving-stone", service: "pavers-and-patios" },
+  cover("Interlocking pavers", "Interlocking pavers", "interlocking-pavers", PAVERS),
+  cover("Concrete slabs", "Concrete slabs", "concrete-slabs", PAVERS),
+  cover("Natural stone pavers", "Natural stone pavers", "natural-stone-pavers", PAVERS),
+  cover("Flagstone pavers", "Flagstone pavers", "flagstone-pavers", PAVERS),
+  cover("Cedar patio", "Cedar patio", "cedar-patio", PAVERS),
+  cover("Concrete walkway", "Concrete walkway", "concrete-walkway", PAVERS),
   // Planting
-  { detail: "Trees", name: "Trees", slug: "trees", service: "planting" },
-  { detail: "Shrubs, perennials & ground cover", name: "Shrubs, perennials & ground cover", slug: "shrubs-perennials-ground-cover", service: "planting" },
-  { detail: "Hedges", name: "Hedges", slug: "hedges", service: "planting" },
-  { detail: "mulch", name: "Mulch", slug: "mulch", service: "planting" },
+  cover("Plants", "Plants", "plants", PLANTING),
+  cover("Trees", "Trees", "trees", PLANTING),
+  cover("Hedges", "Hedges", "hedges", PLANTING),
+  cover("mulch", "Mulch", "mulch", PLANTING),
+  cover("Topsoil", "Topsoil", "topsoil", PLANTING),
   // Lawn installation
-  { detail: "Sod lawn", name: "Sod lawn", slug: "sod-lawn", service: "lawn-installation" },
-  { detail: "Micro clover", name: "Micro clover", slug: "micro-clover", service: "lawn-installation" },
-  { detail: "Artificial turf", name: "Artificial turf", slug: "artificial-turf", service: "lawn-installation" },
-  { detail: "Putting green", name: "Putting green", slug: "putting-green", service: "lawn-installation" },
+  cover("Sod lawn", "Sod lawn", "sod-lawn", LAWN),
+  cover("Micro clover", "Micro clover", "micro-clover", LAWN),
+  cover("Artificial turf", "Artificial turf", "artificial-turf", LAWN),
+  cover("Putting green", "Putting green", "putting-green", LAWN),
   // Garden beds & boxes
-  { detail: "Garden beds (new, raised, reshaped)", name: "Garden beds", slug: "garden-beds", service: "garden-beds-and-boxes" },
-  { detail: "Vegetable boxes", name: "Vegetable boxes", slug: "vegetable-boxes", service: "garden-beds-and-boxes" },
-  { detail: "Small gardens", name: "Small gardens", slug: "small-gardens", service: "garden-beds-and-boxes" },
-  { detail: "topsoil / soil amendment", name: "Topsoil / soil amendment", slug: "topsoil", service: "garden-beds-and-boxes" },
-  // Retaining walls
-  { detail: "Engineered systems", name: "Engineered retaining walls", slug: "engineered-retaining-walls", service: "retaining-walls" },
+  cover("Garden beds", "Garden beds", "garden-beds", BEDS),
+  cover("Garden boxes", "Garden boxes", "garden-boxes", BEDS),
+  // Retaining walls — the plain cover, plus an engineered one where the wall was actually engineered
+  // (the distinction is not cosmetic: an engineered wall is the thing a bylaw or a permit cares about)
+  cover("Retaining walls", "Retaining walls", "retaining-walls", RETAIN),
+  cover("Engineered retaining wall", "Engineered retaining wall", "engineered-retaining-wall", RETAIN),
   // Rock & gravel features
-  { detail: "River rock", name: "River rock", slug: "river-rock", service: "rock-and-gravel-features" },
-  { detail: "Basalt gravel", name: "Basalt gravel", slug: "basalt-gravel", service: "rock-and-gravel-features" },
-  { detail: "Boulders", name: "Boulders", slug: "boulders", service: "rock-and-gravel-features" },
+  cover("River rock", "River rock", "river-rock", ROCK),
+  cover("Basalt gravel", "Basalt gravel", "basalt-gravel", ROCK),
+  cover("Boulders", "Boulders", "boulders", ROCK),
   // Decking
-  { detail: "Cedar", name: "Cedar decking", slug: "cedar-decking", service: "decking" },
-  { detail: "Composite", name: "Composite decking", slug: "composite-decking", service: "decking" },
-  { detail: "Decking (generic)", name: "Decking (generic)", slug: "decking-generic", service: "decking" },
+  cover("Cedar", "Cedar decking", "cedar-decking", DECKING),
+  cover("Composite", "Composite decking", "composite-decking", DECKING),
   // Fencing
-  { detail: "Aluminum", name: "Aluminum fencing", slug: "aluminum-fencing", service: "fencing" },
-  { detail: "Fencing (generic)", name: "Fencing (generic)", slug: "fencing-generic", service: "fencing" },
-  // Outdoor Lighting
-  { detail: "Garden & landscape lighting", name: "Garden & landscape lighting", slug: "garden-landscape-lighting", service: "outdoor-lighting" },
-  // Irrigation
-  { detail: "Automatic irrigation / drip line", name: "Automatic irrigation / drip line", slug: "automatic-irrigation", service: "irrigation" },
+  cover("Cedar fencing", "Cedar fencing", "cedar-fencing", FENCING),
+  cover("Aluminum", "Aluminum fencing", "aluminum-fencing", FENCING),
+  // Outdoor Lighting — single cover, named for its service
+  cover("Outdoor Lighting", "Outdoor Lighting", "outdoor-lighting", LIGHTING),
+  // Irrigation — single cover, named for its service
+  cover("Irrigation", "Irrigation", "irrigation", IRRIGATION),
   // Garden maintenance
-  { detail: "Scheduled maintenance", name: "Scheduled maintenance", slug: "scheduled-maintenance", service: "garden-maintenance" },
-  { detail: "Tree pruning", name: "Tree pruning", slug: "tree-pruning", service: "garden-maintenance" },
-  { detail: "Seasonal planting", name: "Seasonal planting", slug: "seasonal-planting", service: "garden-maintenance" },
+  cover("Scheduled maintenance", "Scheduled maintenance", "scheduled-maintenance", MAINT),
+  cover("Tree pruning", "Tree pruning", "tree-pruning", MAINT),
+  cover("Seasonal planting", "Seasonal planting", "seasonal-planting", MAINT),
 ];
 
-/** Service-level tags from the previous pass. Nothing else references them; they become `service`. */
-const SERVICE_TAGS = [
-  "pavers-and-patios", "planting", "lawn-installation", "garden-beds-and-boxes", "retaining-walls",
-  "rock-and-gravel-features", "decking", "fencing", "outdoor-lighting", "irrigation",
-  "lawn-maintenance", "garden-maintenance",
+/** Superseded slugs, pruned after reassignment if nothing references them any more. */
+const RETIRE = [
+  "patio", "driveway", "paving-stone", "small-gardens", "decking-generic", "walkway", "fencing-generic",
+  "concrete-slab", "interlocking-brick", "natural-stone", "shrubs-perennials-ground-cover",
+  "engineered-retaining-walls", "garden-landscape-lighting", "automatic-irrigation", "vegetable-boxes",
+  "granite-pavers", "stone-pavers",
 ];
+
+const DROPPED = "—";
 
 async function main() {
   const root = join(__dirname, "..");
@@ -117,76 +134,82 @@ async function main() {
   const byDetail = new Map<string, Cover>();
   for (const c of COVERS) byDetail.set(c.detail, c);
 
-  // every CSV detail must map to a cover, or an assignment would be silently dropped
   const seenDetails = new Set<string>();
   const perFolder = new Map<string, Set<string>>();
+  let droppedRows = 0;
   for (const r of tagsCsv) {
     if (!r.service) continue;
-    // material rows carry a "material: " prefix in the CSV; the cover name is what follows
     const detail = r.detail.trim().replace(/^material:\s*/, "");
+    if (detail === DROPPED) { droppedRows++; continue; }
     seenDetails.add(detail);
-    const cover = byDetail.get(detail);
-    if (!cover) throw new Error(`CSV detail has no cover defined: "${detail}"`);
+    const c = byDetail.get(detail);
+    if (!c) throw new Error(`CSV detail has no cover defined: "${detail}"`);
     const folder = oldToNew.get(r.project_slug);
     if (!folder) continue;
     if (!perFolder.has(folder)) perFolder.set(folder, new Set());
-    perFolder.get(folder)!.add(cover.name);
+    perFolder.get(folder)!.add(c.name);
   }
-  const unmapped = COVERS.filter((c) => !seenDetails.has(c.detail));
-  console.log(`covers defined: ${COVERS.length} | used by assignments: ${seenDetails.size}`);
-  if (unmapped.length) console.log("covers with no assignment (kept, unused):", unmapped.map((c) => c.name).join(", "));
+  const unused = COVERS.filter((c) => !seenDetails.has(c.detail));
+  console.log(`covers defined: ${COVERS.length} | used by assignments: ${seenDetails.size} | dropped rows: ${droppedRows}`);
+  if (unused.length) console.log("covers with no assignment (still created):", unused.map((c) => c.name).join(", "));
 
   const { default: prisma } = await import("../src/lib/prisma");
 
-  // pre-flight
-  const existingSlugs = new Set((await prisma.folder.findMany({ select: { slug: true } })).map((f) => f.slug));
+  // pre-flight: every target must exist, because a half-applied run is worse than none
+  const existingSlugs = new Set(
+    (await prisma.folder.findMany({ select: { slug: true } })).map((f) => f.slug),
+  );
   const missing = [...perFolder.keys()].filter((s) => !existingSlugs.has(s));
-  if (missing.length) throw new Error(`plan refers to folder(s) that do not exist: ${missing.join(", ")}`);
-  const collisions = COVERS.filter((c) => SERVICE_TAGS.includes(c.slug));
-  if (collisions.length) throw new Error(`cover slug collides with a service slug: ${collisions.map((c) => c.slug).join(", ")}`);
+  if (missing.length) {
+    throw new Error(
+      `plan refers to folder(s) that do not exist: ${missing.join(", ")} — correct docs/folder-mapping-descriptions.csv first`,
+    );
+  }
 
   // 1) create/refresh the cover tags
   let created = 0, updated = 0;
   for (const c of COVERS) {
     const hit = await prisma.tag.findUnique({ where: { slug: c.slug } });
-    if (!hit) { created++; if (APPLY) await prisma.tag.create({ data: { name: c.name, slug: c.slug, service: c.service } }); }
-    else if (hit.name !== c.name || hit.service !== c.service) {
+    if (!hit) {
+      created++;
+      if (APPLY) await prisma.tag.create({ data: { name: c.name, slug: c.slug, service: c.service } });
+    } else if (hit.name !== c.name || hit.service !== c.service) {
       updated++;
       if (APPLY) await prisma.tag.update({ where: { id: hit.id }, data: { name: c.name, service: c.service } });
     }
   }
   console.log(`\ncover tags: ${created} to create, ${updated} to update`);
 
-  // 2) assign covers to folders, dropping the service-level slugs
-  console.log(`\nfolders: ${perFolder.size}`);
+  // 2) assign covers to folders
   const byName = new Map(COVERS.map((c) => [c.name, c]));
+  console.log(`\nfolders: ${perFolder.size}`);
   for (const [folder, names] of [...perFolder].sort()) {
     console.log(`  ${folder.padEnd(22)} ${[...names].map((n) => byName.get(n)!.slug).sort().join(", ")}`);
   }
 
   if (APPLY) {
     for (const [folder, names] of perFolder) {
-      const current = (await prisma.folder.findUnique({ where: { slug: folder }, select: { tags: true } }))?.tags ?? [];
-      const keep = current.filter((t) => !SERVICE_TAGS.includes(t));
+      const current =
+        (await prisma.folder.findUnique({ where: { slug: folder }, select: { tags: true } }))?.tags ?? [];
+      // Replace any cover this folder no longer earns, keep anything unrecognised (before/after markers).
+      const known = new Set([...COVERS.map((c) => c.slug), ...RETIRE]);
+      const keep = current.filter((t) => !known.has(t));
       const next = [...new Set([...keep, ...[...names].map((n) => byName.get(n)!.slug)])].sort();
       await prisma.folder.update({ where: { slug: folder }, data: { tags: next } });
     }
-    // 3) strip service slugs from any folder that still carries them, then remove the tag rows
+
+    // 3) prune superseded tags that nothing references
     const all = await prisma.folder.findMany({ select: { slug: true, tags: true } });
-    let stripped = 0;
-    for (const f of all) {
-      const next = f.tags.filter((t) => !SERVICE_TAGS.includes(t));
-      if (next.length === f.tags.length) continue;
-      stripped++;
-      console.log(`  stripped service tags from ${f.slug} (now: ${next.join(", ") || "none"})`);
-      await prisma.folder.update({ where: { slug: f.slug }, data: { tags: next } });
-    }
+    const referenced = new Set(all.flatMap((f: any) => f.tags ?? []));
     let removed = 0;
-    for (const slug of SERVICE_TAGS) {
+    for (const slug of RETIRE) {
       const hit = await prisma.tag.findUnique({ where: { slug } });
-      if (hit) { await prisma.tag.delete({ where: { id: hit.id } }); removed++; }
+      if (!hit) continue;
+      if (referenced.has(slug)) { console.log(`  kept ${slug} (still referenced)`); continue; }
+      await prisma.tag.delete({ where: { id: hit.id } });
+      removed++;
     }
-    console.log(`\napplied: ${stripped} folder(s) cleaned, ${removed} service tags removed`);
+    console.log(`\napplied: ${removed} superseded tag(s) removed`);
   } else {
     console.log("\ndry run — re-run with --apply. Nothing was changed.");
   }
