@@ -74,11 +74,19 @@ function findSection(sections: PageSection[], type: string): Record<string, unkn
   return null;
 }
 
-/** The page's hero image, used as its og:image. Absolute already when it lives on R2. */
-export function heroImage(sections: PageSection[]): string | null {
+/**
+ * The page's og:image: the hero's picture when it has one, else any image the page's sections carry
+ * (the contact page's circle, a banner's backdrop). R2 URLs are already absolute.
+ */
+export function pageOgImage(sections: PageSection[]): string | null {
   const hero = findSection(sections, "hero");
-  const img = (hero?.image as string | undefined)?.trim();
-  return img || null;
+  const heroImg = (hero?.image as string | undefined)?.trim();
+  if (heroImg) return heroImg;
+  for (const s of sections) {
+    const img = (s as unknown as { image?: string }).image;
+    if (typeof img === "string" && img.trim()) return img.trim();
+  }
+  return null;
 }
 
 /**

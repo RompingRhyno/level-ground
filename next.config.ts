@@ -65,6 +65,19 @@ const nextConfig: NextConfig = {
   async redirects() {
     return legacyRedirects();
   },
+  async headers() {
+    return [
+      {
+        // HSTS. Two years, subdomains included — the old site served plain http for a hop and none of
+        // its redirects were secure-first; this closes that class of downgrade at the new host.
+        // (Preload is deliberately not requested here; that needs a separate submission.)
+        source: "/(.*)",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns,
     // Quality tiers: q75 stays the default (thumbnails/tiles), q85 for third-width cards, q90 for
