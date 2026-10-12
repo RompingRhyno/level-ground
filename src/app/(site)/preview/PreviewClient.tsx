@@ -5,10 +5,12 @@ import Banner from "@/components/sections/Banner";
 import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
+import SectionHeader from "@/components/sections/SectionHeader";
 import { transitionsFromRows } from "@/lib/transition";
 import Contact from "@/components/sections/Contact";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
-import CollectionIndexPresentation from "@/components/sections/CollectionIndexPresentation";
+import CollectionIndexPresentation, { type CollectionFilter } from "@/components/sections/CollectionIndexPresentation";
+import { SERVICES } from "@/lib/services";
 import VideoStage from "@/components/sections/VideoStage";
 import type {
   PageSection,
@@ -29,9 +31,12 @@ function GalleryPreview({ section }: { section: GallerySection }) {
   const [displayTags, setDisplayTags] = useState<{ slug: string; name: string }[]>([]);
 
   useEffect(() => {
+    // `limit` is not optional: the API's default is 200, and a library past that size silently drops
+    // the oldest rows — a static gallery's later picks are exactly the ones that fall off the end.
     const folder = section.mode === "dynamic" ? section.filters?.folder : undefined;
-    const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
-    fetch(`/api/assets${q}`)
+    const params = new URLSearchParams({ kind: "image", limit: "500" });
+    if (folder) params.set("folder", folder);
+    fetch(`/api/assets?${params}`)
       .then((r) => r.json())
       .then((data: any[]) => {
         let rows = data.filter((a) => a.publicUrl);
@@ -82,8 +87,9 @@ function GalleryPreview({ section }: { section: GallerySection }) {
     if (td.mode === "auto") {
       // Best-effort: fetch assets, derive folders, union tags
       const folder = section.mode === "dynamic" ? (section as any).filters?.folder : undefined;
-      const q = folder ? `?folder=${encodeURIComponent(folder)}` : "";
-      fetch(`/api/assets${q}`)
+      const params = new URLSearchParams({ kind: "image", limit: "500" });
+      if (folder) params.set("folder", folder);
+      fetch(`/api/assets?${params}`)
         .then((r) => r.json())
         .then((data: any[]) => {
           const folderSlugs = [...new Set(data.map((a: any) => a.folder).filter(Boolean))] as string[];
@@ -115,22 +121,7 @@ function GalleryPreview({ section }: { section: GallerySection }) {
 
   return (
     <>
-      {(section.heading || section.body) && (
-        <div className="w-full px-4 md:px-8 mb-8">
-          {section.heading && (
-            <h2
-              className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-              dangerouslySetInnerHTML={{ __html: section.heading }}
-              style={{ color: "var(--color-text-heading)" }}
-            />
-          )}
-          {section.body && (
-            <p className="mt-4 max-w-3xl text-left" style={{ color: "var(--color-text-primary)" }}>
-              {section.body}
-            </p>
-          )}
-        </div>
-      )}
+      <SectionHeader heading={section.heading} body={section.body} />
       {displayTags.length > 0 && (
         <div className="w-full px-4 md:px-8 mb-6 flex flex-wrap gap-2">
           {displayTags.map((tag) => (
@@ -165,7 +156,7 @@ function CollectionItemPreview({ section }: { section: CollectionItemSection }) 
 
         const param = source === "folders" ? "folder" : "tag";
         const [assetsData, tagsData] = await Promise.all([
-          fetch(`/api/assets?${param}=${encodeURIComponent(first.slug)}`).then((r) => r.json()),
+          fetch(`/api/assets?${param}=${encodeURIComponent(first.slug)}&kind=image&limit=500`).then((r) => r.json()),
           source === "folders" && Array.isArray(first.tags) && first.tags.length
             ? fetch("/api/tags").then((r) => r.json())
             : Promise.resolve([]),
@@ -235,8 +226,8 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   const [items, setItems] = useState<{ slug: string; name: string }[]>([]);
   const [firstAssets, setFirstAssets] = useState<Record<string, string>>({});
   const [folderTags, setFolderTags] = useState<Record<string, string[]>>({});
-  const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
-  const [activePreviewTag, setActivePreviewTag] = useState<string | null>(null);
+  const [allTags, setAllTags] = useState<{ slug: string; name: string; service: string | null }[]>([]);
+  const [activePreviewFilter, setActivePreviewFilter] = useState<CollectionFilter>(null);
 
   useEffect(() => {
     const endpoint = source === "folders" ? "/api/folders" : "/api/tags";
@@ -259,7 +250,7 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
     let cancelled = false;
     Promise.all(
       items.map((item) =>
-        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}`)
+        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}&kind=image&limit=500`)
           .then((r) => r.json())
           .then((assets: any[]) => {
             const first = assets.find(
@@ -285,12 +276,19 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
       .catch(() => {});
   }, [source]);
 
+  const serviceByTag = new Map(allTags.map((t) => [t.slug, t.service]));
   const usedTagSlugs = new Set(Object.values(folderTags).flat());
-  const filterTags = allTags.filter((t) => usedTagSlugs.has(t.slug));
-  const tagNameBySlug = Object.fromEntries(allTags.map((t) => [t.slug, t.name]));
-  const filteredItems = activePreviewTag
-    ? items.filter((item) => (folderTags[item.slug] ?? []).includes(activePreviewTag))
-    : items;
+  const coverTags = allTags
+    .filter((t) => usedTagSlugs.has(t.slug))
+    .map((t) => ({ slug: t.slug, name: t.name, service: t.service }));
+  // A service filter matches any of its covers; a tag filter matches that cover exactly.
+  const filteredItems = !activePreviewFilter
+    ? items
+    : activePreviewFilter.kind === "service"
+      ? items.filter((item) =>
+          (folderTags[item.slug] ?? []).some((t) => serviceByTag.get(t) === activePreviewFilter.slug)
+        )
+      : items.filter((item) => (folderTags[item.slug] ?? []).includes(activePreviewFilter.slug));
   const visibleItems = maxItems ? filteredItems.slice(0, maxItems) : filteredItems;
 
   return (
@@ -302,12 +300,12 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
         entityImages={entityImages}
         source={source}
         folderTags={folderTags}
-        tagNameBySlug={tagNameBySlug}
-        allTagsForFilter={filterTags}
+        services={SERVICES}
+        coverTags={coverTags}
         showTagFilter={showTagFilter}
         effectiveRouteBase=""
-        activeTag={activePreviewTag}
-        onTagClick={(slug) => setActivePreviewTag(slug)}
+        activeFilter={activePreviewFilter}
+        onFilterClick={setActivePreviewFilter}
       />
     </div>
   );
