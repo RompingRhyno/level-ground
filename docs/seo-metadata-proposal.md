@@ -3,7 +3,9 @@
 > **Status (2026-10-12): metadata layer implemented and verified.**
 > Built: `src/lib/seo.ts` (title/description/canonical/OG helpers + the confirmed NAP), `Page.metaTitle`/`Page.metaDescription` (migration `page_seo_fields`, seeded for the six pages, editable in the page editor), `generateMetadata` on `/`, `/[slug]` and `/[slug]/[entitySlug]` (project titles = name-only, descriptions fall back to hero subheadings / folder copy / covers), canonicals, OG/Twitter, one JSON-LD graph (Organization + LocalBusiness + WebSite) in `(site)/layout.tsx`, and `lastModified` in `sitemap.ts`.
 > Found and fixed in passing: `NEXT_PUBLIC_BASE_URL` is stored without a scheme, so the **live sitemap and robots.txt were emitting scheme-less URLs** (`level-ground-seven.vercel.app/...`), which crawlers reject; `sitemap.ts`/`robots.ts`/`lib/seo.ts` now share one normalized origin.
-> Not yet built: the 301 redirect map, `Service` schema on the 12 service pages, `CreativeWork` on projects, per-page OG image overrides.
+> Built since: the **301 redirect map** — `src/lib/legacy-redirects.ts` (data) + `next.config.ts` (`redirects()`),
+> verified end to end against the dev server (see the section at the end). Still to build: `Service` schema on
+> the 12 service pages, `CreativeWork` on projects, per-page OG image overrides.
 
 For audit before implementation. Companion to `docs/seo-audit-legacy-site.md` (old site) and
 `docs/seo-work-plan.md` (the gap list). All sources are fields that already exist; the "authoring"
@@ -26,7 +28,13 @@ seeded into the new optional `metaTitle` field; the page label remains the fallb
 | `/landscape-design-installation` | Residential Landscaping Installation \| Level Ground Landscape |
 | `/landscape-maintenance` | Residential Landscaping Maintenance \| Level Ground Landscape |
 
-**Project titles — pattern chosen: `<Folder name>: <service> | Level Ground Landscape`.** Two ways
+**Project titles — SUPERSEDED 2026-10-12: the operator chose name-only titles** (`<Folder name> | Level
+Ground Landscape`), matching the legacy site's own pattern (21 of its 26 project titles were name-only).
+The rule-A/B analysis below is kept as the audit trail for why the descriptive variant was dropped; the
+scene is exactly this one: the length guard fired on 10 of 29 titles and the near-duplicate problem the
+descriptive scheme was meant to solve came back once the guard trimmed it.
+
+**Project titles (historical) — pattern: `<Folder name>: <service> | Level Ground Landscape`.** Two ways
 to pick the `<service>`, measured against the live data (30 visible folders):
 
 | Rule | Distribution |
@@ -152,7 +160,10 @@ the installation or maintenance page (`/landscape-design-installation#<service>`
 | walkway | pavers-and-patios |
 | **water_feature** | **ambiguous** — no cover exists; rock-and-gravel-features? |
 
-18 of 21 are unambiguous; 3 need your call.
+**Decided 2026-10-12:** the three ambiguous terms are **retired** — `boulevard`, `excavation` and
+`water_feature` all redirect to the top of `/landscape-design-installation` (they are processes or
+concepts with no cover and no service section to land on; the projects that used them are recorded in
+`docs/retired-terms-projects.md`). The other 18 land on their service section.
 
 ## 5. Structured data (baseline + above)
 
