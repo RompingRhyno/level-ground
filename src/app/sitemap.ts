@@ -31,12 +31,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: slug === "home" ? 1 : 0.8,
   }));
 
+  // Each project entry declares its photos, so Google can discover them without crawling. Before
+  // and after frames are part of the portfolio; the transition marker rows are not pictures.
+  const imageRows = folders.length
+    ? await prisma.asset.findMany({
+        where: {
+          folder: { in: folders.map((f) => f.slug) },
+          publicUrl: { not: null },
+          hidden: false,
+          mime: { startsWith: "image/" },
+          NOT: { mime: "image/x-transition" },
+        },
+        orderBy: [{ folder: "asc" }, { orderIndex: "asc" }],
+        select: { folder: true, publicUrl: true },
+      })
+    : [];
+
+  const imagesByFolder = new Map<string, string[]>();
+  for (const row of imageRows) {
+    if (!row.folder || !row.publicUrl) continue;
+    const list = imagesByFolder.get(row.folder) ?? [];
+    list.push(row.publicUrl);
+    imagesByFolder.set(row.folder, list);
+  }
+
   const detailPages: MetadataRoute.Sitemap = routeBase
     ? folders.map((folder) => ({
         url: `${SITE}${routeBase}/${folder.slug}`,
         lastModified: folder.updatedAt,
         changeFrequency: "monthly",
         priority: 0.6,
+        images: imagesByFolder.get(folder.slug) ?? undefined,
       }))
     : [];
 
