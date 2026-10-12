@@ -270,7 +270,7 @@ export default function Contact({
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   return (
-    <section className="w-full px-4 md:px-8 py-20">
+    <section className="mx-auto w-[90vw] max-w-[1440px] py-20">
       {/* Heading — full width, above the grid so image aligns with first field */}
       <h2
         className="heading max-w-4xl text-3xl md:text-5xl font-light leading-tight mb-6"
@@ -286,8 +286,9 @@ export default function Contact({
       )}
 
       <div className={`grid items-start gap-12${image ? " md:grid-cols-[1fr_auto]" : ""}`}>
-        {/* Form column */}
-        <div className="max-w-full md:max-w-140">
+        {/* Form column. `min-w-0` lets the 1fr track actually shrink: without it the inputs' intrinsic
+            minimum keeps the column wide and it can spill into the gap toward the image. */}
+        <div className="min-w-0 max-w-full md:max-w-140">
       <form onSubmit={handleSubmit} className="space-y-4" style={{ color: "var(--color-text-heading)" }} noValidate>
         {/* Honeypot */}
         <input
@@ -313,7 +314,7 @@ export default function Contact({
                 value={values[field.id] ?? ""}
                 onChange={(e) => updateValue(field.id, e.target.value)}
                 rows={3}
-                className="w-full rounded border px-3 py-2 text-sm bg-white"
+                className="w-full min-w-0 rounded border px-3 py-2 text-sm bg-white"
               />
             ) : (
               <input
@@ -323,7 +324,7 @@ export default function Contact({
                 placeholder={field.placeholder}
                 value={values[field.id] ?? ""}
                 onChange={(e) => updateValue(field.id, e.target.value)}
-                className="w-full rounded border px-3 py-2 text-sm bg-white"
+                className="w-full min-w-0 rounded border px-3 py-2 text-sm bg-white"
               />
             )}
           </div>
@@ -418,18 +419,22 @@ export default function Contact({
       </form>
         </div>{/* end form column */}
 
-        {/* Image column — right on md+, bottom-centered on narrow */}
+        {/* Image column — right on md+, directly under the heading/subheading on narrow (not below the
+            submit button), so the phone view reads: heading, subheading, image, form. */}
         {image && (
-          <div className="order-last flex justify-center md:order-0 md:justify-start">
+          <div className="order-first flex justify-center md:order-0 md:justify-start md:pl-8">
             <div
-              className="relative aspect-square w-80 sm:w-96 md:w-120 rounded-full shadow-xl"
+              className="relative aspect-square w-80 sm:w-96 md:w-80 lg:w-120 xl:w-140 2xl:w-160 rounded-full shadow-xl"
               style={{ boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" }}
             >
+              {/* The box is a square but these are landscape photos cropped by `object-cover`, so the
+                  source needs `box × aspect` px of WIDTH (~1.8 for 16:9) or its height falls short of the
+                  square and the browser stretches it. Sizes are therefore the CSS box × 1.8. */}
               <Image
                 src={image}
                 alt=""
                 fill
-                sizes="(min-width:1024px) 480px, 384px"
+                sizes="(min-width:1536px) 1152px, (min-width:1280px) 1008px, (min-width:1024px) 864px, (min-width:768px) 576px, (min-width:640px) 691px, 576px"
                 quality={85}
                 className="rounded-full object-cover"
               />
