@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import prisma from "@/lib/prisma";
 import { revalidateFor } from "@/lib/revalidate";
+import { regenerateAltsForTags, regenerateFolderAlts } from "@/lib/alt-db";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 import { SERVICE_NAME_BY_SLUG } from "@/lib/services";
 
@@ -43,6 +44,9 @@ export async function PATCH(request: NextRequest) {
         ...(typeof description !== "undefined" ? { description } : {}),
       },
     });
+
+    // A tag's name is part of every alt text that names it; refresh those folders' photos.
+    await regenerateAltsForTags([updated.slug]);
 
     revalidateTag("tags", {});
     // Tag names are rendered on folder cards and project pages.
@@ -127,7 +131,7 @@ export async function DELETE(request: NextRequest) {
     // Remove the tag slug from every folder that carries it, then delete the Tag row
     const affectedFolders = await prisma.folder.findMany({
       where: { tags: { has: tag.slug } },
-      select: { id: true, tags: true },
+      select: { id: true, tags: true, slug: true },
     });
 
     await prisma.$transaction([
@@ -139,6 +143,11 @@ export async function DELETE(request: NextRequest) {
       ),
       prisma.tag.delete({ where: { id } }),
     ]);
+
+    // The deleted tag leaves each folder's tag list, so the alts that named it change.
+    for (const folder of affectedFolders) {
+      await regenerateFolderAlts(folder.slug);
+    }
 
     revalidateTag("tags", {});
     return NextResponse.json({ success: true });
