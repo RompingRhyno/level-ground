@@ -46,7 +46,7 @@ export default function VideoClient({
     // Mirrors the page preview's empty state. An empty `src` on <video> makes the browser request the
     // page itself, which is what produced the console error this replaced.
     return (
-      <div className="w-full aspect-video rounded bg-(--color-bg-secondary) flex items-center justify-center text-sm text-(--color-text-primary)">
+      <div className="w-full aspect-video rounded-2xl bg-(--color-bg-secondary) flex items-center justify-center text-sm text-(--color-text-primary)">
         No video selected
       </div>
     );

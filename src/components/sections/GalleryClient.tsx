@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
+import { getLayoutCells, getCellSizes } from "@/lib/gallery-layout";
 import type { ResolvedTransition } from "@/lib/transition";
 import TransitionTile from "./TransitionTile";
 import GalleryLightbox, { type LightboxProject } from "./GalleryLightbox";
@@ -32,16 +32,13 @@ export default function GalleryClient({
   const cells = getLayoutCells(assets.length, layoutMode);
   return (
     <>
-      {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
-          (all corners square) and at two columns the left tile squares its left pair, the right tile its
-          right pair. */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+      {/* Mobile: simple 1–2 col responsive grid. Inset 24px each side to match the collection index's card
+          grid, so every tile carries the same corner radius — no tile touches the screen edge any more. */}
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5 px-6">
         {assets.map((asset, i) => (
           <button
             key={asset.id}
-            className={`group relative aspect-video w-full overflow-hidden cursor-pointer rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${
-              i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
-            }`}
+            className="group relative aspect-video w-full overflow-hidden cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             onClick={() => setOpen(i)}
             aria-label={asset.alt ?? `Image ${i + 1}`}
           >
@@ -60,7 +57,7 @@ export default function GalleryClient({
                 fill
                 sizes="(min-width:640px) 50vw, 100vw"
                 quality={85}
-                className="object-cover transition-transform duration-[800ms] group-hover:scale-105"
+                className="object-cover transition-transform duration-[1500ms] group-hover:[transform:scale(1.05)]"
                 loading="lazy"
               />
             )}
@@ -68,10 +65,10 @@ export default function GalleryClient({
         ))}
       </div>
 
-      {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Corners on the screen edge
-          are square (edgeCornerClasses); the rest stay rounded. Hover is a subtle zoom clipped by the
-          tile's own overflow, not an opacity overlay. */}
-      <div className="hidden md:grid md:grid-cols-6 gap-1.5">
+      {/* Desktop: bento/grid layout engine — six columns, same as Gallery.tsx. Inset 24px each side, like
+          the mobile grid, so corners are uniform; hover is a subtle zoom clipped by the tile's own
+          overflow, not an opacity overlay. */}
+      <div className="hidden md:grid md:grid-cols-6 gap-1.5 px-6">
         {cells.map((cell) => {
           const asset = assets[cell.assetIndex];
           const group = transitions[asset.id];
@@ -82,10 +79,9 @@ export default function GalleryClient({
                 gridColumn: `${cell.colStart} / span ${cell.colSpan}`,
                 gridRow: `${cell.rowStart} / span ${cell.rowSpan}`,
               }}
-              className={`group relative rounded overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${edgeCornerClasses(
-                cell.colStart,
-                cell.colSpan,
-              )}${cell.cellType !== "bento-large" ? " aspect-video" : ""}`}
+              className={`group relative rounded-2xl overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white${
+                cell.cellType !== "bento-large" ? " aspect-video" : ""
+              }`}
               onClick={() => setOpen(cell.assetIndex)}
               aria-label={asset.alt ?? `Image ${cell.assetIndex + 1}`}
             >
@@ -103,7 +99,7 @@ export default function GalleryClient({
                   fill
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
                   quality={cell.cellType === "small" ? 85 : 95}
-                  className="object-cover transition-transform duration-[800ms] group-hover:scale-105"
+                  className="object-cover transition-transform duration-[1500ms] group-hover:[transform:scale(1.05)]"
                   loading="lazy"
                 />
               )}
