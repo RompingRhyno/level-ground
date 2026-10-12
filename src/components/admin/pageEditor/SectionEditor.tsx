@@ -274,7 +274,7 @@ export default function SectionEditor({
     let cancelled = false;
     Promise.all(
       items.map((item) =>
-        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}`)
+        fetch(`/api/assets?${param}=${encodeURIComponent(item.slug)}&kind=image&limit=500`)
           .then((r) => r.json())
           .then((assets: any[]) => {
             const first = assets.find(
@@ -426,6 +426,25 @@ export default function SectionEditor({
                 <label className="block text-sm">Image</label>
                 <ImagePicker value={(section as any).image || ""} onChange={(url) => update("image", url)} />
               </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Overlay image (transparent, above heading)</label>
+                <ImagePicker value={(section as any).overlayImage || ""} onChange={(url) => update("overlayImage", url)} />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm">Height</label>
+                <select
+                  value={(section as any).height || "full"}
+                  onChange={(e) => update("height", e.target.value)}
+                  className="w-full rounded border px-2 py-1"
+                >
+                  <option value="full">Full screen (100% of viewport)</option>
+                  <option value="tall">Tall (88%)</option>
+                  <option value="medium">Medium (72%)</option>
+                  <option value="short">Short (56%)</option>
+                </select>
+              </div>
             </div>
           )}
 
@@ -433,11 +452,24 @@ export default function SectionEditor({
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="block text-sm">Heading</label>
-                <input value={(section as any).title || ""} onChange={(e) => update("title", e.target.value)} className="w-full rounded border px-2 py-1" />
+                <RichContentEditable value={(section as any).title || ""} onChange={(val) => update("title", val)} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Heading link</label>
+                <select
+                  value={(section as any).titleHref || ""}
+                  onChange={(e) => update("titleHref", e.target.value)}
+                  className="w-full rounded border px-2 py-1"
+                >
+                  <option value="">(none)</option>
+                  {pagesList.filter(p => p.type === undefined || p.type === 'page').map((p) => (
+                    <option key={p.slug} value={`/${p.slug}`}>{p.label || p.slug}</option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="block text-sm">Body</label>
-                <textarea value={(section as any).body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" />
+                <RichContentEditable multiline value={(section as any).body || ""} onChange={(val) => update("body", val)} className="w-full" />
               </div>
               <div className="field-group">
                 <div className="font-medium text-sm mb-1">Links</div>
@@ -557,7 +589,7 @@ export default function SectionEditor({
               </div>
               <div className="space-y-1">
                 <label className="block text-sm">Body text</label>
-                <textarea value={(section as any).bodyText || ""} onChange={(e) => update("bodyText", e.target.value)} className="w-full rounded border px-2 py-1" />
+                <RichContentEditable multiline value={(section as any).bodyText || ""} onChange={(val) => update("bodyText", val)} className="w-full" />
               </div>
               <div className="field-group">
                 <div className="font-medium text-sm mb-1">Services</div>

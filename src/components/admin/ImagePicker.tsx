@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { SERVICES } from "@/lib/services";
 
 type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
 
@@ -23,6 +24,7 @@ export function ImagePickerModal({
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [allTags, setAllTags] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>(defaultTag ?? "");
+  const [service, setService] = useState<string>("");
   const [broken, setBroken] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -49,12 +51,13 @@ export function ImagePickerModal({
     const params = new URLSearchParams({ kind: "image", limit: "500" });
     if (folder) params.set("folder", folder);
     if (tag) params.set("tag", tag);
+    if (service) params.set("service", service);
     fetch(`/api/assets?${params}`)
       .then((r) => r.json())
       .then((d) => setAssets(Array.isArray(d) ? d : []))
       .catch(() => setAssets([]))
       .finally(() => setLoading(false));
-  }, [folder, tag]);
+  }, [folder, tag, service]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -92,6 +95,13 @@ export function ImagePickerModal({
               {allTags.map((t) => <option key={t.slug} value={t.slug}>{t.name}</option>)}
             </select>
           </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-(--color-text-dark)">Service</label>
+            <select value={service} onChange={(e) => setService(e.target.value)} className="rounded border px-2 py-1 text-sm">
+              <option value="">All</option>
+              {SERVICES.map((s) => <option key={s.slug} value={s.slug}>{s.name}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Grid */}
@@ -111,6 +121,7 @@ export function ImagePickerModal({
                     disabled={!usable}
                     onClick={() => { if (usable && a.publicUrl) { onPick(a.publicUrl); onClose(); } }}
                     className="relative aspect-video rounded overflow-hidden border-2 border-transparent hover:border-blue-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:hover:border-transparent"
+                    style={{ backgroundImage: "repeating-conic-gradient(#ececec 0% 25%, #ffffff 0% 50%)", backgroundSize: "14px 14px" }}
                     title={a.filename ?? a.id}
                   >
                     {usable ? (
@@ -119,7 +130,7 @@ export function ImagePickerModal({
                         alt={a.alt ?? ""}
                         fill
                         sizes="120px"
-                        className="object-cover"
+                        className="object-contain"
                         onError={() => setBroken((prev) => new Set(prev).add(a.id))}
                       />
                     ) : (
@@ -157,8 +168,8 @@ export default function ImagePicker({
     <div className="flex items-start gap-3">
       {/* Thumbnail preview */}
       {value ? (
-        <div className="relative w-36 aspect-video rounded overflow-hidden border border-gray-200 shrink-0">
-          <Image src={value} alt="" fill sizes="144px" className="object-cover" />
+        <div className="relative w-36 aspect-video rounded overflow-hidden border border-gray-200 shrink-0" style={{ backgroundImage: "repeating-conic-gradient(#ececec 0% 25%, #ffffff 0% 50%)", backgroundSize: "14px 14px" }}>
+          <Image src={value} alt="" fill sizes="144px" className="object-contain" />
         </div>
       ) : defaultImage ? (
         <div className="relative w-36 aspect-video rounded overflow-hidden border border-dashed border-gray-300 shrink-0">

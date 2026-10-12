@@ -103,7 +103,9 @@ export default function GalleryEditor({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
-    fetch("/api/assets")
+    // Explicit kind + limit: the API defaults to 200 rows, so a library past that size leaves the
+    // later picks without thumbnails in the selected strip.
+    fetch("/api/assets?kind=image&limit=500")
       .then((r) => r.json())
       .then((data: Asset[]) => {
         const map: Record<string, Asset> = {};
@@ -210,7 +212,17 @@ export default function GalleryEditor({
 
       <div className="space-y-1">
         <label className="block text-sm">Body text</label>
-        <textarea value={gs.body || ""} onChange={(e) => update("body", e.target.value)} className="w-full rounded border px-2 py-1" rows={2} placeholder="Optional" />
+        <RichContentEditable multiline value={gs.body || ""} onChange={(val) => update("body", val)} className="w-full" placeholder="Optional" />
+      </div>
+
+      <div className="space-y-1">
+        <label className="block text-sm">Anchor</label>
+        <input
+          value={gs.anchor || ""}
+          onChange={(e) => update("anchor", e.target.value)}
+          className="w-full rounded border px-2 py-1"
+          placeholder="Optional — id for deep links (e.g. planting)"
+        />
       </div>
 
       <div className="space-y-1">
@@ -220,9 +232,9 @@ export default function GalleryEditor({
           onChange={(e) => {
             const mode = e.target.value;
             if (mode === "static") {
-              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, assetIds: [], tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, assetIds: [], tagDisplay: gs.tagDisplay }, index);
             } else {
-              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
             }
           }}
           className="rounded border px-2 py-1"

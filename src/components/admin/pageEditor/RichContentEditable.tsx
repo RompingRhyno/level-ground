@@ -6,11 +6,18 @@ export default function RichContentEditable({
   onChange,
   className,
   placeholder,
+  multiline = false,
 }: {
   value: string;
   onChange: (val: string) => void;
   className?: string;
   placeholder?: string;
+  /**
+   * True for body copy: Enter inserts a line break and newlines survive a paste. False (default) for
+   * headings and other single-line fields, where Enter is ignored rather than letting the browser
+   * insert a `<div>` — invalid inside the `<h2>`/`<p>` these values render into.
+   */
+  multiline?: boolean;
 }) {
   const divRef = useRef<HTMLDivElement | null>(null);
   const [isBold, setIsBold] = useState(false);
@@ -42,11 +49,31 @@ export default function RichContentEditable({
     onChange(el.innerHTML);
   }
 
-  // Strip all markup on paste — only allow plain text.
+  /**
+   * Paste as plain text — clipboard markup is stripped, but line breaks survive. Newlines become
+   * `<br>` so the value stays the same shape the renderer expects; a single-line field collapses them
+   * to spaces instead.
+   */
   function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
     e.preventDefault();
     const text = e.clipboardData.getData("text/plain");
-    document.execCommand("insertText", false, text);
+    const escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\r\n?/g, "\n");
+    const html = multiline ? escaped.replace(/\n/g, "<br>") : escaped.replace(/\n+/g, " ");
+    document.execCommand("insertHTML", false, html);
+  }
+
+  /** Enter inserts a real line break in a multiline field; single-line fields swallow it. */
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!multiline) return;
+    if (!document.execCommand("insertLineBreak")) {
+      document.execCommand("insertHTML", false, "<br>");
+    }
   }
 
   // onMouseDown + preventDefault keeps focus on the contenteditable before execCommand fires.
@@ -93,6 +120,7 @@ export default function RichContentEditable({
         suppressContentEditableWarning
         onInput={handleInput}
         onPaste={handlePaste}
+        onKeyDown={handleKeyDown}
         data-placeholder={placeholder}
         className={`min-h-8.5 rounded border px-2 py-1 empty:before:content-[attr(data-placeholder)] empty:before:text-(--color-text-light) empty:before:pointer-events-none ${className ?? ""}`}
       />
