@@ -13,6 +13,8 @@ function mapDbPageToConfig(db: any): PageConfig {
     sections: db.sections as PageConfig["sections"],
     type: db.type ?? "page",
     navPill: db.navPill ?? false,
+    metaTitle: db.metaTitle ?? null,
+    metaDescription: db.metaDescription ?? null,
   };
 }
 
@@ -163,8 +165,14 @@ export async function upsertPage(page: PageConfig) {
 
   const result = await prisma.page.upsert({
     where: { slug: page.slug },
-    create: { slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false },
-    update: { label: page.label, sections, type, navPill: page.navPill ?? false },
+    create: {
+      slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false,
+      metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
+    },
+    update: {
+      label: page.label, sections, type, navPill: page.navPill ?? false,
+      metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
+    },
   });
 
   return mapDbPageToConfig(result);

@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
-import { getAllPageSlugs, getPrimaryCollectionRouteBase } from "@/lib/pages";
+import { getPrimaryCollectionRouteBase } from "@/lib/pages";
 import { getVisibleFolders } from "@/lib/folders";
+import { prisma } from "@/lib/prisma";
+import { SITE_URL } from "@/lib/seo";
 
 /**
  * Sitemap, generated from the database on every request.
@@ -13,17 +15,18 @@ import { getVisibleFolders } from "@/lib/folders";
  *
  * Hidden folders are excluded (they 404 by design), as are templates and the admin routes.
  */
-const SITE = (process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const SITE = SITE_URL;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [pageSlugs, routeBase, folders] = await Promise.all([
-    getAllPageSlugs(),
+  const [pageRows, routeBase, folders] = await Promise.all([
+    prisma.page.findMany({ where: { type: "page" }, select: { slug: true, updatedAt: true } }),
     getPrimaryCollectionRouteBase(),
     getVisibleFolders(),
   ]);
 
-  const staticPages: MetadataRoute.Sitemap = pageSlugs.map((slug) => ({
+  const staticPages: MetadataRoute.Sitemap = pageRows.map(({ slug, updatedAt }) => ({
     url: slug === "home" ? `${SITE}/` : `${SITE}/${slug}`,
+    lastModified: updatedAt,
     changeFrequency: "monthly",
     priority: slug === "home" ? 1 : 0.8,
   }));
@@ -31,6 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const detailPages: MetadataRoute.Sitemap = routeBase
     ? folders.map((folder) => ({
         url: `${SITE}${routeBase}/${folder.slug}`,
+        lastModified: folder.updatedAt,
         changeFrequency: "monthly",
         priority: 0.6,
       }))

@@ -1,5 +1,10 @@
 # SEO metadata proposal — titles, descriptions, archive mapping
 
+> **Status (2026-10-12): metadata layer implemented and verified.**
+> Built: `src/lib/seo.ts` (title/description/canonical/OG helpers + the confirmed NAP), `Page.metaTitle`/`Page.metaDescription` (migration `page_seo_fields`, seeded for the six pages, editable in the page editor), `generateMetadata` on `/`, `/[slug]` and `/[slug]/[entitySlug]` (project titles = name-only, descriptions fall back to hero subheadings / folder copy / covers), canonicals, OG/Twitter, one JSON-LD graph (Organization + LocalBusiness + WebSite) in `(site)/layout.tsx`, and `lastModified` in `sitemap.ts`.
+> Found and fixed in passing: `NEXT_PUBLIC_BASE_URL` is stored without a scheme, so the **live sitemap and robots.txt were emitting scheme-less URLs** (`level-ground-seven.vercel.app/...`), which crawlers reject; `sitemap.ts`/`robots.ts`/`lib/seo.ts` now share one normalized origin.
+> Not yet built: the 301 redirect map, `Service` schema on the 12 service pages, `CreativeWork` on projects, per-page OG image overrides.
+
 For audit before implementation. Companion to `docs/seo-audit-legacy-site.md` (old site) and
 `docs/seo-work-plan.md` (the gap list). All sources are fields that already exist; the "authoring"
 column marks where new writing is genuinely needed.
@@ -32,6 +37,42 @@ to pick the `<service>`, measured against the live data (30 visible folders):
 Since every project that contains any paver work is "Pavers & Patios" under rule A, the descriptive
 end collapses; B keeps the service vocabulary while differentiating. Examples:
 `Cypress St: Pavers & Patios | …`, `Cartier St: Lawn installation | …`, `West 14th: Lawn installation | …`.
+
+**Length guard (locked): append the runner-up only when the full title stays ≤ 65 chars.** Without it,
+10 of 29 titles exceeded 60 characters (worst: 83) and the brand suffix — which sits at the end — is
+what Google cuts. At 65: 4 titles sit at 62–64, the max is 64, and 5 titles keep their runner-up
+(Cypress St, Larch St, West 32nd, West 6th, Wiltshire St). Final list (site order by name):
+
+```
+Alder St: Planting | Level Ground Landscape                        Bayswater St: Pavers & Patios | Level Ground Landscape
+Cartier St: Lawn installation | Level Ground Landscape             Cypress St: Pavers & Patios, Planting | Level Ground Landscape
+Duke St: Planting | Level Ground Landscape                         Dunbar St - Backyard: Pavers & Patios | Level Ground Landscape
+Dunbar St - Patio: Pavers & Patios | Level Ground Landscape        East 12th: Pavers & Patios | Level Ground Landscape
+East 22nd: Lawn installation | Level Ground Landscape              East Broadway - Condo: Planting | Level Ground Landscape
+Elliott St: Planting | Level Ground Landscape                      Elm St | Level Ground Landscape   (no covers yet)
+Elmhurst Dr: Lawn installation | Level Ground Landscape            Larch St: Pavers & Patios, Planting | Level Ground Landscape
+South Surrey: Pavers & Patios | Level Ground Landscape             West 10th: Planting | Level Ground Landscape
+West 11th: Planting | Level Ground Landscape                       West 11th - Patio: Pavers & Patios | Level Ground Landscape
+West 14th: Lawn installation | Level Ground Landscape              West 15th: Planting | Level Ground Landscape
+West 24th: Pavers & Patios | Level Ground Landscape                West 29th: Pavers & Patios | Level Ground Landscape
+West 31st: Garden maintenance | Level Ground Landscape             West 32nd: Pavers & Patios, Planting | Level Ground Landscape
+West 35th: Pavers & Patios | Level Ground Landscape                West 35th - Curb: Planting | Level Ground Landscape
+West 6th: Pavers & Patios, Planting | Level Ground Landscape       West 9th: Pavers & Patios | Level Ground Landscape
+West Vancouver: Pavers & Patios | Level Ground Landscape           Wiltshire St: Pavers & Patios, Planting | Level Ground Landscape
+```
+
+## LocalBusiness NAP (confirmed by the operator)
+
+```
+name:    Level Ground Landscape
+street:  2768 W Broadway
+city:    Vancouver, BC V6K 4P4
+phone:   (778) 223-5005
+email:   info@levelgroundlandscape.com
+areaServed: Vancouver and the Lower Mainland
+```
+
+Address is published in the Google listing already, so it goes in the schema (decision 6).
 
 (Service popularity ranking, projects per service: Pavers & Patios 23 · Planting 16 ·
 Lawn installation 14 · Garden beds & boxes 9 · Rock & gravel 6 · Retaining walls 5 · Fencing 4 ·
