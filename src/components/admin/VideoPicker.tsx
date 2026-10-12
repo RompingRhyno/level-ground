@@ -15,7 +15,9 @@ function VideoPickerModal({
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/assets")
+    // Explicit kind + limit: the API defaults to 200 rows overall, so older videos vanish from a
+    // selector in a library past that size.
+    fetch("/api/assets?kind=video&limit=500")
       .then((r) => r.json())
       .then((d: Asset[]) =>
         setAssets((d || []).filter((a) => /^video\//i.test(a.mime || "")))

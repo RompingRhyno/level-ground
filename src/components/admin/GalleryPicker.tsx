@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import { SERVICES } from "@/lib/services";
+import { TRANSITION_MIME } from "@/lib/transition";
 
 type Asset = { id: string; publicUrl: string | null; filename: string | null; alt: string | null; mime?: string | null };
 type TagRecord = { id: number; slug: string; name: string };
@@ -20,9 +22,12 @@ function StaticPicker({
   const [folder, setFolder] = useState<string>("");
   const [folders, setFolders] = useState<{ slug: string; name: string }[]>([]);
   const [tag, setTag] = useState<string>("");
+  const [service, setService] = useState<string>("");
   const [allTags, setAllTags] = useState<TagRecord[]>([]);
 
-  const filteredAssets = assets.filter((a) => !a.mime?.startsWith("video/"));
+  const filteredAssets = assets.filter(
+    (a) => !a.mime?.startsWith("video/") && a.mime !== TRANSITION_MIME
+  );
 
   useEffect(() => {
     Promise.all([
@@ -41,12 +46,13 @@ function StaticPicker({
     const params = new URLSearchParams({ kind: "image", limit: "500" });
     if (folder) params.set("folder", folder);
     if (tag) params.set("tag", tag);
+    if (service) params.set("service", service);
     fetch(`/api/assets?${params}`)
       .then((r) => r.json())
       .then((d) => setAssets(Array.isArray(d) ? d : []))
       .catch(() => setAssets([]))
       .finally(() => setLoading(false));
-  }, [folder, tag]);
+  }, [folder, tag, service]);
 
   function toggle(id: string) {
     if (selected.includes(id)) {
@@ -95,6 +101,21 @@ function StaticPicker({
             ))}
           </select>
         </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-(--color-text-dark)">Service</label>
+          <select
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+            className="rounded border px-2 py-1 text-sm"
+          >
+            <option value="">All</option>
+            {SERVICES.map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
@@ -124,6 +145,8 @@ function StaticPicker({
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 overflow-y-auto flex-1 pr-1">
           {filteredAssets.map((a) => {
             const isSelected = selected.includes(a.id);
+            // Tiles use `object-contain` over a checkerboard: the whole asset stays visible (a wide
+            // wordmark in a 16:9 cover tile loses its ends) and transparency reads as transparent.
             return (
               <button
                 key={a.id}
@@ -132,6 +155,7 @@ function StaticPicker({
                 className={`relative aspect-video rounded overflow-hidden border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   isSelected ? "border-blue-500" : "border-transparent hover:border-gray-300"
                 }`}
+                style={{ backgroundImage: "repeating-conic-gradient(#ececec 0% 25%, #ffffff 0% 50%)", backgroundSize: "14px 14px" }}
                 title={a.filename ?? a.id}
               >
                 {a.publicUrl ? (
@@ -140,7 +164,7 @@ function StaticPicker({
                     alt={a.alt ?? ""}
                     fill
                     sizes="120px"
-                    className="object-cover"
+                    className="object-contain"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-(--color-text-light)">
