@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-type NavPage = { slug: string; label: string };
+type NavPage = { slug: string; label: string; navPill?: boolean };
 
 export default function Navigation({ navPages }: { navPages: NavPage[] }) {
   const [open, setOpen] = useState(false);
@@ -112,16 +112,24 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
         </Link>
       </div>
 
-      {/* Desktop links */}
+      {/* Desktop links. A page marked `navPill` renders as the hero's pill button (`.btn-primary`) instead of
+          the underlined link — the emphasis is per page, chosen in that page's editor. */}
       <div className="hidden md:flex gap-0 items-stretch">
         {navPages.map((page) => {
           const href = `/${page.slug}`;
           const isActive = pathname === href;
+          if (page.navPill) {
+            return (
+              <Link key={page.slug} href={href} className="btn-primary self-center mx-2">
+                {page.label}
+              </Link>
+            );
+          }
           return (
             <Link
               key={page.slug}
               href={href}
-              className={`font-medium uppercase px-4 flex items-center border-b-[3px] transition-colors duration-150 ${isActive ? "border-(--color-brand-logo)" : "border-transparent hover:border-(--color-brand-logo)"}`}
+              className={`font-medium uppercase px-4 flex items-center border-b-[8px] transition-colors duration-150 ${isActive ? "border-(--color-brand-logo)" : "border-transparent hover:border-(--color-brand-logo)"}`}
             >
               {page.label}
             </Link>

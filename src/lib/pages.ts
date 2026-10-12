@@ -12,6 +12,7 @@ function mapDbPageToConfig(db: any): PageConfig {
     label: db.label,
     sections: db.sections as PageConfig["sections"],
     type: db.type ?? "page",
+    navPill: db.navPill ?? false,
   };
 }
 
@@ -20,15 +21,15 @@ export async function getPages(): Promise<PageConfig[]> {
   return dbPages.map(mapDbPageToConfig);
 }
 
-export function getNavPages(): Promise<Pick<PageConfig, "slug" | "label">[]> {
+export function getNavPages(): Promise<Pick<PageConfig, "slug" | "label" | "navPill">[]> {
   return unstable_cache(
     async () => {
       const dbPages = await prisma.page.findMany({
         orderBy: [{ order: "asc" }, { id: "asc" }],
-        select: { slug: true, label: true },
+        select: { slug: true, label: true, navPill: true },
         where: { type: "page" },
       });
-      return dbPages as Pick<PageConfig, "slug" | "label">[];
+      return dbPages as Pick<PageConfig, "slug" | "label" | "navPill">[];
     },
     ["nav-pages"],
     { tags: ["global:nav"], revalidate: CACHE_REVALIDATE_SECONDS }
@@ -162,8 +163,8 @@ export async function upsertPage(page: PageConfig) {
 
   const result = await prisma.page.upsert({
     where: { slug: page.slug },
-    create: { slug: page.slug, label: page.label, sections, type },
-    update: { label: page.label, sections, type },
+    create: { slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false },
+    update: { label: page.label, sections, type, navPill: page.navPill ?? false },
   });
 
   return mapDbPageToConfig(result);
