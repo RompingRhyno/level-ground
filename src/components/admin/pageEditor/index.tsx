@@ -45,6 +45,10 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedSections, setSavedSections] = useState<PageSection[]>(initialPage.sections || []);
   const [navPill, setNavPill] = useState<boolean>(!!initialPage.navPill);
   const [savedNavPill, setSavedNavPill] = useState<boolean>(!!initialPage.navPill);
+  const [metaTitle, setMetaTitle] = useState(initialPage.metaTitle || "");
+  const [savedMetaTitle, setSavedMetaTitle] = useState(initialPage.metaTitle || "");
+  const [metaDescription, setMetaDescription] = useState(initialPage.metaDescription || "");
+  const [savedMetaDescription, setSavedMetaDescription] = useState(initialPage.metaDescription || "");
   /**
    * Stable per-section identity, used for React keys and by dnd-kit. Seeded in an effect rather than a
    * useState initialiser on purpose: crypto.randomUUID() cannot return the same value on the server
@@ -78,7 +82,9 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
   const dirty =
     !saving &&
-    (label !== savedLabel || navPill !== savedNavPill || JSON.stringify(sections) !== JSON.stringify(savedSections));
+    (label !== savedLabel || navPill !== savedNavPill ||
+      metaTitle !== savedMetaTitle || metaDescription !== savedMetaDescription ||
+      JSON.stringify(sections) !== JSON.stringify(savedSections));
 
   const saveClass = dirty
     ? "btn-positive px-4 py-2 rounded text-sm"
@@ -225,7 +231,10 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       const res = await fetch(`/api/pages/${initialPage.slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: initialPage.slug, label, sections, navPill }),
+        body: JSON.stringify({
+          slug: initialPage.slug, label, sections, navPill,
+          metaTitle: metaTitle.trim() || null, metaDescription: metaDescription.trim() || null,
+        }),
       });
 
       if (!res.ok) {
@@ -237,6 +246,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       setSavedSections([...sections]);
       setSavedLabel(label);
       setSavedNavPill(navPill);
+      setSavedMetaTitle(metaTitle);
+      setSavedMetaDescription(metaDescription);
       return true;
     } catch (err: any) {
       setMessage(err.message || String(err));
@@ -292,6 +303,29 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         />
         Pill button in nav
       </label>
+
+      <div>
+        <label className="block text-sm font-medium text-(--color-text-dark)">Meta title</label>
+        <input
+          value={metaTitle}
+          onChange={(e) => setMetaTitle(e.target.value)}
+          placeholder="Defaults to the label, plus “| Level Ground Landscape”"
+          className="w-full rounded border px-2 py-1 text-sm"
+          style={{ backgroundColor: "white" }}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-(--color-text-dark)">Meta description</label>
+        <textarea
+          value={metaDescription}
+          onChange={(e) => setMetaDescription(e.target.value)}
+          rows={2}
+          placeholder="Defaults to the hero subheading"
+          className="w-full rounded border px-2 py-1 text-sm"
+          style={{ backgroundColor: "white" }}
+        />
+      </div>
 
       <div>
         <div className="flex items-center justify-between">

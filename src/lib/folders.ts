@@ -12,6 +12,7 @@ export type FolderRecord = {
   order: number;
   hidden: boolean;
   createdAt: Date;
+  updatedAt: Date;
 };
 
 export type FolderCard = FolderRecord & {

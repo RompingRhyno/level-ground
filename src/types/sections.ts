@@ -8,6 +8,10 @@ export type PageConfig = {
   type?: PageType;
   /** Render this page's sticky-header nav entry as a pill button rather than an underlined link. */
   navPill?: boolean;
+  /** SEO title, used verbatim (no suffix added). Seeded from the legacy site's titles. */
+  metaTitle?: string | null;
+  /** SEO description; falls back to the hero subheading when unset. */
+  metaDescription?: string | null;
 };
 
 /** Band height as a fraction of the viewport (minus the sticky header). */
