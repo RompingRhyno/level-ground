@@ -1,4 +1,5 @@
 import Image from "next/image";
+import RichText from "@/components/RichText";
 import Link from "next/link";
 import { TwoColumnSection } from "@/types/sections";
 
@@ -15,8 +16,8 @@ import { TwoColumnSection } from "@/types/sections";
  * past its ratio, so the image would stay square beside a taller text block and the pair would stop
  * matching.
  *
- * `textFirst` swaps which block leads: false (default) puts the image first — left at md+, top when
- * stacked — true puts the text block first.
+ * `textFirst` swaps which block leads at md+ only: false (default) puts the image first (left), true puts the
+ * text block first. Below md they always stack as text over image, regardless of the flag.
  *
  * `sizes` carries the cover crop: the box is square but the stored photos are landscape, so `object-cover`
  * scales by height and the source needs `box × sourceAspect` px of width (×1.78 for a 16:9 photo, the
@@ -25,17 +26,17 @@ import { TwoColumnSection } from "@/types/sections";
  *
  * All three text parts are optional and render only when present.
  */
-export default function TwoColumn({ title, body, links, image, textFirst }: TwoColumnSection) {
+export default function TwoColumn({ title, titleHref, body, links, image, textFirst }: TwoColumnSection) {
   const heading = title?.trim();
   const text = body?.trim();
   const items = (links ?? []).filter((link) => link.label?.trim() && link.href?.trim());
 
   const imageBlock = (
-    <div className="relative aspect-square overflow-hidden rounded-lg shadow md:aspect-auto">
+    <div className={`relative aspect-square overflow-hidden rounded-2xl shadow md:aspect-auto${textFirst ? "" : " md:order-1"}`}>
       {image ? (
         <Image
           src={image}
-          alt={title || ""}
+          alt={(title || "").replace(/<[^>]+>/g, "")}
           fill
           sizes="(min-width: 1600px) 1252px, (min-width: 768px) calc(80vw - 28px), 160vw"
           quality={95}
@@ -49,18 +50,29 @@ export default function TwoColumn({ title, body, links, image, textFirst }: TwoC
   );
 
   const textBlock = (
-    <div className="flex flex-col justify-center text-(--color-text-dark) md:aspect-square">
+    <div className={`flex flex-col justify-center text-(--color-text-dark) md:aspect-square${textFirst ? "" : " md:order-2"}`}>
       {(heading || text || items.length > 0) && (
         <div className="space-y-4">
-          {heading && <h2 className="text-3xl font-semibold">{heading}</h2>}
-          {text && <p>{text}</p>}
+          {heading &&
+            (titleHref ? (
+              <Link href={titleHref} className="group block">
+                <RichText
+                  as="h2"
+                  value={heading}
+                  className="heading text-3xl md:text-5xl transition-colors group-hover:text-(--color-brand-primary)!"
+                />
+              </Link>
+            ) : (
+              <RichText as="h2" value={heading} className="heading text-3xl md:text-5xl" />
+            ))}
+          {text && <RichText value={text} />}
           {items.length > 0 && (
             <ul>
               {items.map((link) => (
                 <li key={`${link.label}-${link.href}`}>
                   <Link
                     href={link.href}
-                    className="block w-full border-b border-current pt-2 leading-[1.35] transition-colors hover:text-(--color-text-light)"
+                    className="font-bold block w-full border-b border-current pt-2 leading-[1.35] transition-colors hover:text-(--color-brand-primary)"
                   >
                     {link.label}
                   </Link>
@@ -75,19 +87,12 @@ export default function TwoColumn({ title, body, links, image, textFirst }: TwoC
 
   return (
     <section>
-      {/* Content blocks cap at 1440px; wider viewports earn a margin. */}
+      {/* Content blocks cap at 1440px; wider viewports earn a margin.
+          DOM order is always text then image, so the stacked (below md) view is always text over image;
+          which block leads at md+ comes from the order utilities on the blocks themselves. */}
       <div className="mx-auto w-[90vw] max-w-[1440px] grid grid-cols-1 gap-8 md:grid-cols-2">
-        {textFirst ? (
-          <>
-            {textBlock}
-            {imageBlock}
-          </>
-        ) : (
-          <>
-            {imageBlock}
-            {textBlock}
-          </>
-        )}
+        {textBlock}
+        {imageBlock}
       </div>
     </section>
   );
