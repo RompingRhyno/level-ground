@@ -34,15 +34,15 @@ export const LEGACY_PROJECT_REDIRECTS: [string, string][] = [
   ["/projects/cypress-street-boulevard-garden", "/projects/cypress-st"],
   ["/projects/west-32nd-lawn-installation", "/projects/west-32nd"],
   ["/projects/bayswater-walkway-installation", "/projects/bayswater-st"],
-  ["/projects/dunbar-street-patio-installation", "/projects/dunbar-st---backyard"],
+  ["/projects/dunbar-street-patio-installation", "/projects/dunbar-st-backyard"],
   ["/projects/east-22nd-new-lawn-install", "/projects/east-22nd"],
   ["/projects/west-35th", "/projects/west-35th"],
   ["/projects/west-9th-artificial-turf-installation", "/projects/west-9th"],
-  ["/projects/dunbar-patio-installation", "/projects/dunbar-st---patio"],
+  ["/projects/dunbar-patio-installation", "/projects/dunbar-st-patio"],
   ["/projects/low-maintenance-backyard", "/projects/east-12th"],
   ["/projects/renewed-backyard-with-putting-green", "/projects/cartier-st"],
-  ["/projects/condo-landscape-installation", "/projects/east-broadway---condo"],
-  ["/projects/curb-appeal", "/projects/west-35th---curb"],
+  ["/projects/condo-landscape-installation", "/projects/east-broadway-condo"],
+  ["/projects/curb-appeal", "/projects/west-35th-curb"],
   ["/projects/backyard-patio-installation", "/projects/west-29th"],
 ];
 
@@ -73,6 +73,18 @@ export const LEGACY_ARCHIVE_TERMS: [string, string | null][] = [
   ["vegetable_box", "garden-beds-and-boxes"],
   ["walkway", "pavers-and-patios"],
   ["water_feature", null],
+];
+
+/**
+ * This site's own earlier slugs, before the slugify rules collapsed the triple hyphens that a
+ * " - " in a folder name used to produce. Nothing external ever linked them (they existed only on
+ * the pre-launch host), but stale bookmarks and caches land right.
+ */
+export const RENAMED_SLUG_REDIRECTS: [string, string][] = [
+  ["/projects/dunbar-st---backyard", "/projects/dunbar-st-backyard"],
+  ["/projects/dunbar-st---patio", "/projects/dunbar-st-patio"],
+  ["/projects/east-broadway---condo", "/projects/east-broadway-condo"],
+  ["/projects/west-35th---curb", "/projects/west-35th-curb"],
 ];
 
 /** The prefix all 21 archive URLs share. */

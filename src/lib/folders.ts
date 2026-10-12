@@ -220,11 +220,19 @@ export function rewriteFolderSlug(
   return { sections: rewritten, changed };
 }
 
-/** Slugify a folder name (mirrors the tag/route slug rules used elsewhere). */
+/**
+ * Slugify a folder name (mirrors the tag slug rules in the tags route).
+ *
+ * Underscores become hyphens and runs of hyphens collapse to one, so a name like "Dunbar St -
+ * Backyard" yields `dunbar-st-backyard` rather than `dunbar-st---backyard` — the hyphen in the
+ * name is a separator, not a third one.
+ */
 export function slugifyFolderName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/_+/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
