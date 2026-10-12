@@ -88,9 +88,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "unknown service" }, { status: 400 });
     }
 
+    // Same rules as slugifyFolderName: underscores become hyphens, hyphen runs collapse.
     const slug = trimmedName
       .toLowerCase()
-      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/_+/g, "-")
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-+/g, "-")
       .replace(/^-+|-+$/g, "");
 
     const tag = await prisma.tag.create({

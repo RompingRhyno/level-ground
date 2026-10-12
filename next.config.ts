@@ -4,6 +4,7 @@ import {
   LEGACY_ARCHIVE_TERMS,
   LEGACY_PAGE_REDIRECTS,
   LEGACY_PROJECT_REDIRECTS,
+  RENAMED_SLUG_REDIRECTS,
 } from "./src/lib/legacy-redirects";
 import { serviceAnchorHref } from "./src/lib/services";
 
@@ -32,6 +33,7 @@ function legacyRedirects(): LegacyRedirect[] {
 
   for (const [oldPath, destination] of LEGACY_PAGE_REDIRECTS) push(oldPath, destination);
   for (const [oldPath, destination] of LEGACY_PROJECT_REDIRECTS) push(oldPath, destination);
+  for (const [oldPath, destination] of RENAMED_SLUG_REDIRECTS) push(oldPath, destination);
   for (const [term, serviceSlug] of LEGACY_ARCHIVE_TERMS) {
     // Retired terms (null) land at the top of the installation page; the rest go to their section.
     push(`${LEGACY_ARCHIVE_PREFIX}/${term}`, serviceAnchorHref(serviceSlug) ?? "/landscape-design-installation");
