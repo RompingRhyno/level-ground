@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolveUniqueFolderSlug, rewriteFolderSlug, slugifyFolderName } from "@/lib/folders";
 import { revalidateFor } from "@/lib/revalidate";
+import { regenerateFolderAlts } from "@/lib/alt-db";
 import { deleteR2Objects, r2KeysFromMeta } from "@/lib/r2";
 import { requireSession, unauthorized } from "@/lib/api-auth";
 
@@ -88,6 +89,9 @@ export async function PATCH(request: NextRequest, context: any) {
 
       return { folder: updated, assetsMoved, pagesUpdated };
     });
+
+    // The alt text names the folder and its first four tags, so every save refreshes it.
+    await regenerateFolderAlts(result.folder.slug);
 
     await revalidateFor(
       { kind: "folder:updated", slug: result.folder.slug, previousSlug: current.slug },

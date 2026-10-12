@@ -10,6 +10,23 @@ import type { AssetData, FolderData, TagData } from "./types";
 import AssetTile from "./AssetTile";
 import Lightbox from "./Lightbox";
 import Menu from "./Menu";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import MoveModal from "./MoveModal";
 import NewTagModal from "./NewTagModal";
 import UploadModal from "./UploadModal";
@@ -212,17 +229,60 @@ function FolderPageClientInner({
     }
   }
 
+  /** How many leading tags name the alt text. Must match ALT_TAG_COUNT in src/lib/alt.ts. */
+  const ALT_TAGS = 4;
+
+  /**
+   * Clicking an inactive tag activates it into the next slot after the current alt tags (three
+   * active plus one click lands it in position four); once four are active the block is full and
+   * a click does nothing. Clicking an active tag deactivates it to the top of the inactive group.
+   */
   async function toggleTag(slug: string) {
-    const next = folder.tags.includes(slug)
-      ? folder.tags.filter((entry) => entry !== slug)
-      : [...folder.tags, slug];
-    setFolder((current) => ({ ...current, tags: next }));
+    const current = folder.tags;
+    let next: string[];
+    if (current.includes(slug)) {
+      const others = current.filter((entry) => entry !== slug);
+      const insertAt = Math.min(ALT_TAGS, others.length);
+      next = [...others.slice(0, insertAt), slug, ...others.slice(insertAt)];
+    } else {
+      if (current.length >= ALT_TAGS) return;
+      next = [...current, slug];
+    }
+    setFolder((currentFolder) => ({ ...currentFolder, tags: next }));
     try {
       await api(`/api/folders/${folder.id}`, { method: "PATCH", body: JSON.stringify({ tags: next }) });
       router.refresh();
     } catch (err: any) {
       setFolder((current) => ({ ...current, tags: folder.tags }));
       toast({ kind: "error", message: "Could not update tags", detail: err?.message });
+    }
+  }
+
+  const tagSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  // Folder tags first in their stored order (the alt order), then the rest of the vocabulary.
+  const orderedTags: TagData[] = [
+    ...folder.tags.map((slug) => tags.find((t) => t.slug === slug)).filter((t): t is TagData => !!t),
+    ...tags.filter((t) => !folder.tags.includes(t.slug)),
+  ];
+
+  /** Drag-reorder: the array order is the alt order, so the list is the source of truth. */
+  async function handleTagDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    const current = folder.tags;
+    const from = current.indexOf(String(active.id));
+    const to = current.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    const next = arrayMove(current, from, to);
+    setFolder((currentFolder) => ({ ...currentFolder, tags: next }));
+    try {
+      await api(`/api/folders/${folder.id}`, { method: "PATCH", body: JSON.stringify({ tags: next }) });
+    } catch (err) {
+      setFolder((currentFolder) => ({ ...currentFolder, tags: current }));
+      toast({ kind: "error", message: "Could not reorder tags", detail: (err as Error)?.message });
     }
   }
 
@@ -505,33 +565,28 @@ function FolderPageClientInner({
             </button>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {tags.length === 0 && <span className="text-sm text-(--color-text-light)">No tags yet.</span>}
-          {tags.map((tag) => {
-            const active = folder.tags.includes(tag.slug);
-            return (
-              <span key={tag.id} className="inline-flex items-center">
-                <button
-                  type="button"
-                  onClick={() => toggleTag(tag.slug)}
-                  title={tag.description ?? undefined}
-                  aria-pressed={active}
-                  className={`rounded-full px-3 py-1 text-sm ${active ? "btn-selected" : "admin-btn"}`}
-                >
-                  {tag.name}
-                </button>
-                <Menu
-                  className="-ml-1"
-                  buttonClassName="rounded-full px-1 py-1 text-xs text-(--color-text-light) hover:text-(--color-text-dark)"
-                  items={[
-                    { label: "Rename tag…", onSelect: () => void renameTag(tag) },
-                    { label: "Delete tag…", danger: true, onSelect: () => void deleteTag(tag) },
-                  ]}
+        <p className="mb-2 text-xs text-(--color-text-light)">
+          The first {ALT_TAGS} tags name this project&rsquo;s photo alt text. Click one to add or remove it;
+          drag its ⋮ handle to reorder — green marks the tags in use.
+        </p>
+        <DndContext sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
+          <SortableContext items={folder.tags} strategy={horizontalListSortingStrategy}>
+            <div className="flex flex-wrap gap-2">
+              {tags.length === 0 && <span className="text-sm text-(--color-text-light)">No tags yet.</span>}
+              {orderedTags.map((tag, index) => (
+                <SortableTagPill
+                  key={tag.id}
+                  tag={tag}
+                  inFolder={folder.tags.includes(tag.slug)}
+                  inAlt={folder.tags.includes(tag.slug) && index < ALT_TAGS}
+                  onToggle={toggleTag}
+                  onRename={renameTag}
+                  onDelete={deleteTag}
                 />
-              </span>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Toolbar */}
@@ -867,6 +922,78 @@ function FolderPageClientInner({
 
       <NewTagModal open={newTagOpen} onClose={() => setNewTagOpen(false)} onCreated={tagCreated} />
     </div>
+  );
+}
+
+/**
+ * One tag pill. The ⋮ is both the context menu and the drag handle: press-and-move reorders the
+ * folder's tags (the array order decides which feed the alt text), a plain click opens the menu.
+ * Tags outside the folder are not draggable — clicking them adds them.
+ */
+function SortableTagPill({
+  tag,
+  inFolder,
+  inAlt,
+  onToggle,
+  onRename,
+  onDelete,
+}: {
+  tag: TagData;
+  inFolder: boolean;
+  inAlt: boolean;
+  onToggle: (slug: string) => void;
+  onRename: (tag: TagData) => void;
+  onDelete: (tag: TagData) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: tag.slug,
+    disabled: !inFolder,
+  });
+
+  return (
+    <span
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      className="inline-flex items-center"
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(tag.slug)}
+        title={tag.description ?? undefined}
+        aria-pressed={inFolder}
+        className={`rounded-full px-3 py-1 text-sm ${inFolder ? "btn-selected" : "admin-btn"}`}
+        style={
+          inAlt
+            ? {
+                backgroundColor: "var(--color-brand-primary)",
+                borderColor: "var(--color-brand-primary)",
+                color: "#ffffff",
+              }
+            : undefined
+        }
+      >
+        {tag.name}
+      </button>
+      <span
+        {...attributes}
+        {...listeners}
+        className={`-ml-1 rounded-full px-1 py-1 text-xs ${
+          inFolder ? "cursor-grab touch-none active:cursor-grabbing" : ""
+        }`}
+      >
+        <Menu
+          buttonClassName="rounded-full px-1 py-1 text-xs text-(--color-text-light) hover:text-(--color-text-dark)"
+          items={[
+            { label: "Rename tag…", onSelect: () => onRename(tag) },
+            { label: "Delete tag…", danger: true, onSelect: () => onDelete(tag) },
+          ]}
+        />
+      </span>
+    </span>
   );
 }
 
