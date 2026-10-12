@@ -224,8 +224,11 @@ vocabularies, so this is a design intent rather than something the old data prov
 grouping of services; the operator's intent is sharper:
 
 - **Tags are the specific covers** — the consolidated, deduplicated items in `docs/services-revamp-tags.csv`
-  (`detail` column): Patio, Walkway, Interlocking brick, Hedges, Micro clover, River rock, Tree pruning.
-  33 of them, and a project earns the ones it actually involved.
+  (`detail` column): Patio, Hedges, Micro clover, River rock, Tree pruning and so on. A project earns the
+  ones it actually involved. **The live vocabulary is the `COVERS` table in
+  `scripts/apply-cover-tags.ts`; the current list and the evidence behind every cover are in
+  `docs/service-copy-brief.md`.** The audit documents (`services-audit.*`) are a historical record of the
+  first pass and use earlier names — do not read vocabulary from them.
 - **Services are the categories above them** — Pavers & Patios, Planting, Lawn installation, Garden beds &
   boxes, Retaining walls, Rock & gravel features, Decking, Fencing, Outdoor Lighting, Irrigation, plus
   Garden maintenance on the maintenance side. A service is not a tag; it is what a tag sits under.
