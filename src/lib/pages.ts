@@ -13,6 +13,7 @@ function mapDbPageToConfig(db: any): PageConfig {
     sections: db.sections as PageConfig["sections"],
     type: db.type ?? "page",
     navPill: db.navPill ?? false,
+    jumpToTop: db.jumpToTop ?? false,
     metaTitle: db.metaTitle ?? null,
     metaDescription: db.metaDescription ?? null,
   };
@@ -167,10 +168,12 @@ export async function upsertPage(page: PageConfig) {
     where: { slug: page.slug },
     create: {
       slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false,
+      jumpToTop: page.jumpToTop ?? false,
       metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
     },
     update: {
       label: page.label, sections, type, navPill: page.navPill ?? false,
+      jumpToTop: page.jumpToTop ?? false,
       metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
     },
   });

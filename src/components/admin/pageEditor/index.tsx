@@ -45,6 +45,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedSections, setSavedSections] = useState<PageSection[]>(initialPage.sections || []);
   const [navPill, setNavPill] = useState<boolean>(!!initialPage.navPill);
   const [savedNavPill, setSavedNavPill] = useState<boolean>(!!initialPage.navPill);
+  const [jumpToTop, setJumpToTop] = useState<boolean>(!!initialPage.jumpToTop);
+  const [savedJumpToTop, setSavedJumpToTop] = useState<boolean>(!!initialPage.jumpToTop);
   const [metaTitle, setMetaTitle] = useState(initialPage.metaTitle || "");
   const [savedMetaTitle, setSavedMetaTitle] = useState(initialPage.metaTitle || "");
   const [metaDescription, setMetaDescription] = useState(initialPage.metaDescription || "");
@@ -82,7 +84,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
 
   const dirty =
     !saving &&
-    (label !== savedLabel || navPill !== savedNavPill ||
+    (label !== savedLabel || navPill !== savedNavPill || jumpToTop !== savedJumpToTop ||
       metaTitle !== savedMetaTitle || metaDescription !== savedMetaDescription ||
       JSON.stringify(sections) !== JSON.stringify(savedSections));
 
@@ -232,7 +234,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slug: initialPage.slug, label, sections, navPill,
+          slug: initialPage.slug, label, sections, navPill, jumpToTop,
           metaTitle: metaTitle.trim() || null, metaDescription: metaDescription.trim() || null,
         }),
       });
@@ -246,6 +248,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       setSavedSections([...sections]);
       setSavedLabel(label);
       setSavedNavPill(navPill);
+      setSavedJumpToTop(jumpToTop);
       setSavedMetaTitle(metaTitle);
       setSavedMetaDescription(metaDescription);
       return true;
@@ -302,6 +305,15 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
           onChange={(e) => setNavPill(e.target.checked)}
         />
         Pill button in nav
+      </label>
+
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input
+          type="checkbox"
+          checked={jumpToTop}
+          onChange={(e) => setJumpToTop(e.target.checked)}
+        />
+        Jump to top button
       </label>
 
       <div>

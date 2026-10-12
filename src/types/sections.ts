@@ -8,6 +8,8 @@ export type PageConfig = {
   type?: PageType;
   /** Render this page's sticky-header nav entry as a pill button rather than an underlined link. */
   navPill?: boolean;
+  /** Show the floating "jump to top" button on this page's public view. */
+  jumpToTop?: boolean;
   /** SEO title, used verbatim (no suffix added). Seeded from the legacy site's titles. */
   metaTitle?: string | null;
   /** SEO description; falls back to the hero subheading when unset. */

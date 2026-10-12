@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import JumpToTop from "@/components/JumpToTop";
 import RenderSections from "@/components/RenderSections";
 import { getCollectionRouteConfig, getPageBySlug, getAllCollectionRoutes } from "@/lib/pages";
 import { getFolderBySlug } from "@/lib/folders";
@@ -100,6 +101,7 @@ export default async function CollectionItemPage({ params }: Props) {
         pageSlug={templatePage.slug}
         entityContext={{ entitySlug, source: routeConfig.source }}
       />
+      {templatePage.jumpToTop ? <JumpToTop /> : null}
     </>
   );
 }
