@@ -1,4 +1,5 @@
 import Image from "next/image";
+import RichText from "@/components/RichText";
 import Link from "next/link";
 
 type ServiceItem = {
@@ -35,7 +36,7 @@ export default function Services({
                     <Link
                         key={index}
                         href={service.href}
-                        className="group relative block overflow-hidden rounded-lg"
+                        className="group relative block overflow-hidden rounded-2xl"
                     >
                         {/* Image */}
                         <div className="relative aspect-4/3">
@@ -46,7 +47,7 @@ export default function Services({
                                     fill
                                     sizes="(min-width:640px) 50vw, 100vw"
                                     quality={85}
-                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    className="object-cover transition-transform duration-[1500ms] group-hover:[transform:scale(1.05)]"
                                     loading="lazy"
                                 />
                             ) : (
@@ -69,9 +70,10 @@ export default function Services({
 
             {/* Body text */}
             {bodyText && (
-                <p className="mt-10 max-w-3xl mx-auto px-4 md:px-8 text-center text-(--color-text-primary)">
-                    {bodyText}
-                </p>
+                <RichText
+                    value={bodyText}
+                    className="mt-10 max-w-3xl mx-auto px-4 md:px-8 text-center text-(--color-text-primary)"
+                />
             )}
         </section>
     );

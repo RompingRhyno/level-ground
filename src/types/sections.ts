@@ -6,7 +6,12 @@ export type PageConfig = {
   label: string;
   sections: PageSection[];
   type?: PageType;
+  /** Render this page's sticky-header nav entry as a pill button rather than an underlined link. */
+  navPill?: boolean;
 };
+
+/** Band height as a fraction of the viewport (minus the sticky header). */
+export type HeroHeight = "full" | "tall" | "medium" | "short";
 
 export type HeroSection = {
   type: "hero";
@@ -14,7 +19,14 @@ export type HeroSection = {
   subheading?: string;
   buttonText: string;
   buttonHref: string;
+  /** Defaults to "full" when absent. */
+  height?: HeroHeight;
   image: string;
+  /**
+   * Optional transparent image (PNG/WebP) drawn over the full-span photo, above the heading — a mark
+   * or badge that needs the artwork's own transparency, which a background photo cannot carry.
+   */
+  overlayImage?: string;
 };
 
 export type TwoColumnLink = {
@@ -25,6 +37,8 @@ export type TwoColumnLink = {
 export type TwoColumnSection = {
   type: "twoColumn";
   title: string;
+  /** Optional link for the heading itself — e.g. a service list heading pointing at its service page. */
+  titleHref?: string;
   body: string;
   links?: TwoColumnLink[];
   image: string;
@@ -52,6 +66,12 @@ export type GallerySection = {
   lightbox?: boolean;
   heading?: string;
   body?: string;
+  /**
+   * Optional anchor id, so other pages can deep-link to this gallery (e.g. the home page's two-column
+   * service lists link to `/landscape-design-installation#planting`). Keep it stable: links elsewhere
+   * point at it, and the section carries a scroll margin so the sticky header does not cover the top.
+   */
+  anchor?: string;
   tagDisplay?: GalleryTagDisplay;
 } & (
   | { mode: "static"; assetIds: string[] }
