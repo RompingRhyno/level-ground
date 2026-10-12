@@ -5,6 +5,7 @@ import { usageForAssets } from "@/lib/media-refs";
 import { lockFolderForOrdering, nameInsertionSlot } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
+import { TRANSITION_MIME } from "@/lib/transition";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
@@ -26,6 +27,7 @@ function clampInt(value: string | null, fallback: number, min: number, max: numb
  *   folder=<slug>          assets in a folder
  *   folder=__none__        assets with no folder
  *   tag=<slug>             assets in folders carrying the tag
+ *   service=<slug>         assets in folders carrying any cover of that service category
  *   q=<text>               filename contains (case-insensitive)
  *   kind=image|video|other mime grouping
  *   sort=created_asc|created_desc|name_asc|order_asc
@@ -39,6 +41,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const folder = url.searchParams.get("folder");
   const tag = url.searchParams.get("tag");
+  const service = url.searchParams.get("service");
   const q = url.searchParams.get("q")?.trim();
   const kind = url.searchParams.get("kind");
   const sort = url.searchParams.get("sort") ?? "created_desc";
@@ -51,21 +54,41 @@ export async function GET(request: Request) {
 
   if (folder === "__none__") {
     where.folder = null;
-  } else if (folder) {
-    where.folder = folder;
   }
 
+  // Folder, tag and service all resolve to a set of folder slugs; when several are present they are
+  // intersected so the controls compose, instead of the last one overwriting the others.
+  const folderSets: Set<string>[] = [];
+  if (folder && folder !== "__none__") folderSets.push(new Set([folder]));
   if (tag) {
     const taggedFolders = await prisma.folder.findMany({
       where: { tags: { has: tag } },
       select: { slug: true },
     });
-    where.folder = { in: taggedFolders.map((f) => f.slug) };
+    folderSets.push(new Set(taggedFolders.map((f) => f.slug)));
+  }
+  if (service) {
+    const serviceTagSlugs = (
+      await prisma.tag.findMany({ where: { service }, select: { slug: true } })
+    ).map((t) => t.slug);
+    const serviceFolders = await prisma.folder.findMany({
+      where: { tags: { hasSome: serviceTagSlugs } },
+      select: { slug: true },
+    });
+    folderSets.push(new Set(serviceFolders.map((f) => f.slug)));
+  }
+  if (folderSets.length === 1) {
+    where.folder = { in: [...folderSets[0]] };
+  } else if (folderSets.length > 1) {
+    const [first, ...rest] = folderSets;
+    where.folder = { in: [...first].filter((slug) => rest.every((set) => set.has(slug))) };
   }
 
   if (q) where.filename = { contains: q, mode: "insensitive" };
 
-  if (kind === "image") where.mime = { startsWith: "image/" };
+  // `image/x-transition` is a marker row, not a picture: it has no single frame, so it must not
+  // appear in an image picker (or any image listing).
+  if (kind === "image") where.mime = { startsWith: "image/", not: TRANSITION_MIME };
   else if (kind === "video") where.mime = { startsWith: "video/" };
   else if (kind === "other") {
     where.NOT = [{ mime: { startsWith: "image/" } }, { mime: { startsWith: "video/" } }];
@@ -144,19 +167,24 @@ export async function POST(request: Request) {
       await lockFolderForOrdering(tx, folderSlug);
 
       // Fresh uploads take their place in filename order without disturbing the existing sequence: find the
-      // slot this name earns, make room by renumbering the tail, then insert.
-      const { slot, tail } = await nameInsertionSlot(tx, folderSlug, filename);
-      if (tail.length) {
-        // Nulling first keeps the unique index happy while the tail is reassigned (NULLs do not collide).
-        await tx.asset.updateMany({
-          where: { id: { in: tail.map((a: { id: string }) => a.id) } },
-          data: { orderIndex: null },
-        });
-        for (let i = 0; i < tail.length; i++) {
-          await tx.asset.update({ where: { id: tail[i].id }, data: { orderIndex: slot + i + 2 } });
-        }
+      // slot this name earns, then renumber the folder densely (1..n+1) with the newcomer at slot+1.
+      //
+      // Dense renumbering, not `slot + 1` alone: `slot` is a *count of names*, and it only coincides with
+      // a free index when the folder's indexes are an unbroken 1..n. Deletions leave gaps (or a transition
+      // takes a first member's slot and shifts the tail), and then `slot + 1` lands on an occupied index
+      // and the create dies on `@@unique([folder, orderIndex])`. Rewriting every row makes the insertion
+      // point free by construction.
+      const { slot, head, tail } = await nameInsertionSlot(tx, folderSlug, filename);
+      // Nulling first keeps the unique index satisfied while rows are reassigned (NULLs do not collide).
+      await tx.asset.updateMany({ where: { folder: folderSlug }, data: { orderIndex: null } });
+      let next = 1;
+      for (const a of head) {
+        await tx.asset.update({ where: { id: a.id }, data: { orderIndex: next++ } });
       }
-      const orderIndex = slot + 1;
+      const orderIndex = next++;
+      for (const a of tail) {
+        await tx.asset.update({ where: { id: a.id }, data: { orderIndex: next++ } });
+      }
 
       return tx.asset.create({
         data: {
