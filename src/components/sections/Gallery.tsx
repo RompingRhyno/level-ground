@@ -1,9 +1,10 @@
 import Image from "next/image";
+import SectionHeader from "@/components/sections/SectionHeader";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { GallerySection } from "@/types/sections";
 import { prisma } from "@/lib/prisma";
-import { getLayoutCells, getCellSizes, edgeCornerClasses } from "@/lib/gallery-layout";
+import { getLayoutCells, getCellSizes } from "@/lib/gallery-layout";
 import { resolveTransitions } from "@/lib/transition-db";
 import TransitionTile from "./TransitionTile";
 import GalleryClient from "./GalleryClient";
@@ -18,7 +19,7 @@ type AssetRow = {
   width: number | null;
   height: number | null;
 };
-type TagRow = { slug: string; name: string };
+type TagRow = { slug: string; name: string; service: string | null };
 
 const ASSET_SELECT = {
   id: true,
@@ -79,7 +80,7 @@ async function resolveTags(section: GallerySection, assets: AssetRow[]): Promise
   if (td.mode === "manual" && td.tags?.length) {
     const tags = await prisma.tag.findMany({
       where: { slug: { in: td.tags } },
-      select: { slug: true, name: true },
+      select: { slug: true, name: true, service: true },
       orderBy: { name: "asc" },
     });
     return tags;
@@ -100,7 +101,7 @@ async function resolveTags(section: GallerySection, assets: AssetRow[]): Promise
 
     const tags = await prisma.tag.findMany({
       where: { slug: { in: tagSlugs } },
-      select: { slug: true, name: true },
+      select: { slug: true, name: true, service: true },
       orderBy: { name: "asc" },
     });
     return tags;
@@ -121,7 +122,7 @@ async function resolveProjects(assets: AssetRow[]): Promise<Record<string, Light
   });
   const tagSlugs = [...new Set(folders.flatMap((f) => f.tags))];
   const tagRows = tagSlugs.length
-    ? await prisma.tag.findMany({ where: { slug: { in: tagSlugs } }, select: { slug: true, name: true } })
+    ? await prisma.tag.findMany({ where: { slug: { in: tagSlugs } }, select: { slug: true, name: true, service: true } })
     : [];
 
   const bySlug = new Map(folders.map((f) => [f.slug, f]));
@@ -134,7 +135,10 @@ async function resolveProjects(assets: AssetRow[]): Promise<Record<string, Light
       name: f.name,
       slug: f.slug,
       description: f.description,
-      tags: f.tags.map((s) => byTag.get(s)).filter((t): t is { slug: string; name: string } => Boolean(t)),
+      tags: f.tags
+        .map((s) => byTag.get(s))
+        .filter((t): t is TagRow => Boolean(t))
+        .map((t) => ({ slug: t.slug, name: t.name, service: t.service })),
     };
   }
   return out;
@@ -149,30 +153,6 @@ async function findCollectionIndexPageSlug(): Promise<string | null> {
     }
   }
   return null;
-}
-
-function SectionHeader({ heading, body }: { heading?: string; body?: string }) {
-  if (!heading && !body) return null;
-  return (
-    <div className="w-full px-4 md:px-8 mb-8">
-      {heading && (
-        <h2
-          className="heading max-w-4xl text-3xl sm:text-3xl md:text-5xl font-light leading-tight mb-6"
-          dangerouslySetInnerHTML={{ __html: heading }}
-          style={{ color: "var(--color-text-heading)" }}
-        />
-      )}
-
-      {body && (
-        <p
-          className="mt-4 max-w-3xl text-left"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          {body}
-        </p>
-      )}
-    </div>
-  );
 }
 
 function TagPills({ tags, collectionSlug }: { tags: TagRow[]; collectionSlug: string | null }) {
@@ -217,7 +197,7 @@ export default async function Gallery(section: GallerySection) {
 
   if (section.lightbox) {
     return (
-      <section>
+      <section id={section.anchor || undefined} className="scroll-mt-[80px]">
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
         <GalleryClient
@@ -235,14 +215,14 @@ export default async function Gallery(section: GallerySection) {
     // browser's column balancing, so an item cannot know whether it sits on the screen edge. A group
     // there uses its first member's aspect (the row carries those dimensions).
     return (
-      <section>
+      <section id={section.anchor || undefined} className="scroll-mt-[80px]">
         <SectionHeader heading={section.heading} body={section.body} />
         <TagPills tags={tags} collectionSlug={collectionSlug} />
-        <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5">
+        <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5 px-6">
           {valid.map((asset) => {
             const group = transitions[asset.id];
             return (
-              <div key={asset.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
+              <div key={asset.id} className="break-inside-avoid mb-1.5 rounded-2xl overflow-hidden">
                 {group ? (
                   <div
                     className="relative w-full"
@@ -279,23 +259,17 @@ export default async function Gallery(section: GallerySection) {
   const cells = getLayoutCells(valid.length, layout === "bento" ? "bento" : "grid");
 
   return (
-    <section>
+    <section id={section.anchor || undefined} className="scroll-mt-[80px]">
       <SectionHeader heading={section.heading} body={section.body} />
       <TagPills tags={tags} collectionSlug={collectionSlug} />
 
-      {/* Mobile: simple 1–2 col responsive grid. Full bleed, so at one column a tile touches both edges
-          (all corners square) and at two columns the left tile squares its left pair, the right tile its
-          right pair. */}
-      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-        {valid.map((asset, i) => {
+      {/* Mobile: simple 1–2 col responsive grid. Inset 24px each side to match the collection index's card
+          grid, so every tile carries the same corner radius — no tile touches the screen edge any more. */}
+      <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5 px-6">
+        {valid.map((asset) => {
           const group = transitions[asset.id];
           return (
-            <div
-              key={asset.id}
-              className={`relative aspect-video w-full overflow-hidden rounded-none ${
-                i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l"
-              }`}
-            >
+            <div key={asset.id} className="relative aspect-video w-full overflow-hidden rounded-2xl">
               {group ? (
                 <TransitionTile
                   members={group.members}
@@ -324,9 +298,9 @@ export default async function Gallery(section: GallerySection) {
           per tile, `span 6` for a hero); rendering it in three columns leaves columns 4–6 as implicit auto
           tracks, which collapse to a 0px column and a stray wide one — one tile per triple row comes out
           ~140px wide. GalleryClient (the lightbox path) already declares six. Quality tiers: hero and
-          bento-large run full or two-thirds width (q95), the small tiles a third (q85). Corners that touch
-          the screen edge are square (edgeCornerClasses); the rest stay rounded. */}
-      <div className="hidden md:grid md:grid-cols-6 gap-1.5">
+          bento-large run full or two-thirds width (q95), the small tiles a third (q85). Inset 24px each
+          side like the mobile grid, so corners are uniform. */}
+      <div className="hidden md:grid md:grid-cols-6 gap-1.5 px-6">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
           const group = transitions[asset.id];
@@ -337,10 +311,9 @@ export default async function Gallery(section: GallerySection) {
                 gridColumn: `${cell.colStart} / span ${cell.colSpan}`,
                 gridRow: `${cell.rowStart} / span ${cell.rowSpan}`,
               }}
-              className={`relative rounded overflow-hidden ${edgeCornerClasses(
-                cell.colStart,
-                cell.colSpan,
-              )}${cell.cellType !== "bento-large" ? " aspect-video" : ""}`}
+              className={`relative rounded-2xl overflow-hidden${
+                cell.cellType !== "bento-large" ? " aspect-video" : ""
+              }`}
             >
               {group ? (
                 <TransitionTile

@@ -4,6 +4,7 @@ import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "
 import Image from "next/image";
 import Link from "next/link";
 import type { ResolvedTransition } from "@/lib/transition";
+import { serviceAnchorHref } from "@/lib/services";
 import TransitionTile from "./TransitionTile";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
@@ -14,7 +15,7 @@ export type LightboxProject = {
   name: string;
   slug: string;
   description: string | null;
-  tags: { slug: string; name: string }[];
+  tags: { slug: string; name: string; service?: string | null }[];
 };
 
 function ChevronLeftIcon() {
@@ -243,7 +244,7 @@ export default function GalleryLightbox({
                 nav(onPrev);
               }}
               aria-label="Previous image"
-              className="group h-20 lg:h-24 w-[clamp(2.5rem,6vw,5rem)] rounded-lg flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+              className="group h-20 lg:h-24 w-[clamp(2.5rem,6vw,5rem)] rounded-2xl flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
             >
               <ChevronLeftIcon />
             </button>
@@ -315,7 +316,7 @@ export default function GalleryLightbox({
                   nav(onNext);
                 }}
                 aria-label="Next image"
-                className="group h-20 lg:h-24 w-[clamp(2.5rem,6vw,5rem)] rounded-lg flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
+                className="group h-20 lg:h-24 w-[clamp(2.5rem,6vw,5rem)] rounded-2xl flex items-center justify-center text-(--color-text-dark) hover:bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-text-dark)"
               >
                 <ChevronRightIcon />
               </button>
@@ -343,14 +344,22 @@ export default function GalleryLightbox({
             </div>
             {project.tags.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag.slug}
-                    className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
+                {/* Covers link to their service category's section, the same as the project page's own
+                    pills; one without a service stays a plain chip. */}
+                {project.tags.map((tag) => {
+                  const href = serviceAnchorHref(tag.service);
+                  const className =
+                    "text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)";
+                  return href ? (
+                    <Link key={tag.slug} href={href} className={className}>
+                      {tag.name}
+                    </Link>
+                  ) : (
+                    <span key={tag.slug} className={className}>
+                      {tag.name}
+                    </span>
+                  );
+                })}
               </div>
             )}
             {project.description && (
@@ -385,7 +394,7 @@ export default function GalleryLightbox({
               onClick={() => onThumbClick(idx)}
               aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
               aria-current={open === idx}
-              className="relative shrink-0 rounded overflow-hidden bg-black/5 aspect-video w-28"
+              className="relative shrink-0 rounded-2xl overflow-hidden bg-black/5 aspect-video w-28"
             >
               <div className="absolute inset-0">
                 <Image src={a.publicUrl} alt="" fill className="object-cover" loading="lazy" sizes="112px" />
