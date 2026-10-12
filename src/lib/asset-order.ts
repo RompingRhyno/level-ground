@@ -36,5 +36,5 @@ export async function nameInsertionSlot(tx: any, folderSlug: string, filename: s
   })) as { id: string; filename: string | null; orderIndex: number }[];
 
   const slot = existing.filter((a) => compareAssetNames(a.filename ?? "", filename) <= 0).length;
-  return { slot, tail: existing.slice(slot) };
+  return { slot, head: existing.slice(0, slot), tail: existing.slice(slot) };
 }
