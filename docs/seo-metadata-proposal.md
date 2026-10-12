@@ -3,9 +3,12 @@
 > **Status (2026-10-12): metadata layer implemented and verified.**
 > Built: `src/lib/seo.ts` (title/description/canonical/OG helpers + the confirmed NAP), `Page.metaTitle`/`Page.metaDescription` (migration `page_seo_fields`, seeded for the six pages, editable in the page editor), `generateMetadata` on `/`, `/[slug]` and `/[slug]/[entitySlug]` (project titles = name-only, descriptions fall back to hero subheadings / folder copy / covers), canonicals, OG/Twitter, one JSON-LD graph (Organization + LocalBusiness + WebSite) in `(site)/layout.tsx`, and `lastModified` in `sitemap.ts`.
 > Found and fixed in passing: `NEXT_PUBLIC_BASE_URL` is stored without a scheme, so the **live sitemap and robots.txt were emitting scheme-less URLs** (`level-ground-seven.vercel.app/...`), which crawlers reject; `sitemap.ts`/`robots.ts`/`lib/seo.ts` now share one normalized origin.
-> Built since: the **301 redirect map** — `src/lib/legacy-redirects.ts` (data) + `next.config.ts` (`redirects()`),
-> verified end to end against the dev server (see the section at the end). Still to build: `Service` schema on
-> the 12 service pages, `CreativeWork` on projects, per-page OG image overrides.
+> Built since: the **301 redirect map** (`src/lib/legacy-redirects.ts` + `redirects()` in
+> `next.config.ts`, verified against all 102 source rows), **`Service` schema** on both service pages
+> (driven by the section anchors — 10 on installation, 2 on maintenance), **`CreativeWork`** on every
+> project page, and per-page **OG images** (a page's hero; a project's first visible photo). The
+> structured-data layer is complete; everything remaining is account-side (GTM, Search Console) or
+> happens at cutover (see `docs/handoff.md`).
 
 For audit before implementation. Companion to `docs/seo-audit-legacy-site.md` (old site) and
 `docs/seo-work-plan.md` (the gap list). All sources are fields that already exist; the "authoring"

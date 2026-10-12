@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { PageConfig, PageSection } from "@/types/sections";
+import { SERVICE_NAME_BY_SLUG } from "@/lib/services";
 
 /**
  * Site-wide SEO facts and the small helpers every route composes its metadata from.
@@ -107,6 +108,50 @@ export function projectDescription(name: string, description: string | null, cov
   return clampDescription(
     `A residential landscaping project in Vancouver by ${SUFFIX}${list ? ` — ${list}` : ""}.`
   );
+}
+
+/**
+ * The `Service` nodes for a service page: one per section anchor. The service pages carry a section
+ * per service (10 on installation, 2 on maintenance) and each section's anchor is the service slug,
+ * so the anchors are the source of truth — sections gain or lose a service and the schema follows.
+ */
+export function serviceSchemaNodes(anchors: string[], pagePath: string): Record<string, unknown>[] {
+  return anchors
+    .filter((slug) => SERVICE_NAME_BY_SLUG[slug])
+    .map((slug) => ({
+      "@type": "Service",
+      "@id": `${SITE_URL}${pagePath}#${slug}`,
+      name: SERVICE_NAME_BY_SLUG[slug],
+      url: `${SITE_URL}${pagePath}#${slug}`,
+      areaServed: BUSINESS.areas.map((a) => ({ "@type": "Place", name: a })),
+      provider: { "@id": `${SITE_URL}/#localbusiness` },
+    }));
+}
+
+/** The `CreativeWork` node for a project page: the portfolio piece itself. */
+export function projectSchemaNode({
+  entityPath,
+  name,
+  description,
+  image,
+  coverNames,
+}: {
+  entityPath: string;
+  name: string;
+  description: string;
+  image: string | null;
+  coverNames: string[];
+}): Record<string, unknown> {
+  return {
+    "@type": "CreativeWork",
+    "@id": `${SITE_URL}${entityPath}#project`,
+    name,
+    description,
+    url: `${SITE_URL}${entityPath}`,
+    ...(image ? { image } : {}),
+    creator: { "@id": `${SITE_URL}/#organization` },
+    ...(coverNames.length ? { about: coverNames.slice(0, 4).map((n) => ({ "@type": "Thing", name: n })) } : {}),
+  };
 }
 
 /** The Metadata every public route returns, so canonicals/OG/Twitter cannot drift per route. */
