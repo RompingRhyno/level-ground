@@ -8,6 +8,8 @@ export type TagRecord = {
   slug: string;
   name: string;
   description: string | null;
+  /** The service this cover sits under (a service slug); see src/lib/services.ts. */
+  service: string | null;
   createdAt: Date;
 };
 

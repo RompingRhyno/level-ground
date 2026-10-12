@@ -7,10 +7,11 @@ import TransitionTile from "./TransitionTile";
 import type { LightboxProject } from "./GalleryLightbox";
 import type { GalleryLayout } from "@/types/sections";
 import type { ResolvedTransition } from "@/lib/transition";
+import { serviceAnchorHref } from "@/lib/services";
 
 type Asset = { id: string; publicUrl: string; alt: string | null };
 
-type TagRow = { slug: string; name: string };
+type TagRow = { slug: string; name: string; /** Service slug; absent in the editor preview. */ service?: string | null };
 
 type Props = {
   name: string;
@@ -44,7 +45,7 @@ function StaticGrid({
         {assets.map((a) => {
           const group = transitions[a.id];
           return (
-            <div key={a.id} className="break-inside-avoid mb-1.5 rounded overflow-hidden">
+            <div key={a.id} className="break-inside-avoid mb-1.5 rounded-2xl overflow-hidden">
               {group ? (
                 <div className="relative w-full aspect-video">
                   <TransitionTile
@@ -78,13 +79,13 @@ function StaticGrid({
   return (
     <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5">
       {assets.map((a, i) => {
-        const sm = i % 2 === 0 ? "sm:rounded-r" : "sm:rounded-l";
+        const sm = i % 2 === 0 ? "sm:rounded-r-2xl" : "sm:rounded-l-2xl";
         const md =
           i % 3 === 0
-            ? "md:rounded-r"
+            ? "md:rounded-r-2xl"
             : i % 3 === 1
-              ? "md:rounded"
-              : "md:rounded-l md:rounded-r-none";
+              ? "md:rounded-2xl"
+              : "md:rounded-l-2xl md:rounded-r-none";
         const group = transitions[a.id];
         return (
           <div key={a.id} className={`relative aspect-video overflow-hidden rounded-none ${sm} ${md}`}>
@@ -146,11 +147,17 @@ export default function CollectionItemClient({
 
         {displayTags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
-            {displayTags.map((tag) =>
-              collectionSlug ? (
+            {/* Each cover links to its service category — the section for that service on the
+                installation or maintenance page. A cover without a service (or in a preview that has
+                no collection route) falls back to the tag filter, then to plain text. */}
+            {displayTags.map((tag) => {
+              const href =
+                serviceAnchorHref(tag.service) ??
+                (collectionSlug ? `/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}` : null);
+              return href ? (
                 <Link
                   key={tag.slug}
-                  href={`/${collectionSlug}?tag=${encodeURIComponent(tag.slug)}`}
+                  href={href}
                   className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
                 >
                   {tag.name}
@@ -159,8 +166,8 @@ export default function CollectionItemClient({
                 <span key={tag.slug} className="text-sm px-3 py-1 rounded-full border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text)">
                   {tag.name}
                 </span>
-              )
-            )}
+              );
+            })}
           </div>
         )}
 
