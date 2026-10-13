@@ -92,7 +92,7 @@ function ItemGrid({
           >
             <div className="relative aspect-video w-full">
               {image ? (
-                <Image src={image} alt={item.name} fill sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw" quality={85} className="object-cover transition-transform duration-[1500ms] group-hover:[transform:scale(1.03)]" />
+                <Image src={image} alt={item.name} fill sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw" quality={85} className="object-cover will-change-transform transition-transform duration-[1000ms] group-hover:[transform:scale(1.03)]" />
               ) : (
                 <div className="absolute inset-0 bg-(--color-bg-secondary)" />
               )}
