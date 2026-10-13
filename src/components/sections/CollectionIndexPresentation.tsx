@@ -28,6 +28,8 @@ export type CollectionIndexPresentationProps = {
   activeFilter?: CollectionFilter;
   onFilterClick?: (next: CollectionFilter) => void;
   mode?: "primary" | "reference";
+  /** The reference-mode link's text. Defaults to "See More". */
+  seeMoreText?: string;
 };
 
 const chipClass = (lit: boolean): string =>
@@ -243,7 +245,7 @@ export default function CollectionIndexPresentation(props: CollectionIndexPresen
         href={props.effectiveRouteBase}
         className="ml-auto shrink-0 px-5 py-2 rounded-full text-base font-medium transition-colors border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
       >
-        See More
+        {props.seeMoreText?.trim() || "See More"}
       </Link>
     ) : null;
 

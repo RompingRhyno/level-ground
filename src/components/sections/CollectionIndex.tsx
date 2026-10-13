@@ -9,7 +9,7 @@ import type { CollectionIndexSection } from "@/types/sections";
 type Item = { slug: string; name: string };
 
 export default async function CollectionIndex(props: CollectionIndexSection & { resolvedRouteBase?: string }) {
-  const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems, mode } = props;
+  const { source, routeBase, heading, entityImages, sortMode, entityOrder, resolvedRouteBase, showTagFilter, maxItems, mode, seeMoreText } = props;
   // Live service list (a service can be created from the tag modal), cached.
   const services = await getServices();
   let effectiveRouteBase = routeBase || resolvedRouteBase || "";
@@ -102,6 +102,7 @@ export default async function CollectionIndex(props: CollectionIndexSection & { 
       showTagFilter={showTagFilter}
       effectiveRouteBase={effectiveRouteBase}
       mode={mode}
+      seeMoreText={seeMoreText}
     />
   );
 }
