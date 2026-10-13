@@ -49,9 +49,9 @@ export type TwoColumnLink = {
 
 export type TwoColumnSection = {
   type: "twoColumn";
-  title: string;
+  heading: string;
   /** Optional link for the heading itself — e.g. a service list heading pointing at its service page. */
-  titleHref?: string;
+  headingHref?: string;
   body: string;
   links?: TwoColumnLink[];
   image: string;

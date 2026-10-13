@@ -28,15 +28,15 @@ import { serviceAnchorHref } from "@/lib/services";
  * All three text parts are optional and render only when present.
  */
 export default function TwoColumn({
-  title,
-  titleHref,
+  heading,
+  headingHref,
   body,
   links,
   image,
   textFirst,
   serviceHrefs,
 }: TwoColumnSection & { serviceHrefs?: Record<string, string> }) {
-  const heading = title?.trim();
+  const headingText = heading?.trim();
   const text = body?.trim();
   // A link resolves through its service reference when it has one; hrefs remain for anything that is
   // not a service. `serviceAnchorHref` is the pre-map fallback (the editor preview has no map).
@@ -54,7 +54,7 @@ export default function TwoColumn({
       {image ? (
         <Image
           src={image}
-          alt={(title || "").replace(/<[^>]+>/g, "")}
+          alt={(heading || "").replace(/<[^>]+>/g, "")}
           fill
           sizes="(min-width: 1600px) 1252px, (min-width: 768px) calc(80vw - 28px), 160vw"
           quality={95}
@@ -69,19 +69,19 @@ export default function TwoColumn({
 
   const textBlock = (
     <div className={`flex flex-col justify-center text-(--color-text-dark) md:aspect-square${textFirst ? "" : " md:order-2"}`}>
-      {(heading || text || items.length > 0) && (
+      {(headingText || text || items.length > 0) && (
         <div className="space-y-4">
-          {heading &&
-            (titleHref ? (
-              <Link href={titleHref} className="group block">
+          {headingText &&
+            (headingHref ? (
+              <Link href={headingHref} className="group block">
                 <RichText
                   as="h2"
-                  value={heading}
+                  value={headingText}
                   className="heading text-3xl md:text-5xl transition-colors group-hover:text-(--color-brand-primary)!"
                 />
               </Link>
             ) : (
-              <RichText as="h2" value={heading} className="heading text-3xl md:text-5xl" />
+              <RichText as="h2" value={headingText} className="heading text-3xl md:text-5xl" />
             ))}
           {text && <RichText value={text} />}
           {items.length > 0 && (
