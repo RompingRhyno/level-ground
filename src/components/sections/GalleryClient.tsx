@@ -66,7 +66,7 @@ export default function GalleryClient({
                 fill
                 sizes="(min-width:640px) 50vw, 100vw"
                 quality={85}
-                className="object-cover will-change-transform transition-transform duration-[1000ms] group-hover:[transform:scale(1.03)]"
+                className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
                 loading="lazy"
               />
             )}
@@ -108,7 +108,7 @@ export default function GalleryClient({
                   fill
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
                   quality={cell.cellType === "small" ? 85 : 95}
-                  className="object-cover will-change-transform transition-transform duration-[1000ms] group-hover:[transform:scale(1.03)]"
+                  className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
                   loading="lazy"
                 />
               )}
