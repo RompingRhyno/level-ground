@@ -205,6 +205,7 @@ export default async function Gallery(section: GallerySection) {
           transitions={transitions}
           projects={projects}
           layoutMode={layout === "bento" ? "bento" : "grid"}
+          seeMore={section.seeMoreEnabled ? { text: section.seeMoreText, cutoff: section.seeMoreCutoff } : null}
         />
       </section>
     );

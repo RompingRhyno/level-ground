@@ -854,6 +854,37 @@ export default function SectionEditor({
                 />
                 <label htmlFor={`lightbox-${index}`} className="text-sm">Enable lightbox</label>
               </div>
+              <div className="field-group">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`see-more-${index}`}
+                    checked={!!(section as any).seeMoreEnabled}
+                    onChange={(e) => update("seeMoreEnabled", e.target.checked)}
+                  />
+                  <label htmlFor={`see-more-${index}`} className="text-sm">Collapse behind a button</label>
+                </div>
+                {!!(section as any).seeMoreEnabled && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      value={(section as any).seeMoreText || ""}
+                      onChange={(e) => update("seeMoreText", e.target.value)}
+                      placeholder="See more"
+                      className="w-40 rounded border px-2 py-1 text-sm"
+                    />
+                    <label className="text-sm" htmlFor={`see-more-cutoff-${index}`}>shows after</label>
+                    <input
+                      id={`see-more-cutoff-${index}`}
+                      type="number"
+                      min={1}
+                      value={(section as any).seeMoreCutoff ?? 6}
+                      onChange={(e) => update("seeMoreCutoff", Number(e.target.value) || undefined)}
+                      className="w-16 rounded border px-2 py-1 text-sm"
+                    />
+                    <span className="text-sm">photos</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

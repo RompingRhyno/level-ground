@@ -17,25 +17,34 @@ export default function GalleryClient({
   projects = {},
   showProjectLink = true,
   layoutMode = "bento",
+  seeMore = null,
 }: {
   assets: Asset[];
   transitions?: Record<string, ResolvedTransition>;
   projects?: Record<string, LightboxProject>;
   showProjectLink?: boolean;
   layoutMode?: GalleryLayout;
+  /** Resolved collapse settings; null = show everything (the default). */
+  seeMore?: { text?: string; cutoff?: number } | null;
 }) {
   const [open, setOpen] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const prev = () => setOpen((i) => (i !== null ? (i > 0 ? i - 1 : assets.length - 1) : null));
   const next = () => setOpen((i) => (i !== null ? (i < assets.length - 1 ? i + 1 : 0) : null));
 
-  const cells = getLayoutCells(assets.length, layoutMode);
+  const cutoff = seeMore?.cutoff && seeMore.cutoff > 0 ? seeMore.cutoff : 6;
+  const collapsed = !!seeMore && !expanded && assets.length > cutoff;
+  const shownAssets = collapsed ? assets.slice(0, cutoff) : assets;
+  // The visible cells are the FULL pattern's first N, so revealing the rest continues the same
+  // layout rather than starting a second pattern — that is what keeps the expansion seamless.
+  const cells = getLayoutCells(assets.length, layoutMode).filter((c) => !collapsed || c.assetIndex < cutoff);
   return (
     <>
       {/* Mobile: simple 1–2 col responsive grid. Inset 24px each side to match the collection index's card
           grid, so every tile carries the same corner radius — no tile touches the screen edge any more. */}
       <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-1.5 px-6">
-        {assets.map((asset, i) => (
+        {shownAssets.map((asset, i) => (
           <button
             key={asset.id}
             className="group relative aspect-video w-full overflow-hidden cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -107,6 +116,18 @@ export default function GalleryClient({
           );
         })}
       </div>
+
+      {collapsed && (
+        <div className="mt-4 flex justify-center px-6">
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="px-5 py-2 rounded-full text-base font-medium transition-colors border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
+          >
+            {seeMore?.text?.trim() || "See more"}
+          </button>
+        </div>
+      )}
 
       <GalleryLightbox
         assets={assets}
