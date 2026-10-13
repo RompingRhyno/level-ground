@@ -71,6 +71,12 @@ export async function getServiceLinkMap(): Promise<ServiceLink[]> {
   });
 }
 
+/** slug → resolved href, for surfaces that render many service links at once. */
+export async function getServiceHrefMap(): Promise<Record<string, string>> {
+  const map = await getServiceLinkMap();
+  return Object.fromEntries(map.map((s) => [s.slug, s.href]));
+}
+
 export async function resolveServiceHref(slug: string | null | undefined): Promise<string | null> {
   if (!slug) return null;
   const map = await getServiceLinkMap();
