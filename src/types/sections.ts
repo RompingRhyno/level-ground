@@ -86,6 +86,14 @@ export type GallerySection = {
    * service rename re-derives the id. See `docs/service-linking-plan.md`.
    */
   service?: string;
+  /**
+   * Collapse the gallery behind a button once it holds more than `seeMoreCutoff` photos. Off by
+   * default; expanding renders the remainder into the same grid, so the layout pattern continues
+   * without a seam (the visible cells are the full pattern's first N, not a pattern of their own).
+   */
+  seeMoreEnabled?: boolean;
+  seeMoreText?: string;
+  seeMoreCutoff?: number;
   tagDisplay?: GalleryTagDisplay;
 } & (
   | { mode: "static"; assetIds: string[] }
