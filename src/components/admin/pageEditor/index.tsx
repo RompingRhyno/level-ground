@@ -19,6 +19,7 @@ import {
 import type { PageConfig, PageSection } from "@/types/sections";
 import AlertDialog from "@/components/ui/AlertDialog";
 import { PreviewWidthContext } from "./PreviewWidthContext";
+import JumpToTop from "@/components/JumpToTop";
 import SectionEditor from "./SectionEditor";
 
 // ── Preview size presets ───────────────────────────────────────────────────
@@ -58,6 +59,14 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
    * dragged before this runs.
    */
   const [sectionIds, setSectionIds] = useState<string[]>([]);
+  /** The floating save mirrors the toolbar's, so it only appears once the toolbar has scrolled away. */
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 300);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     setSectionIds(sections.map(() => crypto.randomUUID()));
@@ -369,6 +378,18 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
             <button onClick={save} disabled={!dirty || saving} className={saveClass}>
               {saving ? "Saving\u2026" : "Save"}
             </button>
+            {/* Floating pair while scrolling a long section list: save stays reachable, and the
+                round button jumps back to the toolbar. The circle sits at right-6 and shows past
+                300px scroll; save rides to its left on the same gate, so neither duplicates the
+                toolbar while it is on screen. */}
+            {scrolled && (
+              <div className="fixed bottom-6 right-24 z-40 flex items-center gap-3">
+                <button onClick={save} disabled={!dirty || saving} className={`${saveClass} shadow-lg`}>
+                  {saving ? "Saving\u2026" : "Save"}
+                </button>
+              </div>
+            )}
+            <JumpToTop />
           </div>
         </div>
 

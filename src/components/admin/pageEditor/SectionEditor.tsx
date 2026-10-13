@@ -382,6 +382,14 @@ export default function SectionEditor({
         >
           <span className="text-xs opacity-50">{expanded ? "▼" : "▶"}</span>
           <span>{SECTION_LABELS[type] ?? type}</span>
+          {(() => {
+            const heading = String((section as { heading?: unknown }).heading ?? "")
+              .replace(/<[^>]*>/g, "")
+              .trim();
+            return heading ? (
+              <span className="truncate font-normal opacity-60">· {heading}</span>
+            ) : null;
+          })()}
         </button>
         <div className="flex items-center gap-1">
           <button type="button" onClick={async () => { if (await confirm(`Remove ${SECTION_LABELS[type] ?? type} section?`, "This section will be permanently removed from the page.", "danger", "Remove")) onRemove(index); }} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>

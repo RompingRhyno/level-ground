@@ -405,7 +405,7 @@ export default function GalleryEditor({
               id={`see-more-cutoff-${index}`}
               type="number"
               min={1}
-              value={gs.seeMoreCutoff ?? 6}
+              value={gs.seeMoreCutoff ?? 3}
               onChange={(e) => update("seeMoreCutoff", Number(e.target.value) || undefined)}
               className="w-16 rounded border px-2 py-1 text-sm"
             />

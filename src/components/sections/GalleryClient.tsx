@@ -33,7 +33,7 @@ export default function GalleryClient({
   const prev = () => setOpen((i) => (i !== null ? (i > 0 ? i - 1 : assets.length - 1) : null));
   const next = () => setOpen((i) => (i !== null ? (i < assets.length - 1 ? i + 1 : 0) : null));
 
-  const cutoff = seeMore?.cutoff && seeMore.cutoff > 0 ? seeMore.cutoff : 6;
+  const cutoff = seeMore?.cutoff && seeMore.cutoff > 0 ? seeMore.cutoff : 3;
   const collapsed = !!seeMore && !expanded && assets.length > cutoff;
   const shownAssets = collapsed ? assets.slice(0, cutoff) : assets;
   // The visible cells are the FULL pattern's first N, so revealing the rest continues the same
