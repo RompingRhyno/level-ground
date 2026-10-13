@@ -145,7 +145,7 @@ function StaticPicker({
       ) : filteredAssets.length === 0 ? (
         <div className="text-sm text-(--color-text-light)">No assets found.</div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 overflow-y-auto flex-1 pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 overflow-y-auto flex-1 pr-1">
           {filteredAssets.map((a) => {
             const isSelected = selected.includes(a.id);
             // Tiles use `object-contain` over a checkerboard: the whole asset stays visible (a wide
@@ -380,7 +380,7 @@ export default function GalleryPicker({
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[85vh]">
+      <div className="bg-white rounded-lg shadow-xl w-[88vw] max-w-none flex flex-col h-[90vh] max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">
           <h2 className="font-semibold text-(--color-text-dark)">

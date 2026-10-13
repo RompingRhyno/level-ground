@@ -1,4 +1,5 @@
 import AdminNav from "@/components/admin/AdminNav";
+import JumpToTop from "@/components/JumpToTop";
 import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
@@ -14,6 +15,7 @@ export default async function AdminLayout({
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <AdminNav role={session.user.role as "owner" | "admin"} />
       <main className="p-6">{children}</main>
+      <JumpToTop />
     </div>
   );
 }
