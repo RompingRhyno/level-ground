@@ -759,7 +759,9 @@ export default function SectionEditor({
                       Drag cards to reorder · click an image to change it
                     </p>
 
+                    {/* Stable id: keeps aria-describedby deterministic across SSR and hydration. */}
                     <DndContext
+                      id={`section-entities-${index}`}
                       sensors={entitySensors}
                       onDragStart={handleEntityDragStart}
                       onDragEnd={handleEntityDragEnd}

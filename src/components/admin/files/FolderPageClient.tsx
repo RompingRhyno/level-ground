@@ -603,7 +603,9 @@ function FolderPageClientInner({
           services; each tag belongs to one.
         </p>
 
-        <DndContext sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
+        {/* A stable id keeps dnd-kit's aria-describedby deterministic across SSR and hydration
+            (without one it uses a module counter, and the two renders disagree). */}
+        <DndContext id="folder-tags" sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
           <SortableContext items={folder.tags} strategy={horizontalListSortingStrategy}>
             <div className="flex flex-wrap gap-2">
               {folder.tags.length === 0 && (
