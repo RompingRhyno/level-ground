@@ -1,3 +1,5 @@
+import RichText from "@/components/RichText";
+
 type Item = { slug: string; name: string };
 
 /**
@@ -12,23 +14,34 @@ type Item = { slug: string; name: string };
 export function ServiceLinksView({
   services,
   shownSlugs,
+  heading,
 }: {
   services: Item[];
   shownSlugs: string[] | null;
+  heading?: string;
 }) {
   const items = shownSlugs ? services.filter((s) => shownSlugs.includes(s.slug)) : services;
   if (!items.length) return null;
   return (
-    <div className="px-4 md:px-8 flex flex-wrap gap-2">
-      {items.map((s) => (
-        <a
-          key={s.slug}
-          href={`#${s.slug}`}
-          className="px-4 py-1 rounded-full text-base transition-colors border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
-        >
-          {s.name}
-        </a>
-      ))}
+    <div className="px-4 md:px-8">
+      {/* Subheading scale — the hero subheading's size, in the body font. */}
+      <RichText
+        as="h2"
+        value={heading}
+        className="max-w-4xl text-xl md:text-3xl mb-6"
+        style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
+      />
+      <div className="flex flex-wrap gap-2">
+        {items.map((s) => (
+          <a
+            key={s.slug}
+            href={`#${s.slug}`}
+            className="px-4 py-1 rounded-full text-base transition-colors border border-(--tag-border-color) bg-(--btn-primary-bg) text-(--btn-primary-text) hover:bg-(--btn-select) hover:text-(--btn-select-text)"
+          >
+            {s.name}
+          </a>
+        ))}
+      </div>
     </div>
   );
 }

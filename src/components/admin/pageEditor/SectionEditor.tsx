@@ -388,8 +388,17 @@ export default function SectionEditor({
           <span className="text-xs opacity-50">{expanded ? "▼" : "▶"}</span>
           <span>{SECTION_LABELS[type] ?? type}</span>
           {(() => {
-            const heading = String((section as { heading?: unknown }).heading ?? "")
+            // Two Column keeps its copy in `title`, everything else in `heading`. The rich editor
+            // stores entities (&amp;), so decode the common ones or the row reads "Design &amp; Installation".
+            const src = (section as { heading?: unknown }).heading ?? (section as { title?: unknown }).title ?? "";
+            const heading = String(src)
               .replace(/<[^>]*>/g, "")
+              .replace(/&lt;/g, "<")
+              .replace(/&gt;/g, ">")
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&nbsp;/g, " ")
+              .replace(/&amp;/g, "&")
               .trim();
             return heading ? (
               <span className="truncate font-normal opacity-60">· {heading}</span>
@@ -458,6 +467,15 @@ export default function SectionEditor({
                   <option value="medium">Medium (72%)</option>
                   <option value="short">Short (56%)</option>
                 </select>
+              </div>
+            </div>
+          )}
+
+          {type === "service-links" && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Heading</label>
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
               </div>
             </div>
           )}
