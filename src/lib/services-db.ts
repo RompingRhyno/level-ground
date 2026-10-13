@@ -14,13 +14,17 @@ const SERVICES_CACHE_SECONDS = 300;
 export const getServices = unstable_cache(
   async (): Promise<Service[]> => {
     try {
-      const rows = await prisma.service.findMany({ orderBy: [{ order: "asc" }, { id: "asc" }] });
+      // Alphabetical by name, the order every service surface displays — the stored `order` column
+      // is creation order and no longer decides anything user-visible.
+      const rows = await prisma.service.findMany();
       if (!rows.length) return SERVICES;
-      return rows.map((row) => ({
-        slug: row.slug,
-        name: row.name,
-        group: (row.group === "maintenance" ? "maintenance" : "installation") as ServiceGroup,
-      }));
+      return rows
+        .map((row) => ({
+          slug: row.slug,
+          name: row.name,
+          group: (row.group === "maintenance" ? "maintenance" : "installation") as ServiceGroup,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     } catch {
       return SERVICES;
     }

@@ -13,19 +13,25 @@ export type ServiceGroup = "installation" | "maintenance";
 
 export type Service = { slug: string; name: string; group: ServiceGroup };
 
+/**
+ * The seeded services, and the fallback whenever the live list has not loaded yet — kept in
+ * alphabetical order by name, because that is the order every service surface displays (service
+ * pills, index filters, the tag box's headings, the pickers' dropdowns). `getServices()` sorts
+ * its DB read the same way; keep the two in step by name, not by the order they were created in.
+ */
 export const SERVICES: Service[] = [
-  { slug: "pavers-and-patios", name: "Pavers & Patios", group: "installation" },
-  { slug: "planting", name: "Planting", group: "installation" },
-  { slug: "lawn-installation", name: "Lawn installation", group: "installation" },
-  { slug: "garden-beds-and-boxes", name: "Garden beds & boxes", group: "installation" },
-  { slug: "retaining-walls", name: "Retaining walls", group: "installation" },
-  { slug: "rock-and-gravel-features", name: "Rock & gravel features", group: "installation" },
   { slug: "decking", name: "Decking", group: "installation" },
   { slug: "fencing", name: "Fencing", group: "installation" },
-  { slug: "outdoor-lighting", name: "Outdoor Lighting", group: "installation" },
-  { slug: "irrigation", name: "Irrigation", group: "installation" },
-  { slug: "lawn-maintenance", name: "Lawn maintenance", group: "maintenance" },
+  { slug: "garden-beds-and-boxes", name: "Garden beds & boxes", group: "installation" },
   { slug: "garden-maintenance", name: "Garden maintenance", group: "maintenance" },
+  { slug: "irrigation", name: "Irrigation", group: "installation" },
+  { slug: "lawn-installation", name: "Lawn installation", group: "installation" },
+  { slug: "lawn-maintenance", name: "Lawn maintenance", group: "maintenance" },
+  { slug: "outdoor-lighting", name: "Outdoor Lighting", group: "installation" },
+  { slug: "pavers-and-patios", name: "Pavers & Patios", group: "installation" },
+  { slug: "planting", name: "Planting", group: "installation" },
+  { slug: "retaining-walls", name: "Retaining walls", group: "installation" },
+  { slug: "rock-and-gravel-features", name: "Rock & gravel features", group: "installation" },
 ];
 
 export const SERVICE_NAME_BY_SLUG: Record<string, string> = Object.fromEntries(
