@@ -395,7 +395,7 @@ export default function GalleryLightbox({
               onClick={() => onThumbClick(idx)}
               aria-label={a.alt ?? `Thumbnail ${idx + 1}`}
               aria-current={open === idx}
-              className="relative shrink-0 rounded-2xl overflow-hidden bg-black/5 aspect-video w-28"
+              className="relative shrink-0 rounded-[14px] overflow-hidden bg-black/5 aspect-video w-28"
             >
               <div className="absolute inset-0">
                 <Image src={a.publicUrl} alt="" fill className="object-cover" loading="lazy" sizes="112px" />
@@ -409,7 +409,7 @@ export default function GalleryLightbox({
               {open === idx && (
                 <div
                   aria-hidden
-                  className="absolute inset-0 rounded-2xl pointer-events-none thumbnail-selected"
+                  className="absolute inset-0 rounded-[14px] pointer-events-none thumbnail-selected"
                 />
               )}
             </button>
