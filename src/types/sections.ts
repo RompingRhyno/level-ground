@@ -170,6 +170,15 @@ export type CollectionIndexSection = {
   };
 };
 
+/**
+ * Jump pills: one per service that has a section on the same page, each an in-page `#<slug>` anchor
+ * — the same pill styling the collection index's filter row uses (see docs/service-linking-plan.md).
+ * A service without a section here is left out: a pill that jumps nowhere reads as a bug.
+ */
+export type ServiceLinksSection = {
+  type: "service-links";
+};
+
 export type CollectionItemSection = {
   type: "collection-item";
   source?: "folders" | "tags";
@@ -187,4 +196,5 @@ export type PageSection =
   | VideoSection
   | ContactSection
   | CollectionIndexSection
-  | CollectionItemSection;
+  | CollectionItemSection
+  | ServiceLinksSection;
