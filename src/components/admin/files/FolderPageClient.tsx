@@ -28,6 +28,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import MoveModal from "./MoveModal";
+import { useServices } from "@/components/sections/useServiceLinks";
+import { SERVICES } from "@/lib/services";
 import NewTagModal from "./NewTagModal";
 import UploadModal from "./UploadModal";
 import TransitionModal from "./TransitionModal";
@@ -75,6 +77,7 @@ function FolderPageClientInner({
   const [prompt, setPrompt] = useState<LightboxPrompt>(null);
   const [promptValue, setPromptValue] = useState("");
   const [newTagOpen, setNewTagOpen] = useState(false);
+  const [servicePreset, setServicePreset] = useState<string | undefined>(undefined);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -263,11 +266,23 @@ function FolderPageClientInner({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Folder tags first in their stored order (the alt order), then the rest of the vocabulary.
-  const orderedTags: TagData[] = [
-    ...folder.tags.map((slug) => tags.find((t) => t.slug === slug)).filter((t): t is TagData => !!t),
-    ...tags.filter((t) => !folder.tags.includes(t.slug)),
-  ];
+  // The folder's tags in their stored order — the alt order, drag-reorderable.
+  const activeTags: TagData[] = folder.tags
+    .map((slug) => tags.find((t) => t.slug === slug))
+    .filter((t): t is TagData => !!t);
+  // Everything else, grouped under its service category — the add zone.
+  const liveServices = useServices();
+  const services = liveServices ?? SERVICES;
+  const addGroups = [
+    ...services.map((s) => ({
+      key: s.slug,
+      label: s.name,
+      tags: tags.filter((t) => t.service === s.slug && !folder.tags.includes(t.slug)),
+    })),
+    ...(tags.some((t) => !t.service && !folder.tags.includes(t.slug))
+      ? [{ key: "__none", label: "No category", tags: tags.filter((t) => !t.service && !folder.tags.includes(t.slug)) }]
+      : []),
+  ].filter((g) => g.tags.length > 0);
 
   /** Drag-reorder: the array order is the alt order, so the list is the source of truth. */
   async function handleTagDragEnd({ active, over }: DragEndEvent) {
@@ -560,25 +575,46 @@ function FolderPageClientInner({
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">Tags</span>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setNewTagOpen(true)} className="rounded px-2 py-1 text-sm btn-positive">
+            <button
+              type="button"
+              onClick={() => {
+                setServicePreset(undefined);
+                setNewTagOpen(true);
+              }}
+              className="rounded px-2 py-1 text-sm btn-positive"
+            >
               ＋ New tag
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setServicePreset("__new__");
+                setNewTagOpen(true);
+              }}
+              className="rounded px-2 py-1 text-sm admin-btn"
+            >
+              ＋ New service
             </button>
           </div>
         </div>
-        <p className="mb-2 text-xs text-(--color-text-light)">
+        <p className="mb-3 text-xs text-(--color-text-light)">
           The first {ALT_TAGS} tags name this project&rsquo;s photo alt text. Click one to add or remove it;
-          drag its ⋮ handle to reorder — light green marks the tags in use.
+          drag its ⋮ handle to reorder — light green marks the tags in use. The categories below are
+          services; each tag belongs to one.
         </p>
+
         <DndContext sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
           <SortableContext items={folder.tags} strategy={horizontalListSortingStrategy}>
             <div className="flex flex-wrap gap-2">
-              {tags.length === 0 && <span className="text-sm text-(--color-text-light)">No tags yet.</span>}
-              {orderedTags.map((tag, index) => (
+              {folder.tags.length === 0 && (
+                <span className="text-sm text-(--color-text-light)">No tags yet — add from the categories below.</span>
+              )}
+              {activeTags.map((tag, index) => (
                 <SortableTagPill
                   key={tag.id}
                   tag={tag}
-                  inFolder={folder.tags.includes(tag.slug)}
-                  inAlt={folder.tags.includes(tag.slug) && index < ALT_TAGS}
+                  inFolder
+                  inAlt={index < ALT_TAGS}
                   onToggle={toggleTag}
                   onRename={renameTag}
                   onDelete={deleteTag}
@@ -587,6 +623,31 @@ function FolderPageClientInner({
             </div>
           </SortableContext>
         </DndContext>
+
+        {addGroups.length > 0 && (
+          <div className="mt-3 space-y-3 border-t border-(--color-border) pt-3">
+            {addGroups.map((group) => (
+              <div key={group.key}>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-(--color-text-light)">
+                  {group.label}
+                </div>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {group.tags.map((tag) => (
+                    <SortableTagPill
+                      key={tag.id}
+                      tag={tag}
+                      inFolder={false}
+                      inAlt={false}
+                      onToggle={toggleTag}
+                      onRename={renameTag}
+                      onDelete={deleteTag}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -920,7 +981,12 @@ function FolderPageClientInner({
         }}
       />
 
-      <NewTagModal open={newTagOpen} onClose={() => setNewTagOpen(false)} onCreated={tagCreated} />
+      <NewTagModal
+        open={newTagOpen}
+        onClose={() => setNewTagOpen(false)}
+        onCreated={tagCreated}
+        servicePreset={servicePreset}
+      />
     </div>
   );
 }

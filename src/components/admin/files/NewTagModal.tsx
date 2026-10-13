@@ -18,10 +18,13 @@ export default function NewTagModal({
   open,
   onClose,
   onCreated,
+  servicePreset,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tag: TagData) => Promise<void> | void;
+  /** Pass "__new__" to open straight into the create-a-service branch (the tag box's New service button). */
+  servicePreset?: string;
 }) {
   const [name, setName] = useState("");
   const [service, setService] = useState("");
@@ -37,14 +40,14 @@ export default function NewTagModal({
   useEffect(() => {
     if (!open) return;
     setName("");
-    setService("");
+    setService(servicePreset ?? "");
     setNewServiceName("");
     setNewServiceGroup("installation");
     setError(null);
     setBusy(false);
     const t = setTimeout(() => nameRef.current?.focus(), 30);
     return () => clearTimeout(t);
-  }, [open]);
+  }, [open, servicePreset]);
 
   useEffect(() => {
     if (!open) return;
