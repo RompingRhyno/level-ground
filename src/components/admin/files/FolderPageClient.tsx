@@ -239,9 +239,11 @@ function FolderPageClientInner({
   const ALT_TAGS = 4;
 
   /**
-   * Clicking an inactive tag activates it into the next slot after the current alt tags (three
-   * active plus one click lands it in position four); once four are active the block is full and
-   * a click does nothing. Clicking an active tag deactivates it to the top of the inactive group.
+   * Clicking an inactive tag appends it to the folder's tags; clicking an active one moves it to
+   * position min(ALT_TAGS, others.length) — i.e. into the alt block while there is room, otherwise
+   * just to the front of what follows. There is deliberately no cap: `ALT_TAGS` decides how many
+   * tags feed the alt text, not how many a project may carry, and blocking the add silently read
+   * as broken pills on every folder that already had four.
    */
   async function toggleTag(slug: string) {
     const current = folder.tags;
@@ -251,7 +253,6 @@ function FolderPageClientInner({
       const insertAt = Math.min(ALT_TAGS, others.length);
       next = [...others.slice(0, insertAt), slug, ...others.slice(insertAt)];
     } else {
-      if (current.length >= ALT_TAGS) return;
       next = [...current, slug];
     }
     setFolder((currentFolder) => ({ ...currentFolder, tags: next }));
@@ -646,7 +647,7 @@ function FolderPageClientInner({
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {group.tags.map((tag) => (
-                    <SortableTagPill
+                    <TagPill
                       key={tag.id}
                       tag={tag}
                       inFolder={false}
@@ -1012,13 +1013,22 @@ function FolderPageClientInner({
  * folder's tags (the array order decides which feed the alt text), a plain click opens the menu.
  * Tags outside the folder are not draggable — clicking them adds them.
  */
-function SortableTagPill({
+/**
+ * The pill itself — the same element in both zones. Split out of SortableTagPill so the add zone
+ * can render it directly: those pills are not draggable (nothing to reorder outside the folder),
+ * and mounting a dnd-kit sortable there produced pills whose clicks never reached the handler.
+ */
+function TagPill({
   tag,
   inFolder,
   inAlt,
   onToggle,
   onRename,
   onDelete,
+  handleProps,
+  handleClass,
+  wrapperRef,
+  wrapperStyle,
 }: {
   tag: TagData;
   inFolder: boolean;
@@ -1026,22 +1036,13 @@ function SortableTagPill({
   onToggle: (slug: string) => void;
   onRename: (tag: TagData) => void;
   onDelete: (tag: TagData) => void;
+  handleProps?: React.HTMLAttributes<HTMLSpanElement>;
+  handleClass?: string;
+  wrapperRef?: (node: HTMLElement | null) => void;
+  wrapperStyle?: React.CSSProperties;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: tag.slug,
-    disabled: !inFolder,
-  });
-
   return (
-    <span
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
-      }}
-      className="inline-flex items-center"
-    >
+    <span ref={wrapperRef} style={wrapperStyle} className="inline-flex items-center">
       <button
         type="button"
         onClick={() => onToggle(tag.slug)}
@@ -1061,11 +1062,8 @@ function SortableTagPill({
         {tag.name}
       </button>
       <span
-        {...attributes}
-        {...listeners}
-        className={`-ml-1 rounded-full px-1 py-1 text-xs ${
-          inFolder ? "cursor-grab touch-none active:cursor-grabbing" : ""
-        }`}
+        {...handleProps}
+        className={handleClass ?? "-ml-1 rounded-full px-1 py-1 text-xs"}
       >
         <Menu
           buttonClassName="rounded-full px-1 py-1 text-xs text-(--color-text-light) hover:text-(--color-text-dark)"
@@ -1076,6 +1074,36 @@ function SortableTagPill({
         />
       </span>
     </span>
+  );
+}
+
+/** The in-folder pill: draggable to reorder (the array order feeds the alt text). */
+function SortableTagPill(props: {
+  tag: TagData;
+  inFolder: boolean;
+  inAlt: boolean;
+  onToggle: (slug: string) => void;
+  onRename: (tag: TagData) => void;
+  onDelete: (tag: TagData) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.tag.slug,
+    disabled: !props.inFolder,
+  });
+  return (
+    <TagPill
+      {...props}
+      wrapperRef={setNodeRef}
+      wrapperStyle={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+      handleProps={{ ...attributes, ...listeners }}
+      handleClass={`-ml-1 rounded-full px-1 py-1 text-xs ${
+        props.inFolder ? "cursor-grab touch-none active:cursor-grabbing" : ""
+      }`}
+    />
   );
 }
 

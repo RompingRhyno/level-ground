@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { deleteR2Objects, r2KeysFromMeta } from "@/lib/r2";
-import { usageForAssets } from "@/lib/media-refs";
+import { removeAssetReferences, usageForAssets } from "@/lib/media-refs";
 import { lockFolderForOrdering } from "@/lib/asset-order";
 import { revalidateFor } from "@/lib/revalidate";
 import { requireSession, unauthorized } from "@/lib/api-auth";
@@ -223,10 +223,15 @@ export async function DELETE(request: NextRequest, context: any) {
       await tx.asset.delete({ where: { id } });
     });
 
+    // Strip the dead references from the pages that used it: a deleted asset must not leave a
+    // section holding an id (static picks) or URL (literal fields) that draws nothing.
+    const cleaned = await removeAssetReferences(id, asset.publicUrl);
+
     await revalidateFor({ kind: "asset:deleted", pageSlugs: usedOn }, `asset:delete:${id}${isGroup ? ":transition" : ""}`);
 
     return NextResponse.json({
       success: true,
+      referencesCleaned: cleaned,
       usedOn,
       usedInTransitionGroups: groups,
       transitions: { updated: updatedGroups, dissolved: dissolved.length },
