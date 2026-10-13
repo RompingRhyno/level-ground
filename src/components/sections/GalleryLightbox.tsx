@@ -401,13 +401,16 @@ export default function GalleryLightbox({
                 <Image src={a.publicUrl} alt="" fill className="object-cover" loading="lazy" sizes="112px" />
               </div>
               {/* The ring rides on an overlay above the image: an inset box-shadow paints below the
-                  element's children, so putting it on the button hides it behind the thumbnail. No
-                  rounded here on purpose — the button's overflow-hidden and border-radius clip this
-                  overlay to the exact rounded padding box, so the ring fills right up to the border's
-                  inner edge including the corners. A rounded on the overlay would give it a second,
-                  slightly different arc and leave slivers at each corner. */}
+                  element's children, so putting it on the button hides it behind the thumbnail. The
+                  overlay shares the button's radius (rounded-2xl) so the ring's INNER edge curves
+                  with it — an un-rounded overlay insets the shadow into a square, which leaves the
+                  inside corners visibly angular. Same radius as the button, so the outer edge and the
+                  parent's clip land on one arc and no slivers appear at the corners. */}
               {open === idx && (
-                <div aria-hidden className="absolute inset-0 pointer-events-none thumbnail-selected" />
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-2xl pointer-events-none thumbnail-selected"
+                />
               )}
             </button>
           ))}
