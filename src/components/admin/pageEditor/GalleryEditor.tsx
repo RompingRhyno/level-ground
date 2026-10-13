@@ -17,6 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useServices } from "@/components/sections/useServiceLinks";
 import type { PageSection } from "@/types/sections";
 import GalleryPicker from "../GalleryPicker";
 import RichContentEditable from "./RichContentEditable";
@@ -195,6 +196,7 @@ export default function GalleryEditor({
     onChange({ ...section, [key]: value } as PageSection, index);
   }
 
+  const services = useServices();
   const assetCount = gs.mode === "static" ? (gs.assetIds?.length ?? 0) : null;
   const activeTagCount = gs.mode === "dynamic" ? (gs.filters?.tags?.length ?? 0) : null;
   const activeFolder = gs.mode === "dynamic" ? (gs.filters?.folder ?? null) : null;
@@ -216,13 +218,40 @@ export default function GalleryEditor({
       </div>
 
       <div className="space-y-1">
+        <label className="block text-sm">Service link</label>
+        <select
+          value={gs.service || ""}
+          onChange={(e) => {
+            const slug = e.target.value || undefined;
+            // Binding derives the id; unbinding frees the service so another section can take it.
+            update("service", slug);
+            update("anchor", slug);
+          }}
+          className="rounded border px-2 py-1"
+        >
+          <option value="">(none)</option>
+          {(services ?? []).map((s) => {
+            const linkedHere = gs.service === s.slug;
+            const linkedElsewhere = !!s.hasSection && !linkedHere;
+            return (
+              <option key={s.slug} value={s.slug} disabled={linkedElsewhere}>
+                {s.name}{linkedElsewhere ? " — linked on another section" : ""}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      <div className="space-y-1">
         <label className="block text-sm">Anchor</label>
         <input
-          value={gs.anchor || ""}
+          value={gs.service ? gs.service : gs.anchor || ""}
+          disabled={!!gs.service}
           onChange={(e) => update("anchor", e.target.value)}
-          className="w-full rounded border px-2 py-1"
+          className="w-full rounded border px-2 py-1 disabled:opacity-60"
           placeholder="Optional — id for deep links (e.g. planting)"
         />
+        {gs.service ? <p className="text-xs" style={{ color: "var(--color-text-light)" }}>Derived from the service link.</p> : null}
       </div>
 
       <div className="space-y-1">
@@ -232,9 +261,9 @@ export default function GalleryEditor({
           onChange={(e) => {
             const mode = e.target.value;
             if (mode === "static") {
-              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, assetIds: [], tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, assetIds: [], tagDisplay: gs.tagDisplay }, index);
             } else {
-              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
             }
           }}
           className="rounded border px-2 py-1"
