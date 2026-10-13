@@ -209,7 +209,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
     if (!type) return;
     const defaults: any = {
       hero: { type: "hero", heading: "", subheading: "", buttonText: "", buttonHref: "", image: "" },
-      twoColumn: { type: "twoColumn", title: "", body: "", links: [], image: "", textFirst: false },
+      twoColumn: { type: "twoColumn", heading: "", body: "", links: [], image: "", textFirst: false },
       banner: { type: "banner", heading: "", subheading: "", image: "", overlayOpacity: 0.35 },
       services: { type: "services", heading: "", services: [], bodyText: "" },
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },

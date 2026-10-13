@@ -388,9 +388,9 @@ export default function SectionEditor({
           <span className="text-xs opacity-50">{expanded ? "▼" : "▶"}</span>
           <span>{SECTION_LABELS[type] ?? type}</span>
           {(() => {
-            // Two Column keeps its copy in `title`, everything else in `heading`. The rich editor
-            // stores entities (&amp;), so decode the common ones or the row reads "Design &amp; Installation".
-            const src = (section as { heading?: unknown }).heading ?? (section as { title?: unknown }).title ?? "";
+            // Every section type stores its heading in `heading`. The rich editor stores entities
+            // (&amp;), so decode the common ones or the row reads "Design &amp; Installation".
+            const src = (section as { heading?: unknown }).heading ?? "";
             const heading = String(src)
               .replace(/<[^>]*>/g, "")
               .replace(/&lt;/g, "<")
@@ -484,13 +484,13 @@ export default function SectionEditor({
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="block text-sm">Heading</label>
-                <RichContentEditable value={(section as any).title || ""} onChange={(val) => update("title", val)} className="w-full" />
+                <RichContentEditable value={(section as any).heading || ""} onChange={(val) => update("heading", val)} className="w-full" />
               </div>
               <div className="space-y-1">
                 <label className="block text-sm">Heading link</label>
                 <select
-                  value={(section as any).titleHref || ""}
-                  onChange={(e) => update("titleHref", e.target.value)}
+                  value={(section as any).headingHref || ""}
+                  onChange={(e) => update("headingHref", e.target.value)}
                   className="w-full rounded border px-2 py-1"
                 >
                   <option value="">(none)</option>
