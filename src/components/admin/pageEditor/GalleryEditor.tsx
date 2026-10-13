@@ -274,9 +274,9 @@ export default function GalleryEditor({
           onChange={(e) => {
             const mode = e.target.value;
             if (mode === "static") {
-              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, assetIds: [], tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "static", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, seeMoreEnabled: gs.seeMoreEnabled, seeMoreText: gs.seeMoreText, seeMoreCutoff: gs.seeMoreCutoff, assetIds: [], tagDisplay: gs.tagDisplay }, index);
             } else {
-              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
+              onChange({ type: "gallery", mode: "dynamic", layout: gs.layout, lightbox: gs.lightbox, heading: gs.heading, body: gs.body, anchor: gs.anchor, service: gs.service, seeMoreEnabled: gs.seeMoreEnabled, seeMoreText: gs.seeMoreText, seeMoreCutoff: gs.seeMoreCutoff, filters: { tags: [], folder: undefined }, tagDisplay: gs.tagDisplay }, index);
             }
           }}
           className="rounded border px-2 py-1"
@@ -381,6 +381,37 @@ export default function GalleryEditor({
           />
           Enable lightbox
         </label>
+      </div>
+
+      <div className="space-y-1">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={!!gs.seeMoreEnabled}
+            onChange={(e) => update("seeMoreEnabled", e.target.checked)}
+          />
+          Collapse behind a button
+        </label>
+        {!!gs.seeMoreEnabled && (
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              value={gs.seeMoreText || ""}
+              onChange={(e) => update("seeMoreText", e.target.value)}
+              placeholder="See more"
+              className="w-40 rounded border px-2 py-1 text-sm"
+            />
+            <label className="text-sm" htmlFor={`see-more-cutoff-${index}`}>shows after</label>
+            <input
+              id={`see-more-cutoff-${index}`}
+              type="number"
+              min={1}
+              value={gs.seeMoreCutoff ?? 6}
+              onChange={(e) => update("seeMoreCutoff", Number(e.target.value) || undefined)}
+              className="w-16 rounded border px-2 py-1 text-sm"
+            />
+            <span className="text-sm">photos</span>
+          </div>
+        )}
       </div>
 
       {/* ── Tag Display ─────────────────────────────────────────────── */}
