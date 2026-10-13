@@ -145,7 +145,7 @@ function StaticPicker({
       ) : filteredAssets.length === 0 ? (
         <div className="text-sm text-(--color-text-light)">No assets found.</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 overflow-y-auto flex-1 pr-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 content-start auto-rows-min gap-3 overflow-y-auto flex-1 pr-1">
           {filteredAssets.map((a) => {
             const isSelected = selected.includes(a.id);
             // Tiles use `object-contain` over a checkerboard: the whole asset stays visible (a wide
@@ -155,7 +155,7 @@ function StaticPicker({
                 key={a.id}
                 type="button"
                 onClick={() => toggle(a.id)}
-                className={`relative aspect-video rounded overflow-hidden border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                className={`relative self-start aspect-video rounded overflow-hidden border-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   isSelected ? "border-blue-500" : "border-transparent hover:border-gray-300"
                 }`}
                 style={{ backgroundImage: "repeating-conic-gradient(#ececec 0% 25%, #ffffff 0% 50%)", backgroundSize: "14px 14px" }}
