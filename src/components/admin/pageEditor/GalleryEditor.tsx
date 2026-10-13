@@ -304,6 +304,8 @@ export default function GalleryEditor({
         )}
         {gs.mode === "static" && assetIds.length > 0 && (
           <DndContext
+            // Stable id: keeps aria-describedby deterministic across SSR and hydration.
+            id="gallery-picks"
             sensors={sensors}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
