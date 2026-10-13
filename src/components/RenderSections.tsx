@@ -1,5 +1,5 @@
 // components/RenderSections.tsx
-import { PageSection } from "@/types/sections";
+import { PageSection, TwoColumnSection } from "@/types/sections";
 import Hero from "./sections/Hero";
 import TwoColumn from "./sections/TwoColumn";
 import Gallery from "./sections/Gallery";
@@ -11,6 +11,7 @@ import Contact from "./sections/Contact";
 import CollectionIndex from "./sections/CollectionIndex";
 import CollectionItem from "./sections/CollectionItem";
 import ServiceLinks from "./sections/ServiceLinks";
+import { getServiceHrefMap } from "@/lib/service-links";
 
 type EntityContext = { entitySlug: string; source: "folders" | "tags" };
 
@@ -28,8 +29,11 @@ function resolveCollectionRouteBase(sections: PageSection[]): string | undefined
   return (primary as any)?.routeBase || undefined;
 }
 
-export default function RenderSections({ sections, pageSlug, entityContext }: Props) {
+export default async function RenderSections({ sections, pageSlug, entityContext }: Props) {
   const collectionRouteBase = resolveCollectionRouteBase(sections);
+  // Resolved once per render for twoColumn service links: their displayed URL is derived from the
+  // service's reference, so the editor can show a service name where the data holds one.
+  const serviceHrefs = await getServiceHrefMap();
   return (
     <>
       {sections.map((section, index) => {
@@ -57,7 +61,7 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
             break;
 
           case "twoColumn":
-            content = <TwoColumn {...section} />;
+            content = <TwoColumn {...(section as TwoColumnSection)} serviceHrefs={serviceHrefs} />;
             break;
 
           case "video":

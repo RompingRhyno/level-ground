@@ -6,6 +6,8 @@ import { useConfirm } from "../useConfirm";
 import GalleryEditor from "./GalleryEditor";
 import ContactEditor from "./ContactEditor";
 import SectionPreview from "./SectionPreview";
+import { useServices } from "@/components/sections/useServiceLinks";
+import { SERVICES } from "@/lib/services";
 import ImagePicker, { ImagePickerModal } from "../ImagePicker";
 import VideoPicker from "../VideoPicker";
 import RichContentEditable from "./RichContentEditable";
@@ -226,6 +228,9 @@ export default function SectionEditor({
 }) {
   const [expanded, setExpanded] = useState(false);
   const { confirm, dialogProps } = useConfirm();
+  const liveServices = useServices();
+  /** The vocabulary for the twoColumn link picker: live list, static fallback until it loads. */
+  const serviceOptions = liveServices ?? SERVICES;
   const type = section.type;
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
@@ -489,16 +494,30 @@ export default function SectionEditor({
                       links[li] = { ...links[li], label: e.target.value };
                       update("links", links);
                     }} className="rounded border px-2 py-1 flex-1" />
-                    <select value={l.href || ""} onChange={(e) => {
+                    {/* The link's target: a service reference (resolved to wherever that service
+                        lives, so the option shows a name rather than "(none)") or a custom URL.
+                        The old page-only select could never match a page+anchor href. */}
+                    <select value={l.service || (l.href ? "__custom__" : "")} onChange={(e) => {
                       const links = [...((section as any).links || [])];
-                      links[li] = { ...links[li], href: e.target.value };
+                      const v = e.target.value;
+                      links[li] = v === "__custom__"
+                        ? { ...links[li], service: undefined }
+                        : { ...links[li], service: v || undefined, href: v ? undefined : links[li].href };
                       update("links", links);
                     }} className="rounded border px-2 py-1 flex-1">
                       <option value="">(none)</option>
-                      {pagesList.filter(p => p.type === undefined || p.type === 'page').map((p) => (
-                        <option key={p.slug} value={`/${p.slug}`}>{p.label || p.slug}</option>
+                      {serviceOptions.map((s) => (
+                        <option key={s.slug} value={s.slug}>{s.name}</option>
                       ))}
+                      <option value="__custom__">Custom URL…</option>
                     </select>
+                    {!l.service && (
+                      <input value={l.href || ""} placeholder="/path or /path#anchor" onChange={(e) => {
+                        const links = [...((section as any).links || [])];
+                        links[li] = { ...links[li], href: e.target.value };
+                        update("links", links);
+                      }} className="rounded border px-2 py-1 flex-1" />
+                    )}
                     <button onClick={() => {
                       const links = [...((section as any).links || [])];
                       links.splice(li, 1);

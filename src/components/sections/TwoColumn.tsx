@@ -2,6 +2,7 @@ import Image from "next/image";
 import RichText from "@/components/RichText";
 import Link from "next/link";
 import { TwoColumnSection } from "@/types/sections";
+import { serviceAnchorHref } from "@/lib/services";
 
 /**
  * Two equal blocks side by side — one square image, one text block — inside a container capped at
@@ -26,10 +27,27 @@ import { TwoColumnSection } from "@/types/sections";
  *
  * All three text parts are optional and render only when present.
  */
-export default function TwoColumn({ title, titleHref, body, links, image, textFirst }: TwoColumnSection) {
+export default function TwoColumn({
+  title,
+  titleHref,
+  body,
+  links,
+  image,
+  textFirst,
+  serviceHrefs,
+}: TwoColumnSection & { serviceHrefs?: Record<string, string> }) {
   const heading = title?.trim();
   const text = body?.trim();
-  const items = (links ?? []).filter((link) => link.label?.trim() && link.href?.trim());
+  // A link resolves through its service reference when it has one; hrefs remain for anything that is
+  // not a service. `serviceAnchorHref` is the pre-map fallback (the editor preview has no map).
+  const resolved = (links ?? [])
+    .map((link) => ({
+      label: link.label ?? "",
+      href: (link.service ? (serviceHrefs?.[link.service] ?? serviceAnchorHref(link.service)) : link.href) ?? "",
+      key: `${link.label}-${link.service ?? link.href ?? ""}`,
+    }))
+    .filter((link) => link.label.trim() && link.href.trim());
+  const items = resolved;
 
   const imageBlock = (
     <div className={`relative aspect-square overflow-hidden rounded-2xl shadow md:aspect-auto${textFirst ? "" : " md:order-1"}`}>
@@ -69,7 +87,7 @@ export default function TwoColumn({ title, titleHref, body, links, image, textFi
           {items.length > 0 && (
             <ul>
               {items.map((link) => (
-                <li key={`${link.label}-${link.href}`}>
+                <li key={link.key}>
                   <Link
                     href={link.href}
                     className="font-bold block w-full border-b border-current pt-2 leading-[1.35] transition-colors hover:text-(--color-brand-primary)"

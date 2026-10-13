@@ -12,7 +12,7 @@ import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import CollectionIndexPresentation, { type CollectionFilter } from "@/components/sections/CollectionIndexPresentation";
 import { ServiceLinksView } from "@/components/sections/ServiceLinksView";
 import { useServices } from "@/components/sections/useServiceLinks";
-import { SERVICES } from "@/lib/services";
+import { SERVICES, serviceAnchorHref } from "@/lib/services";
 import VideoStage from "@/components/sections/VideoStage";
 import type {
   PageSection,
@@ -313,7 +313,11 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   );
 }
 
-function renderContent(section: PageSection, services: { slug: string; name: string }[]) {
+function renderContent(
+  section: PageSection,
+  services: { slug: string; name: string }[],
+  serviceHrefs: Record<string, string>,
+) {
   const type = section.type;
 
   if (type === "hero") {
@@ -335,7 +339,7 @@ function renderContent(section: PageSection, services: { slug: string; name: str
     const s = section as TwoColumnSection;
     return (
       <div className="section-container pt-12">
-        <TwoColumn {...s} />
+        <TwoColumn {...s} serviceHrefs={serviceHrefs} />
       </div>
     );
   }
@@ -397,6 +401,10 @@ export default function PreviewClient() {
   const [data, setData] = useState<PageSection | null>(null);
   const liveServices = useServices();
   const previewServices = liveServices ?? SERVICES;
+  /** slug → href for twoColumn service links; the static fallback path has no href of its own. */
+  const previewServiceHrefs = Object.fromEntries(
+    previewServices.map((s) => [s.slug, (s as { href?: string }).href ?? serviceAnchorHref(s.slug) ?? ""])
+  );
 
   useEffect(() => {
     // Hide site nav/footer when rendered inside the admin preview iframe
@@ -445,5 +453,5 @@ export default function PreviewClient() {
 
   if (!data) return null;
 
-  return <>{renderContent(data, previewServices)}</>;
+  return <>{renderContent(data, previewServices, previewServiceHrefs)}</>;
 }

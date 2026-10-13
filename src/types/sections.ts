@@ -37,7 +37,14 @@ export type HeroSection = {
 
 export type TwoColumnLink = {
   label: string;
-  href: string;
+  /** A literal URL — used when the link is not a service. */
+  href?: string;
+  /**
+   * The service this link points at, by slug. Preferred over `href`: the resolved URL is derived
+   * (see lib/service-links), so it follows the section wherever the service actually lives and
+   * survives a rename, and the page editor can show the service's name instead of "(none)".
+   */
+  service?: string;
 };
 
 export type TwoColumnSection = {
