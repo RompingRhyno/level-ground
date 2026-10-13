@@ -664,9 +664,18 @@ export default function SectionEditor({
                   <option value="reference">Reference — display only</option>
                 </select>
                 {((section as any).mode ?? "primary") === "reference" && (
-                  <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-                    Uses routing from primary collection index on this page.
-                  </p>
+                  <>
+                    <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+                      Uses routing from primary collection index on this page.
+                    </p>
+                    <label className="block text-sm mt-2">Button text</label>
+                    <input
+                      value={(section as any).seeMoreText || ""}
+                      onChange={(e) => update("seeMoreText", e.target.value)}
+                      placeholder="See More"
+                      className="w-full rounded border px-2 py-1"
+                    />
+                  </>
                 )}
               </div>
               <div className="space-y-1">

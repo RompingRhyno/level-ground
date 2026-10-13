@@ -163,6 +163,8 @@ export type CollectionIndexSection = {
   sortMode?: "custom" | "latest" | "earliest" | "alphabetical";
   showTagFilter?: boolean;
   maxItems?: number;
+  /** Reference mode's link to the primary collection index; the button's text. */
+  seeMoreText?: string;
   query?: {
     filter?: string;
   };
