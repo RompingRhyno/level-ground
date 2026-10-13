@@ -109,6 +109,35 @@ automatically and a rename propagates. Manual entries stay available for anythin
 | **Tag's service reassignment** | — | **no UI exists** to move a tag to another service |
 | Redirect map (`next.config.ts`) | static, frozen legacy set | deliberately not coupled |
 
+## Proposed admin shape (operator, 2026-10-13): the expanded tag modal + a gallery service dropdown
+
+Two moves: **expand the tag modal into the vocabulary's CRUD** (services included: create, rename,
+regroup, reorder, delete; tags gain move-to-another-service), and **add a "service link" dropdown to
+the gallery component** that binds a section to a service, listing unlinked services and graying the
+linked ones. The idea holds; the gaps to design around:
+
+1. **Scope mismatch.** The vocabulary is global; the modal opens from one folder's tag section. Fine
+   as an entry point, but the modal must read/write global state and say so (it is no longer
+   "this folder's tags").
+2. **Dropdown scope.** A service section belongs on its group's service page. A gallery on any other
+   page (home, about) binding a service would create a section no link ever resolves to — the
+   dropdown should either only appear on the two service pages, or warn.
+3. **`anchor` vs `service` conflict.** Both fields would exist. Rule needed: binding a service sets
+   the anchor from the reference (and disables the manual field, or makes the anchor an explicit
+   override with a warning).
+4. **Unlink/rebind flow.** Gray-out prevents double-linking, but nothing yet expresses *unlink*
+   (e.g. moving `planting` from one section to another requires freeing the first).
+5. **Regroup moves the section.** Changing a service from installation to maintenance must move its
+   section between pages — same cascade class as rename.
+6. **Delete confirmation must enumerate references** — tags using it, its section, any listing rows —
+   the way tag-delete already names its folders.
+7. **Freshness.** The grayed-out set is a live read (both service pages' sections, cached); the modal
+   and dropdown need it via an API, and it must invalidate with the same tags the resolver uses.
+
+Also noted: service mentions in *non-gallery* sections (the installation page's bottom banner names
+Excavation in prose) stay plain text — the dropdown only exists on galleries. Acceptable, but worth
+being deliberate about.
+
 ## Target design
 
 1. **One resolver, server-side:** `getServiceLinkMap()` → `slug → { name, group, page, anchor, href,
