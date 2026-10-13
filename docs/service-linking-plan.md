@@ -116,23 +116,30 @@ regroup, reorder, delete; tags gain move-to-another-service), and **add a "servi
 the gallery component** that binds a section to a service, listing unlinked services and graying the
 linked ones. The idea holds; the gaps to design around:
 
-1. **Scope mismatch.** The vocabulary is global; the modal opens from one folder's tag section. Fine
-   as an entry point, but the modal must read/write global state and say so (it is no longer
-   "this folder's tags").
-2. **Dropdown scope.** A service section belongs on its group's service page. A gallery on any other
-   page (home, about) binding a service would create a section no link ever resolves to — the
-   dropdown should either only appear on the two service pages, or warn.
-3. **`anchor` vs `service` conflict.** Both fields would exist. Rule needed: binding a service sets
-   the anchor from the reference (and disables the manual field, or makes the anchor an explicit
-   override with a warning).
-4. **Unlink/rebind flow.** Gray-out prevents double-linking, but nothing yet expresses *unlink*
-   (e.g. moving `planting` from one section to another requires freeing the first).
-5. **Regroup moves the section.** Changing a service from installation to maintenance must move its
-   section between pages — same cascade class as rename.
-6. **Delete confirmation must enumerate references** — tags using it, its section, any listing rows —
-   the way tag-delete already names its folders.
-7. **Freshness.** The grayed-out set is a live read (both service pages' sections, cached); the modal
-   and dropdown need it via an API, and it must invalidate with the same tags the resolver uses.
+**Resolved / corrected 2026-10-13 (operator):**
+
+1. **Scope — solved by the revamped tag box.** The folder page's tag section is redrawn with tags
+   visually grouped under their services, plus an "Add service" action that makes the category
+   relationship legible. The modal edits global vocabulary; the box shows it in context.
+   *One design point to settle:* the box then shows tags grouped by service, while the alt list
+   depends on the folder's ordered tags (first four). Proposal: two zones — "In this project"
+   (ordered, drag, the alt list) and "Add from services" (grouped browse).
+2. **Dropdown scope — withdrawn.** A service's section may live on **any** page; the resolver finds
+   it by reference and links there. (A home-page gallery bound to `planting` means the cover chips
+   point at the home section.) The service's *group* only sets the **default** page for the
+   skeleton section the create cascade makes — not where links resolve.
+3. **`anchor` vs `service`, restated.** Today `anchor` is a free-text id on a section; on the two
+   service pages those strings are service slugs *by convention*, hand-typed, and can drift. The
+   proposal adds `service` — a **reference** (a pick from the live list) meaning "this section is
+   Planting". Binding it derives the id from the reference and disables the free-text anchor, which
+   then survives only for non-service sections that need a jump target.
+4. **Unlink — solved.** The dropdown carries an explicit "(none)" entry; choosing it frees the
+   binding so the service can be linked elsewhere.
+5. **Regroup moves the section** — same cascade class as rename; managed in the CRUD transaction.
+6. **Delete confirmation enumerates references** — tags, its section, listing rows — the tag-delete
+   precedent.
+7. **Freshness** — the linked-set read goes through the resolver's cached read, invalidated by the
+   same cache tags on every write.
 
 Also noted: service mentions in *non-gallery* sections (the installation page's bottom banner names
 Excavation in prose) stay plain text — the dropdown only exists on galleries. Acceptable, but worth
