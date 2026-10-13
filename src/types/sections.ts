@@ -73,11 +73,19 @@ export type GallerySection = {
   heading?: string;
   body?: string;
   /**
-   * Optional anchor id, so other pages can deep-link to this gallery (e.g. the home page's two-column
-   * service lists link to `/landscape-design-installation#planting`). Keep it stable: links elsewhere
+   * Optional anchor id, so other pages can deep-link to this gallery. Keep it stable: links elsewhere
    * point at it, and the section carries a scroll margin so the sticky header does not cover the top.
+   *
+   * When `service` is bound, the id derives from that reference and this field is ignored (the page
+   * editor disables it) — it then only serves non-service sections that need a jump target.
    */
   anchor?: string;
+  /**
+   * The service this section *is* — a reference into the Service table, picked from the live list,
+   * never typed. Cover-chip links resolve to wherever the bound section lives (any page), and a
+   * service rename re-derives the id. See `docs/service-linking-plan.md`.
+   */
+  service?: string;
   tagDisplay?: GalleryTagDisplay;
 } & (
   | { mode: "static"; assetIds: string[] }
