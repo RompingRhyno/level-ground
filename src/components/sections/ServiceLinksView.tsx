@@ -23,15 +23,18 @@ export function ServiceLinksView({
   const items = shownSlugs ? services.filter((s) => shownSlugs.includes(s.slug)) : services;
   if (!items.length) return null;
   return (
-    <div className="px-4 md:px-8">
-      {/* Subheading scale — the hero subheading's size, in the body font. */}
-      <RichText
-        as="h2"
-        value={heading}
-        className="max-w-4xl text-xl md:text-3xl mb-6"
-        style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
-      />
-      <div className="flex flex-wrap gap-2">
+    <div className="w-full">
+      {/* Heading keeps the section-text inset (px-4 md:px-8, like SectionHeader); the pills adopt the
+          gallery media inset (px-6) so they line up with the tile grids below them. */}
+      <div className="px-4 md:px-8">
+        <RichText
+          as="h2"
+          value={heading}
+          className="max-w-4xl text-xl md:text-3xl mb-6"
+          style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-body)" }}
+        />
+      </div>
+      <div className="px-6 flex flex-wrap gap-2">
         {items.map((s) => (
           <a
             key={s.slug}
