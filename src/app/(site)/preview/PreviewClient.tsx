@@ -379,7 +379,11 @@ function renderContent(
     // The preview has no page context, so every service shows here — the page narrows the list.
     return (
       <div className="section-container pt-12">
-        <ServiceLinksView services={services} shownSlugs={null} />
+        <ServiceLinksView
+          services={services}
+          shownSlugs={null}
+          heading={(section as { heading?: string }).heading}
+        />
       </div>
     );
   }

@@ -89,7 +89,10 @@ export default async function RenderSections({ sections, pageSlug, entityContext
             return (
               <section key={index}>
                 <div className="section-container pt-12">
-                  <ServiceLinks sections={sections} />
+                  <ServiceLinks
+                    sections={sections}
+                    heading={(section as { heading?: string }).heading}
+                  />
                 </div>
               </section>
             );

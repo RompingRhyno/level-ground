@@ -192,6 +192,9 @@ export type CollectionIndexSection = {
  */
 export type ServiceLinksSection = {
   type: "service-links";
+  /** Optional label above the pill row, set at the site's subheading scale (the hero subheading's
+   * size). Authored with the rich editor, so <b>/<i> render. */
+  heading?: string;
 };
 
 export type CollectionItemSection = {
