@@ -10,6 +10,8 @@ import { transitionsFromRows } from "@/lib/transition";
 import Contact from "@/components/sections/Contact";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import CollectionIndexPresentation, { type CollectionFilter } from "@/components/sections/CollectionIndexPresentation";
+import { ServiceLinksView } from "@/components/sections/ServiceLinksView";
+import { useServices } from "@/components/sections/useServiceLinks";
 import { SERVICES } from "@/lib/services";
 import VideoStage from "@/components/sections/VideoStage";
 import type {
@@ -311,7 +313,7 @@ function CollectionIndexPreview({ section }: { section: CollectionIndexSection }
   );
 }
 
-function renderContent(section: PageSection) {
+function renderContent(section: PageSection, services: { slug: string; name: string }[]) {
   const type = section.type;
 
   if (type === "hero") {
@@ -369,6 +371,14 @@ function renderContent(section: PageSection) {
       </div>
     );
   }
+  if (type === "service-links") {
+    // The preview has no page context, so every service shows here — the page narrows the list.
+    return (
+      <div className="section-container pt-12">
+        <ServiceLinksView services={services} shownSlugs={null} />
+      </div>
+    );
+  }
   if (type === "collection-index") {
     return <CollectionIndexPreview section={section as CollectionIndexSection} />;
   }
@@ -385,6 +395,8 @@ function renderContent(section: PageSection) {
 
 export default function PreviewClient() {
   const [data, setData] = useState<PageSection | null>(null);
+  const liveServices = useServices();
+  const previewServices = liveServices ?? SERVICES;
 
   useEffect(() => {
     // Hide site nav/footer when rendered inside the admin preview iframe
@@ -433,5 +445,5 @@ export default function PreviewClient() {
 
   if (!data) return null;
 
-  return <>{renderContent(data)}</>;
+  return <>{renderContent(data, previewServices)}</>;
 }

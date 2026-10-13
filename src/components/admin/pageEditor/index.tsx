@@ -206,6 +206,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },
       video: { type: "video", heading: "", subheading: "", videoUrl: "" },
       contact: { id: crypto.randomUUID(), type: "contact", heading: "", fields: [], recipientIds: [] },
+      "service-links": { type: "service-links" },
       "collection-index": { type: "collection-index", mode: "primary", source: "folders", routeBase: "", detailTemplateSlug: "", heading: "" },
       "collection-item": { type: "collection-item", layout: "grid", lightbox: true },
     };
@@ -235,6 +236,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug: initialPage.slug, label, sections, navPill, jumpToTop,
+          type: initialPage.type,
           metaTitle: metaTitle.trim() || null, metaDescription: metaDescription.trim() || null,
         }),
       });
@@ -357,6 +359,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               <option value="gallery">Gallery</option>
               <option value="video">Video</option>
               <option value="contact">Contact Form</option>
+              <option value="service-links">Service links</option>
               <option value="collection-index">Collection Index</option>
               <option value="collection-item">Collection Item</option>
             </select>

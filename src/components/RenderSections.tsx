@@ -10,6 +10,7 @@ import Video from "./sections/Video";
 import Contact from "./sections/Contact";
 import CollectionIndex from "./sections/CollectionIndex";
 import CollectionItem from "./sections/CollectionItem";
+import ServiceLinks from "./sections/ServiceLinks";
 
 type EntityContext = { entitySlug: string; source: "folders" | "tags" };
 
@@ -76,6 +77,15 @@ export default function RenderSections({ sections, pageSlug, entityContext }: Pr
               <section key={index}>
                 <div className="section-container pt-12">
                   <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
+                </div>
+              </section>
+            );
+
+          case "service-links":
+            return (
+              <section key={index}>
+                <div className="section-container pt-12">
+                  <ServiceLinks sections={sections} />
                 </div>
               </section>
             );
