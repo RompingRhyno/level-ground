@@ -219,19 +219,35 @@ export default function GalleryEditor({
 
       <div className="space-y-1">
         <label className="block text-sm">Service link</label>
+        {/* One control for the section's id: pick a service (the id derives from the reference,
+            renames cascade, and the cover chips find the section) — or a custom jump id for a
+            section that is not a service. Legacy sections carrying only an anchor that matches a
+            service slug show that service as selected. */}
         <select
-          value={gs.service || ""}
+          value={
+            gs.service
+              ? gs.service
+              : gs.anchor && (services ?? []).some((s) => s.slug === gs.anchor)
+                ? gs.anchor
+                : gs.anchor
+                  ? "__custom__"
+                  : ""
+          }
           onChange={(e) => {
-            const slug = e.target.value || undefined;
-            // Binding derives the id; unbinding frees the service so another section can take it.
-            update("service", slug);
-            update("anchor", slug);
+            const value = e.target.value;
+            if (value === "__custom__") {
+              update("service", undefined);
+              return;
+            }
+            // Binding derives the id; picking (none) frees the service for another section.
+            update("service", value || undefined);
+            update("anchor", value || undefined);
           }}
           className="rounded border px-2 py-1"
         >
           <option value="">(none)</option>
           {(services ?? []).map((s) => {
-            const linkedHere = gs.service === s.slug;
+            const linkedHere = gs.service === s.slug || (!gs.service && gs.anchor === s.slug);
             const linkedElsewhere = !!s.hasSection && !linkedHere;
             return (
               <option key={s.slug} value={s.slug} disabled={linkedElsewhere}>
@@ -239,19 +255,16 @@ export default function GalleryEditor({
               </option>
             );
           })}
+          <option value="__custom__">Custom jump id…</option>
         </select>
-      </div>
-
-      <div className="space-y-1">
-        <label className="block text-sm">Anchor</label>
-        <input
-          value={gs.service ? gs.service : gs.anchor || ""}
-          disabled={!!gs.service}
-          onChange={(e) => update("anchor", e.target.value)}
-          className="w-full rounded border px-2 py-1 disabled:opacity-60"
-          placeholder="Optional — id for deep links (e.g. planting)"
-        />
-        {gs.service ? <p className="text-xs" style={{ color: "var(--color-text-light)" }}>Derived from the service link.</p> : null}
+        {!gs.service && (!gs.anchor || !(services ?? []).some((s) => s.slug === gs.anchor)) && (
+          <input
+            value={gs.anchor || ""}
+            onChange={(e) => update("anchor", e.target.value || undefined)}
+            className="mt-1 w-full rounded border px-2 py-1"
+            placeholder="id for deep links (e.g. gallery)"
+          />
+        )}
       </div>
 
       <div className="space-y-1">
