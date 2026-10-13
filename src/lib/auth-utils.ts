@@ -10,8 +10,17 @@ const resend = new Resend(process.env.RESEND_API_KEY)
  */
 const EMAIL_FROM = process.env.AUTH_EMAIL_FROM ?? process.env.CONTACT_EMAIL_FROM ?? ''
 
-/** Site origin for links inside those emails. Set per environment (Vercel: the production domain). */
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+/**
+ * Site origin for links inside those emails. Set per environment (Vercel: the production domain).
+ * Normalized because NEXT_PUBLIC_BASE_URL is stored without a scheme — an un-normalized value
+ * produced scheme-less reset links that no mail client will hyperlink (same class of bug the
+ * sitemap and robots had; see src/lib/seo.ts for the shared normalization).
+ */
+const SITE_URL = (() => {
+  const raw = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
+  const trimmed = raw.replace(/\/+$/, '')
+  return /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`
+})()
 
 /** SHA-256 hex digest of a raw token string. */
 export function hashToken(raw: string): string {
