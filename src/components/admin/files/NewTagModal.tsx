@@ -7,47 +7,39 @@ import { api } from "./api";
 import type { TagData } from "./types";
 
 /**
- * Create a tag together with its service category.
+ * Create a tag, filed under its service category.
  *
  * The category is not decoration: a tag's `service` is what files it under a service in the
  * gallery picker and the /projects filter (tags are the covers, services are the categories
  * above them), so an unassigned tag is invisible to both. Capturing it up front is the point of
- * this modal.
+ * this modal. Creating a *service* is a separate concern in its own modal.
  */
 export default function NewTagModal({
   open,
   onClose,
   onCreated,
-  servicePreset,
 }: {
   open: boolean;
   onClose: () => void;
   onCreated: (tag: TagData) => Promise<void> | void;
-  /** Pass "__new__" to open straight into the create-a-service branch (the tag box's New service button). */
-  servicePreset?: string;
 }) {
   const [name, setName] = useState("");
   const [service, setService] = useState("");
-  const [newServiceName, setNewServiceName] = useState("");
-  const [newServiceGroup, setNewServiceGroup] = useState<"installation" | "maintenance">("installation");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const liveServices = useServices();
   const services = liveServices ?? SERVICES;
-  const creatingService = service === "__new__";
 
   useEffect(() => {
     if (!open) return;
     setName("");
-    setService(servicePreset ?? "");
-    setNewServiceName("");
-    setNewServiceGroup("installation");
+    setService("");
     setError(null);
     setBusy(false);
     const t = setTimeout(() => nameRef.current?.focus(), 30);
     return () => clearTimeout(t);
-  }, [open, servicePreset]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -68,26 +60,12 @@ export default function NewTagModal({
       setError("Choose a service category.");
       return;
     }
-    const newService = newServiceName.trim();
-    if (creatingService && !newService) {
-      setError("Enter the new service's name.");
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
-      // A brand-new service is created first; the tag then files under it.
-      let serviceSlug = service;
-      if (creatingService) {
-        const createdService = await api<{ slug: string }>("/api/services", {
-          method: "POST",
-          body: JSON.stringify({ name: newService, group: newServiceGroup }),
-        });
-        serviceSlug = createdService.slug;
-      }
       const created = await api<TagData>("/api/tags", {
         method: "POST",
-        body: JSON.stringify({ name: trimmed, service: serviceSlug }),
+        body: JSON.stringify({ name: trimmed, service }),
       });
       await onCreated(created);
       onClose();
@@ -150,35 +128,8 @@ export default function NewTagModal({
                 </option>
               ))}
             </optgroup>
-            <option value="__new__">＋ New service…</option>
           </select>
         </label>
-
-        {creatingService && (
-          <div className="mb-4 rounded border border-(--color-border) p-3">
-            <label className="mb-2 block">
-              <span className="mb-1 block text-sm">New service name</span>
-              <input
-                value={newServiceName}
-                onChange={(event) => setNewServiceName(event.target.value)}
-                placeholder="e.g. Processes"
-                className="w-full rounded border bg-white px-3 py-2 text-sm"
-                autoFocus
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-sm">Lives under</span>
-              <select
-                value={newServiceGroup}
-                onChange={(event) => setNewServiceGroup(event.target.value as "installation" | "maintenance")}
-                className="w-full rounded border bg-white px-3 py-2 text-sm"
-              >
-                <option value="installation">Installation</option>
-                <option value="maintenance">Maintenance</option>
-              </select>
-            </label>
-          </div>
-        )}
 
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 

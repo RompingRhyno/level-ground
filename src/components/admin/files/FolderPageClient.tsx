@@ -28,9 +28,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import MoveModal from "./MoveModal";
-import { useServices } from "@/components/sections/useServiceLinks";
+import { useServices, invalidateServices } from "@/components/sections/useServiceLinks";
 import { SERVICES } from "@/lib/services";
 import NewTagModal from "./NewTagModal";
+import NewServiceModal from "./NewServiceModal";
 import UploadModal from "./UploadModal";
 import TransitionModal from "./TransitionModal";
 import { ToastProvider, useToast } from "./Toast";
@@ -77,7 +78,9 @@ function FolderPageClientInner({
   const [prompt, setPrompt] = useState<LightboxPrompt>(null);
   const [promptValue, setPromptValue] = useState("");
   const [newTagOpen, setNewTagOpen] = useState(false);
-  const [servicePreset, setServicePreset] = useState<string | undefined>(undefined);
+  const [newServiceOpen, setNewServiceOpen] = useState(false);
+  /** The add zone (services + their unused tags) is collapsed until asked for. */
+  const [addOpen, setAddOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -574,28 +577,6 @@ function FolderPageClientInner({
       >
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">Tags</span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setServicePreset(undefined);
-                setNewTagOpen(true);
-              }}
-              className="rounded px-2 py-1 text-sm btn-positive"
-            >
-              ＋ New tag
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setServicePreset("__new__");
-                setNewTagOpen(true);
-              }}
-              className="rounded px-2 py-1 text-sm admin-btn"
-            >
-              ＋ New service
-            </button>
-          </div>
         </div>
         <p className="mb-3 text-xs text-(--color-text-light)">
           The first {ALT_TAGS} tags name this project&rsquo;s photo alt text. Click one to add or remove it;
@@ -607,9 +588,9 @@ function FolderPageClientInner({
             (without one it uses a module counter, and the two renders disagree). */}
         <DndContext id="folder-tags" sensors={tagSensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
           <SortableContext items={folder.tags} strategy={horizontalListSortingStrategy}>
-            <div className="flex flex-wrap gap-2">
-              {folder.tags.length === 0 && (
-                <span className="text-sm text-(--color-text-light)">No tags yet — add from the categories below.</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {folder.tags.length === 0 && !addOpen && (
+                <span className="text-sm text-(--color-text-light)">No tags yet.</span>
               )}
               {activeTags.map((tag, index) => (
                 <SortableTagPill
@@ -622,12 +603,42 @@ function FolderPageClientInner({
                   onDelete={deleteTag}
                 />
               ))}
+              {!addOpen && (
+                <button
+                  type="button"
+                  onClick={() => setAddOpen(true)}
+                  className="rounded-full border border-(--color-border) bg-white px-3 py-1 text-xs text-(--color-text-dark) hover:bg-(--color-bg-secondary)"
+                >
+                  ＋ Add tag
+                </button>
+              )}
             </div>
           </SortableContext>
         </DndContext>
 
-        {addGroups.length > 0 && (
+        {addOpen && (
           <div className="mt-3 space-y-3 border-t border-(--color-border) pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setNewTagOpen(true)} className="rounded px-2 py-1 text-sm btn-positive">
+                  ＋ New tag
+                </button>
+                <button type="button" onClick={() => setNewServiceOpen(true)} className="rounded px-2 py-1 text-sm admin-btn">
+                  ＋ New service
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddOpen(false)}
+                aria-label="Collapse tags"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-(--color-border) bg-white hover:bg-(--color-bg-secondary)"
+                style={{ color: "var(--color-text-dark)" }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m18 15-6-6-6 6" />
+                </svg>
+              </button>
+            </div>
             {addGroups.map((group) => (
               <div key={group.key}>
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-(--color-text-light)">
@@ -983,11 +994,14 @@ function FolderPageClientInner({
         }}
       />
 
-      <NewTagModal
-        open={newTagOpen}
-        onClose={() => setNewTagOpen(false)}
-        onCreated={tagCreated}
-        servicePreset={servicePreset}
+      <NewTagModal open={newTagOpen} onClose={() => setNewTagOpen(false)} onCreated={tagCreated} />
+      <NewServiceModal
+        open={newServiceOpen}
+        onClose={() => setNewServiceOpen(false)}
+        onCreated={() => {
+          // Drop the client cache so the next fetch (the tag modal's select) sees the new service.
+          invalidateServices();
+        }}
       />
     </div>
   );

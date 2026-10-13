@@ -25,6 +25,12 @@ function load(): Promise<LiveService[]> {
   return inflight;
 }
 
+/** Drop the module cache so the next fetch reflects a just-made change (e.g. a new service). */
+export function invalidateServices(): void {
+  cache = null;
+  inflight = null;
+}
+
 export function useServices(): LiveService[] | null {
   const [services, setServices] = useState<LiveService[] | null>(cache);
   useEffect(() => {
