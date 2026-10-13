@@ -352,7 +352,7 @@ export default function GalleryLightbox({
                   const className =
                     "text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)";
                   return href ? (
-                    <Link key={tag.slug} href={href} className={className}>
+                    <Link key={tag.slug} href={href} onClick={onClose} className={className}>
                       {tag.name}
                     </Link>
                   ) : (
