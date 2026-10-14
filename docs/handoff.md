@@ -15,8 +15,8 @@ Status: draft, built while migrating to new accounts (2026-09).
 | **Cloudflare — Turnstile** | Contact-form CAPTCHA | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (`.env`), `TURNSTILE_SECRET_KEY` (`.env.local`) | Third piece under the same Cloudflare account — easy to forget. |
 | **Resend** | Contact notifications + admin auth mail | `RESEND_API_KEY` (`.env.local`), `CONTACT_EMAIL_FROM` (`.env`) | Needs a **verified domain**; the sandbox sender only delivers to the account owner's address. Create the key as **Sending access, restricted to the domain** — the app only ever sends. Domain creation/verification needs full access (or the dashboard) on migration day. |
 | **Vercel** | Hosting + the contact-cleanup cron | `CRON_SECRET` (`.env.local`), all of the above | Cron hits `/api/contact/cleanup` daily (`vercel.json`). |
-| **GitHub** | Source of truth | — | Repo + the SSH key are part of the handoff, not runtime. |
-| **Domain + DNS** | Production origin, Resend records, R2 custom domain later | `NEXT_PUBLIC_BASE_URL` (`.env`) | Registrar + Cloudflare zone. Set `NEXT_PUBLIC_BASE_URL` to the real origin once it exists. |
+| **GitHub** | Source of truth | — | Repo: **levelgrounddev/level-ground** (private; `origin` carries two push URLs — levelgrounddev and the personal mirror `RompingRhyno/level-ground` — so both stay in sync). Vercel is still linked to the *personal* repo; re-linking it to levelgrounddev is the remaining step (Vercel → project → Settings → Git → Disconnect, then Connect `levelgrounddev/level-ground`; the connect flow prompts for GitHub access if the Vercel app isn't yet authorised on that account). |
+| **Domain + DNS** | Production origin, Resend records, R2 custom domain later | `NEXT_PUBLIC_BASE_URL` (`.env`) | **Registrar: Tucows via Decibite** — NS edits happen in the Decibite panel (domain carries transfer/update locks; clear them if the NS edit is refused). **DNS is already Cloudflare** (`renan/tori.ns.cloudflare.com`) — which account holds that zone still to be confirmed. Old site's origin is **WP Engine** (`x-powered-by: WP Engine`) — keep it alive until cutover, retire after. Set `NEXT_PUBLIC_BASE_URL` to the real origin once it exists. |
 | **Mailbox** | Receives contact-form mail; the address Resend sends as | `CONTACT_EMAIL_FROM` | If it is currently a personal mailbox, the client needs their own. |
 
 Runtime dependencies with no account: `unpkg.com` (ffmpeg WASM core, fetched in the browser when
@@ -395,13 +395,14 @@ the env var is only needed when a wrangler file cannot carry it — while the ap
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `0x4AAAAAAFFhQnN6o-Vl5QJG`, matches the account's widget | `.env` → Vercel |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | new account, scoped to `level-ground` | `.env.local` → Vercel |
 
-**The notification recipient now points at `levelgrounddev@gmail.com`** (updated 2026-09-27). It
-previously held the developer's personal address, which the new account's sandbox refused verbatim:
-`403 — You can only send testing emails to your own email address`. A test send through the app's key was
-then **accepted** by Resend, so the notification path works on the new account while the domain is still
-unverified. Two follow-ups for handoff: point the row at the client's real inbox once that is available
-(its `name` field still reads "Ryan"), and remember that after domain verification *any* recipient works,
-so the row stops being constrained to the account owner's address.
+**The notification recipient now points at `levelgrounddev@proton.me`** (updated 2026-10-12; previously
+`levelgrounddev@gmail.com` since 2026-09-27, and the developer's personal address before that — the new
+Resend account's sandbox refused that one verbatim:
+`403 — You can only send testing emails to your own email address`). A test send through the app's key to
+the Proton address was **accepted** by Resend, so the notification path works on the new account while the
+domain is still unverified. Two follow-ups for handoff: point the row at the client's real inbox once that
+is available (its `name` field still reads "Ryan"), and remember that after domain verification *any*
+recipient works, so the row stops being constrained to the account owner's address.
 
 ### Vercel project settings (2026-09-27)
 
@@ -518,6 +519,31 @@ publish domain is retired; and the **Vercel custom domain** with `NEXT_PUBLIC_BA
 already lists the production hostnames, so it needs nothing at that point — the widget only changes if a
 preview deployment needs to run the form.
 
+**Resolved (2026-10-12): the client is leaving Google Workspace.** The zone's Google MX records are
+therefore *not* recreated in the new zone — Cloudflare **Email Routing** MX replaces them at the flip
+(and there is no SPF/DMARC to clean up). The client should export any mail worth keeping and cancel the
+Workspace subscription after cutover; inbound keeps working once routing is onboarded, delivered to the
+owner's mailbox. **One fact still to settle:** the zone is **already on Cloudflare** — confirm which
+account holds `renan/tori.ns.cloudflare.com`. If it is accessible, export the zone (BIND format) before
+the flip and import it into the new account, because a fresh Cloudflare import scan can pick up the
+proxy's own edge IPs instead of the WP Engine origin. If it is not accessible, rebuild the records —
+the WP Engine panel has the origin IP (access confirmed). Rebuilding is small: the zone holds only the
+apex/www A records (proxied) and the Google MX, all recreatable via API once the token carries
+**Zone → DNS: Edit** (attachable only after the zone exists in the new account; add **Zone Settings:
+Edit** too if the SSL mode should be set programmatically — Full (strict) is the right value for both
+WP Engine and Vercel). Once the zone exists, recreate + verify everything in the new account *before*
+the NS flip at Decibite.
+
+**Two cutover styles — pick on the day:** *Same-day swap* = records point straight at Vercel, so neither
+the old Cloudflare account nor the WP Engine origin IP is needed; rollback is flipping the NS back to
+`renan/tori` (the old zone persists in its account for days/weeks and reactivates — fine for the flip
+day, not a long-term dependency), and the old site stays viewable through its WP Engine environment URL
+until the subscription is cancelled. The only "window" is Vercel's DNS check right after the flip —
+old-pair resolvers keep serving the old site throughout, so there is no real downtime. *Staged* = the
+new zone keeps serving the old site for a while, which needs **only the WP Engine origin IP** in the
+apex/www records — not the old Cloudflare account (it cannot tell which account proxies it). With the
+IP in hand both options stay open until the flip.
+
 0. **Before anything DNS-shaped:** push and deploy this repo so the **legacy 301 map** is live on the new
    host (`src/lib/legacy-redirects.ts` + `redirects()` in `next.config.ts`; verified against all 102
    source rows locally). The map only executes where this site is served, so deploying it early is
@@ -532,7 +558,9 @@ preview deployment needs to run the form.
 2. **Flip the nameservers** at the registrar to the pair the new account assigns, then confirm the old
    site still resolves and serves.
 3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX) and Email Routing's
-   MX. Turnstile already lists the production hostnames, so it needs nothing here.
+   MX. Turnstile already lists the production hostnames, so it needs nothing here. If any page copy ends
+   up quoting an email address, also flip on **Email Address Obfuscation** (Scrape Shield — free toggle,
+   edge-side rewrite, no code; only works on the proxied zone, so it can't run on the vercel.app origin).
 4. **Activate the two email paths**, in this order because each depends on the previous one:
    add the domain in Resend (Dashboard → Domains) and wait for verification; enable Email Routing
    (Onboard Domain) — routing must be live *before* the alias test, since the send-as confirmation code
