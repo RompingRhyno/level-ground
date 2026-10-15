@@ -162,7 +162,12 @@ export async function upsertPage(page: PageConfig) {
 
   // sections stored as JSON
   const sections = page.sections;
-  const type = page.type ?? "page";
+  // A caller that omits `type` must NOT reset it: the editor's payload has no `type`, and defaulting
+  // to "page" is exactly how the projects-detail template silently became a nav-visible page.
+  const existingType = page.type
+    ? null
+    : (await prisma.page.findUnique({ where: { slug: page.slug }, select: { type: true } }))?.type ?? null;
+  const type = page.type ?? existingType ?? "page";
 
   const result = await prisma.page.upsert({
     where: { slug: page.slug },
