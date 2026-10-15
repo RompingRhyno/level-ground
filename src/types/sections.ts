@@ -132,6 +132,14 @@ export type BannerSection = {
   overlayOpacity?: number; // e.g. 0.25 for 25%
 };
 
+export type TestimonialSection = {
+  type: "testimonial";
+  /** The quote. Authored through the rich editor, so <b>/<i>/<br> render. */
+  text: string;
+  /** Reviewer's name shown under the bubble; the bubble's tail points at it. */
+  name?: string;
+};
+
 export type VideoSection = {
   type: "video";
   heading?: string;
@@ -208,6 +216,7 @@ export type PageSection =
   | HeroSection
   | ServicesSection
   | BannerSection
+  | TestimonialSection
   | TwoColumnSection
   | GallerySection
   | CTASection
