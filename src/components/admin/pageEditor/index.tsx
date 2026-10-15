@@ -211,6 +211,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       hero: { type: "hero", heading: "", subheading: "", buttonText: "", buttonHref: "", image: "" },
       twoColumn: { type: "twoColumn", heading: "", body: "", links: [], image: "", textFirst: false },
       banner: { type: "banner", heading: "", subheading: "", image: "", overlayOpacity: 0.35 },
+      testimonial: { type: "testimonial", text: "", name: "" },
       services: { type: "services", heading: "", services: [], bodyText: "" },
       gallery: { type: "gallery", mode: "static", layout: "grid", lightbox: false, assetIds: [] },
       video: { type: "video", heading: "", subheading: "", videoUrl: "" },
@@ -364,6 +365,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
               <option value="hero">Hero</option>
               <option value="twoColumn">Two Column</option>
               <option value="banner">Banner</option>
+              <option value="testimonial">Testimonial</option>
               <option value="services">Services</option>
               <option value="gallery">Gallery</option>
               <option value="video">Video</option>

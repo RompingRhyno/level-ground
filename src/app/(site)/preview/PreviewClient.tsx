@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import Hero from "@/components/sections/Hero";
 import Banner from "@/components/sections/Banner";
+import Testimonial from "@/components/sections/Testimonial";
 import TwoColumn from "@/components/sections/TwoColumn";
 import Services from "@/components/sections/Services";
 import GalleryClient from "@/components/sections/GalleryClient";
@@ -18,6 +19,7 @@ import type {
   PageSection,
   HeroSection,
   BannerSection,
+  TestimonialSection,
   TwoColumnSection,
   ServicesSection,
   GallerySection,
@@ -332,6 +334,14 @@ function renderContent(
     return (
       <div className="section-container pt-12">
         <Banner {...(section as BannerSection)} />
+      </div>
+    );
+  }
+  if (type === "testimonial") {
+    const s = section as TestimonialSection;
+    return (
+      <div className="section-container pt-12">
+        <Testimonial {...s} />
       </div>
     );
   }

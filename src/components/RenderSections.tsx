@@ -6,6 +6,7 @@ import Gallery from "./sections/Gallery";
 import CTA from "./sections/CTA";
 import Services from "./sections/Services";
 import Banner from "./sections/Banner";
+import Testimonial from "./sections/Testimonial";
 import Video from "./sections/Video";
 import Contact from "./sections/Contact";
 import CollectionIndex from "./sections/CollectionIndex";
@@ -54,6 +55,10 @@ export default async function RenderSections({ sections, pageSlug, entityContext
             // sections here, and a Banner's own padding is invisible because its image is
             // `absolute inset-0` and paints over the padding box.
             content = <Banner {...section} />;
+            break;
+
+          case "testimonial":
+            content = <Testimonial {...section} />;
             break;
 
           case "gallery":

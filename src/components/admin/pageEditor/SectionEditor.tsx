@@ -602,6 +602,19 @@ export default function SectionEditor({
             </div>
           )}
 
+          {type === "testimonial" && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Quote</label>
+                <RichContentEditable multiline value={(section as any).text || ""} onChange={(val) => update("text", val)} className="w-full" />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Name</label>
+                <input value={(section as any).name || ""} onChange={(e) => update("name", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+            </div>
+          )}
+
           {type === "gallery" && (
             <GalleryEditor section={section} index={index} onChange={onChange} />
           )}
