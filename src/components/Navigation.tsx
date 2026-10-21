@@ -50,14 +50,13 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
     }
   }, [open]);
   
-  // scroll-driven open/close behavior (accumulated)
+  // Scroll-driven close: once the user has scrolled a meaningful distance down, collapse the menu.
+  // (The mirror behaviour — returning to the top of the page popping the menu open — was removed: on
+  // mobile it opened the hamburger unprompted whenever the page settled near the top.)
   useEffect(() => {
     let lastY = typeof window !== "undefined" ? window.scrollY : 0;
     let accDown = 0;
-    let accUp = 0;
     const closeThreshold = 80; // px accumulated downward to force-close
-    const openOnTopThreshold = 20; // px from top to consider "at top"
-    const openAccumThreshold = 8; // accumulated upward px to open when near top
 
     function onScroll() {
       const y = window.scrollY;
@@ -65,22 +64,13 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
 
       if (delta > 0) {
         accDown += delta;
-        accUp = 0;
       } else if (delta < 0) {
-        accUp += -delta;
         accDown = 0;
       }
 
-      // Close when enough downward scroll accumulated
       if (accDown > closeThreshold && open) {
         setOpen(false);
         accDown = 0;
-      }
-
-      // If near the top and user has scrolled up a bit, open
-      if (y <= openOnTopThreshold && accUp > openAccumThreshold && !open) {
-        setOpen(true);
-        accUp = 0;
       }
 
       lastY = y;
