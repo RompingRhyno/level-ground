@@ -39,6 +39,10 @@ export default function GalleryClient({
   // The visible cells are the FULL pattern's first N, so revealing the rest continues the same
   // layout rather than starting a second pattern — that is what keeps the expansion seamless.
   const cells = getLayoutCells(assets.length, layoutMode).filter((c) => !collapsed || c.assetIndex < cutoff);
+  // Odd counts leave a lone tile in the mobile two-up grid (sm–md). Promote the first photo to a
+  // full-width hero there so the rest fill the rows evenly. Parity follows the VISIBLE tiles, so it
+  // also holds while a See-more gallery is collapsed. Below sm the grid is one column — no orphan.
+  const mobileHero = shownAssets.length % 2 === 1;
   return (
     <>
       {/* Mobile: simple 1–2 col responsive grid. Inset 24px each side to match the collection index's card
@@ -47,7 +51,9 @@ export default function GalleryClient({
         {shownAssets.map((asset, i) => (
           <button
             key={asset.id}
-            className="group relative aspect-video w-full overflow-hidden cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className={`group relative aspect-video w-full overflow-hidden cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-white${
+              mobileHero && i === 0 ? " sm:col-span-2" : ""
+            }`}
             onClick={() => setOpen(i)}
             aria-label={asset.alt ?? `Image ${i + 1}`}
           >
@@ -55,7 +61,7 @@ export default function GalleryClient({
               <TransitionTile
                 members={transitions[asset.id].members}
                 transition={transitions[asset.id].transition}
-                sizes="(min-width:640px) 50vw, 100vw"
+                sizes={mobileHero && i === 0 ? "100vw" : "(min-width:640px) 50vw, 100vw"}
                 quality={85}
                 showPills={false}
               />
@@ -64,7 +70,7 @@ export default function GalleryClient({
                 src={asset.publicUrl}
                 alt={asset.alt ?? ""}
                 fill
-                sizes="(min-width:640px) 50vw, 100vw"
+                sizes={mobileHero && i === 0 ? "100vw" : "(min-width:640px) 50vw, 100vw"}
                 quality={85}
                 className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
                 loading="lazy"
