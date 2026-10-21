@@ -66,10 +66,10 @@ export default function VideoStage({
       <h2
         className="heading text-2xl sm:text-3xl md:text-4xl font-light leading-tight"
         dangerouslySetInnerHTML={{ __html: heading ?? "" }}
-        style={{ color: "var(--color-text-inverse)" }}
+        style={{ color: "var(--stage-text-color, var(--color-text-inverse))" }}
       />
       {subheading && (
-        <p className="mt-3 md:mt-4 max-w-2xl text-sm md:text-base" style={{ color: "var(--color-text-inverse)" }}>
+        <p className="mt-3 md:mt-4 max-w-2xl text-sm md:text-base" style={{ color: "var(--stage-text-color, var(--color-text-inverse))" }}>
           {subheading}
         </p>
       )}
@@ -78,8 +78,14 @@ export default function VideoStage({
 
   return (
     <div>
-      {/* Below md the same text sits above the video instead of over it. */}
-      {text && <div className="md:hidden px-4 pb-6">{text}</div>}
+      {/* Below md the same text sits above the video instead of over it — so it is on the white page
+          and must be dark, or it renders white-on-white and the section reads as an empty band. The
+          overlay below keeps the inverse default. */}
+      {text && (
+        <div className="md:hidden px-4 pb-6" style={{ "--stage-text-color": "var(--color-text-dark)" } as React.CSSProperties}>
+          {text}
+        </div>
+      )}
 
       <div className="relative mx-auto w-[min(100%,133.333svh)]">
         {/* Media and scrim are clipped together so the rounded corners clip both. */}
