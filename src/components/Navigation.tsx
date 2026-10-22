@@ -90,21 +90,23 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
           backdropFilter: "blur(4px)",
         }}
     >
-      {/* Logo on the left (with mobile breadcrumb underneath) */}
-      <div className="shrink-0 flex items-center py-4">
-        <Link href="/">
+      {/* Logo on the left (with mobile breadcrumb underneath). Shrink-safe: on very narrow phones the
+          fixed 252px artwork would otherwise push the row past the viewport. */}
+      <div className="shrink min-w-0 flex items-center py-4">
+        <Link href="/" className="flex min-w-0">
           <Image
             src="/logo-dark.png"
             alt="Level Ground Landscaping"
             width={252}
             height={36}
+            className="h-9 w-auto max-w-full object-contain"
           />
         </Link>
       </div>
 
-      {/* Desktop links. A page marked `navPill` renders as the hero's pill button (`.btn-primary`) instead of
-          the underlined link — the emphasis is per page, chosen in that page's editor. */}
-      <div className="hidden md:flex gap-0 items-stretch">
+      {/* Desktop links. They only fit from lg up — the row is ~960px wide, so phones in landscape
+          (and tablets in portrait) get the hamburger instead of a horizontally scrolling page. */}
+      <div className="hidden lg:flex gap-0 items-stretch">
         {navPages.map((page) => {
           const href = `/${page.slug}`;
           const isActive = pathname === href;
@@ -128,7 +130,7 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
       </div>
 
       {/* Mobile hamburger */}
-      <div className="md:hidden flex items-center py-4">
+      <div className="lg:hidden flex items-center py-4">
         <button
           id="mobile-menu-button"
           ref={buttonRef}
