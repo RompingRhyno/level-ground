@@ -411,8 +411,10 @@ function renderContent(
   return null;
 }
 
+type PreviewPayload = { section: PageSection; index: number; alternate: boolean };
+
 export default function PreviewClient() {
-  const [data, setData] = useState<PageSection | null>(null);
+  const [data, setData] = useState<PreviewPayload | null>(null);
   const liveServices = useServices();
   const previewServices = liveServices ?? SERVICES;
   /** slug → href for twoColumn service links; the static fallback path has no href of its own. */
@@ -426,7 +428,11 @@ export default function PreviewClient() {
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "preview-data") {
-        setData(event.data.section as PageSection);
+        setData({
+          section: event.data.section as PageSection,
+          index: typeof event.data.index === "number" ? event.data.index : 0,
+          alternate: !!event.data.alternate,
+        });
       }
     };
     window.addEventListener("message", handler);
@@ -467,5 +473,20 @@ export default function PreviewClient() {
 
   if (!data) return null;
 
-  return <>{renderContent(data, previewServices, previewServiceHrefs)}</>;
+  // Same rule as RenderSections: the page colour on the first section, the tint on the second, and so
+  // on — but only when the page has alternation switched on.
+  const bandClass = data.alternate
+    ? data.index % 2 === 0
+      ? "bg-[var(--color-bg-band-a)]"
+      : "bg-[var(--color-bg-band-b)]"
+    : "";
+  const bandVars = data.alternate
+    ? ({ "--section-surface": data.index % 2 === 0 ? "var(--color-bg-band-a)" : "var(--color-bg-band-b)" } as React.CSSProperties)
+    : undefined;
+
+  return (
+    <div className={bandClass} style={bandVars}>
+      {renderContent(data.section, previewServices, previewServiceHrefs)}
+    </div>
+  );
 }

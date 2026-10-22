@@ -38,7 +38,17 @@ export default function Testimonial({ text, name }: { text?: string; name?: stri
             className="absolute -bottom-11 right-[calc(27%_-_44px)] h-11 w-22 overflow-hidden md:right-[calc(23%_-_44px)]"
             aria-hidden="true"
           >
-            <rect x="5.4" y="0" width="77.2" height="4" fill="white" />
+            {/* The mask hides the pill border across the tail's mouth. It has to be the section's own
+                surface, not white: on an alternating page the band under this section is tinted, and a
+                white rect read as a light notch inside the tail. `--section-surface` is set by the
+                alternating wrapper; the fallback keeps the plain white page unchanged. */}
+            <rect
+              x="5.4"
+              y="0"
+              width="77.2"
+              height="4"
+              style={{ fill: "var(--section-surface, var(--color-bg-primary))" }}
+            />
             <path
               d="M -0.2 -4 L 44 40.2 L 88.2 -4"
               fill="none"

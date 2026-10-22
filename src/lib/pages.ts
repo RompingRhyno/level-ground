@@ -14,6 +14,7 @@ function mapDbPageToConfig(db: any): PageConfig {
     type: db.type ?? "page",
     navPill: db.navPill ?? false,
     jumpToTop: db.jumpToTop ?? false,
+    alternateSections: db.alternateSections ?? false,
     metaTitle: db.metaTitle ?? null,
     metaDescription: db.metaDescription ?? null,
   };
@@ -174,11 +175,13 @@ export async function upsertPage(page: PageConfig) {
     create: {
       slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false,
       jumpToTop: page.jumpToTop ?? false,
+      alternateSections: page.alternateSections ?? false,
       metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
     },
     update: {
       label: page.label, sections, type, navPill: page.navPill ?? false,
       jumpToTop: page.jumpToTop ?? false,
+      alternateSections: page.alternateSections ?? false,
       metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
     },
   });

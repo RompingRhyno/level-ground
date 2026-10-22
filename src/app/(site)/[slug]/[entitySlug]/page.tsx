@@ -100,6 +100,7 @@ export default async function CollectionItemPage({ params }: Props) {
         sections={templatePage.sections}
         pageSlug={templatePage.slug}
         entityContext={{ entitySlug, source: routeConfig.source }}
+        alternate={templatePage.alternateSections}
       />
       {templatePage.jumpToTop ? <JumpToTop /> : null}
     </>

@@ -6,6 +6,10 @@
   /* Background colors */
   --color-bg-primary: #ffffff; /* pure white */
   --color-bg-secondary: #EAE4E2;
+  /* Alternating section bands, opt-in per page: the two original tint steps. Kept as their own tokens
+   * so the page base can stay pure white without changing what the alternation was designed against. */
+  --color-bg-band-a: #FAF4F1;
+  --color-bg-band-b: #EAE4E2;
 
   /* Text colors: three tokens, everything else below aliases them.
    *   dark    — every piece of readable text: body, headings, labels, values, nav, footer, admin
