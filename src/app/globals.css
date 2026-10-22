@@ -92,6 +92,15 @@ body {
   background-color: var(--color-bg-primary);
 }
 
+/* Nothing may ever produce a horizontal scrollbar. A child that is too wide is a layout bug, but the
+ * page must never pan sideways because of it — most visibly when a phone is turned to landscape.
+ * `clip` rather than `hidden`: hidden would make the root a scroll container and break the sticky
+ * header, whereas clip just refuses the overflow. */
+html,
+body {
+  overflow-x: clip;
+}
+
 /* Placeholders are the one sanctioned lighter text. One rule for every field on the site and in the
  * admin, so a placeholder can never drift back to Tailwind's default (a 50% mix of the field's own
  * colour, which would have made it dark once the field text became dark). */
