@@ -19,7 +19,7 @@ export default function Testimonial({ text, name }: { text?: string; name?: stri
   return (
     <div className="flex flex-col items-center px-4 md:px-8">
       {quote && (
-        <div className="relative w-full max-w-[60rem] rounded-[4rem] border-2 border-(--color-text-dark) md:rounded-full">
+        <div className="relative w-full max-w-[60rem] rounded-[2.5rem] border-2 border-(--color-text-dark) md:rounded-full">
           <RichText
             value={quote}
             className="px-10 py-12 text-center text-lg leading-relaxed md:px-14 md:py-10"
@@ -31,8 +31,11 @@ export default function Testimonial({ text, name }: { text?: string; name?: stri
               with the border, no overshoot — and the mask rect's edges (x 5.4 / 82.6) sit ~1px inside
               where the arms' outer edges cross the border's bottom edge, overlapping the border into
               the arm so no light seam can show at the junction. */}
+          {/* On phones the bubble is a tall rounded rectangle, so the mouth has to clear the bottom-right
+              corner radius (2.5rem): the tail sits at 27% from the right there and 23% from md up, where
+              the capsule's much larger end radius still leaves a wide flat run. */}
           <svg
-            className="absolute -bottom-11 right-[calc(23%_-_44px)] h-11 w-22 overflow-hidden"
+            className="absolute -bottom-11 right-[calc(27%_-_44px)] h-11 w-22 overflow-hidden md:right-[calc(23%_-_44px)]"
             aria-hidden="true"
           >
             <rect x="5.4" y="0" width="77.2" height="4" fill="white" />
@@ -48,9 +51,9 @@ export default function Testimonial({ text, name }: { text?: string; name?: stri
       {reviewer && (
         <div className="w-full max-w-[60rem] px-[2px]">
           <p className="mt-16 text-right text-base md:text-lg" style={{ fontFamily: "var(--font-heading)", fontWeight: 500, color: "var(--color-text-dark)" }}>
-            {/* mr-23% puts the name's right edge where the tail's tip is; translating by half its own
-                width then centres the name on the tip, whatever its length. */}
-            <span className="mr-[23%] inline-block translate-x-1/2">{reviewer}</span>
+            {/* The margin puts the name's right edge where the tail's tip is (27% on phones, 23% from md
+                up); translating by half its own width then centres the name on the tip. */}
+            <span className="mr-[27%] inline-block translate-x-1/2 md:mr-[23%]">{reviewer}</span>
           </p>
         </div>
       )}
