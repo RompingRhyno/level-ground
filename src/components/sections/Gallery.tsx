@@ -111,13 +111,17 @@ async function resolveTags(section: GallerySection, assets: AssetRow[]): Promise
 }
 
 /** Per-asset project info for the lightbox's right panel: one folder row per folder, keyed per asset, so a
- *  tag-driven gallery spanning several folders shows the right panel for whichever image is open. */
+ *  tag-driven gallery spanning several folders shows the right panel for whichever image is open.
+ *
+ *  Folders hidden from /projects are skipped: their detail route does not exist, so naming the project
+ *  and offering "See full project" would send the visitor to a 404. With no entry, the panel (name,
+ *  tags, description, button) does not render at all. */
 async function resolveProjects(assets: AssetRow[]): Promise<Record<string, LightboxProject>> {
   const slugs = [...new Set(assets.map((a) => a.folder).filter(Boolean))] as string[];
   if (!slugs.length) return {};
 
   const folders = await prisma.folder.findMany({
-    where: { slug: { in: slugs } },
+    where: { slug: { in: slugs }, hidden: false },
     select: { name: true, slug: true, description: true, tags: true },
   });
   const tagSlugs = [...new Set(folders.flatMap((f) => f.tags))];
