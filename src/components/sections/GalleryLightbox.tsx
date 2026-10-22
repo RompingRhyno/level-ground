@@ -268,35 +268,34 @@ export default function GalleryLightbox({
     </div>
   ) : null;
 
-  // Tags + description: the same block in the phone layout (under the photo) and the desktop panel.
-  const metaBlock = project ? (
-    <>
-      {project.tags.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {/* Covers link to their service category's section, the same as the project page's own
-              pills; one without a service stays a plain chip. */}
-          {project.tags.map((tag) => {
-            const href = serviceHref(tag.service);
-            const className =
-              "text-[13px] lg:text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)";
-            return href ? (
-              <Link key={tag.slug} href={href} onClick={onClose} className={className}>
-                {tag.name}
-              </Link>
-            ) : (
-              <span key={tag.slug} className={className}>
-                {tag.name}
-              </span>
-            );
-          })}
-        </div>
-      )}
-      {project.description && (
-        <p className="mt-5 leading-relaxed text-[17px] lg:text-lg" style={{ color: "var(--color-text-dark)" }}>
-          {project.description}
-        </p>
-      )}
-    </>
+  // Tags and description split: the desktop panel reads tags then description, the phone layout puts
+  // the pills last, under the description.
+  const tagsBlock =
+    project && project.tags.length > 0 ? (
+      <div className="mt-4 flex flex-wrap gap-2">
+        {/* Covers link to their service category's section, the same as the project page's own
+            pills; one without a service stays a plain chip. */}
+        {project.tags.map((tag) => {
+          const href = serviceHref(tag.service);
+          const className =
+            "text-[13px] lg:text-sm px-3 py-1 rounded-full border border-(--tag-border-color) text-(--color-text-dark) transition-colors hover:bg-(--btn-select) hover:border-(--btn-select) hover:text-(--btn-select-text)";
+          return href ? (
+            <Link key={tag.slug} href={href} onClick={onClose} className={className}>
+              {tag.name}
+            </Link>
+          ) : (
+            <span key={tag.slug} className={className}>
+              {tag.name}
+            </span>
+          );
+        })}
+      </div>
+    ) : null;
+
+  const descriptionBlock = project?.description ? (
+    <p className="lg:mt-5 leading-relaxed text-[16px] lg:text-lg" style={{ color: "var(--color-text-dark)" }}>
+      {project.description}
+    </p>
   ) : null;
 
   return (
@@ -392,7 +391,10 @@ export default function GalleryLightbox({
           </div>
 
           {/* Phones: previous / expand / next as one row directly under the photo. */}
-          <div className="lg:hidden flex items-center justify-center gap-5 py-2.5">
+          {/* Breathing room between the photo and the controls, mirrored below: 16px above the
+              arrows (18 to the smaller full-screen circle) and 12px below, which reads as ~17 once the
+              description's line-box leading is taken into account. */}
+          <div className="lg:hidden flex items-center justify-center gap-5 pt-4 pb-3">
             <button
               type="button"
               onClick={(e) => {
@@ -464,14 +466,18 @@ export default function GalleryLightbox({
             has no project data (a static gallery with no folder behind it). */}
         {project && (
           <>
-            <div className="order-3 lg:hidden pl-5 pr-5 pb-6 shrink-0">{metaBlock}</div>
+            <div className="order-3 lg:hidden pl-5 pr-5 pb-6 shrink-0">
+              {descriptionBlock}
+              {tagsBlock}
+            </div>
 
             <aside className="order-2 hidden lg:block lg:w-1/3 overflow-y-auto px-5 py-5 lg:py-12 lg:pl-0 lg:pr-16 shrink-0">
               {/* min-h-full + justify-center centres the panel's content, and unlike auto margins it never
                   clips the top when the description is longer than the column. */}
               <div className="min-h-full flex flex-col justify-center">
                 {titleRow}
-                {metaBlock}
+                {tagsBlock}
+                {descriptionBlock}
               </div>
             </aside>
           </>
