@@ -69,7 +69,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
           }}
         />
       ) : null}
-      <RenderSections sections={page.sections} pageSlug={slug} />
+      <RenderSections sections={page.sections} pageSlug={slug} alternate={page.alternateSections} />
       {page.jumpToTop ? <JumpToTop /> : null}
     </>
   );

@@ -89,7 +89,10 @@ model Page {
   navPill   Boolean  @default(false)
   /// Render a floating "jump to top" circle button (bottom-right) on this page's public view once
   /// the visitor has scrolled past the first viewport.
-  jumpToTop Boolean  @default(false)
+  jumpToTop Boolean @default(false)
+  /// Tint every other section with `--color-bg-secondary` (starting with the page colour on the first
+  /// section). Off by default: a single background is the house style. The editor preview honours it.
+  alternateSections Boolean @default(false)
   /// SEO title, used verbatim (bypassing the site's "| Level Ground Landscape" suffix). Falls back to
   /// `<label> | Level Ground Landscape` when unset. Seeded from the legacy site's titles.
   metaTitle       String?

@@ -217,11 +217,14 @@ export default function SectionEditor({
   allSections,
   onChange,
   onRemove,
+  alternate,
 }: {
   /** Stable identity from the parent; the card is the sortable item. */
   id: string;
   section: PageSection;
   index: number;
+  /** Page-level alternation, so the section preview shows the band it will really sit on. */
+  alternate?: boolean;
   allSections?: PageSection[];
   onChange: (s: PageSection, i: number) => void;
   onRemove: (i: number) => void;
@@ -918,7 +921,7 @@ export default function SectionEditor({
 
           </div>
 
-          <SectionPreview section={section} />
+          <SectionPreview section={section} index={index} alternate={alternate} />
         </div>
       )}
     </div>

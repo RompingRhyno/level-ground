@@ -27,7 +27,7 @@ export default async function HomePage() {
   if (!page) return notFound();
   return (
     <>
-      <RenderSections sections={page.sections} pageSlug="home" />
+      <RenderSections sections={page.sections} pageSlug="home" alternate={page.alternateSections} />
       {page.jumpToTop ? <JumpToTop /> : null}
     </>
   );

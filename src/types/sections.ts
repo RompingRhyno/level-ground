@@ -10,6 +10,8 @@ export type PageConfig = {
   navPill?: boolean;
   /** Show the floating "jump to top" button on this page's public view. */
   jumpToTop?: boolean;
+  /** Tint every other section (odd ones) with `--color-bg-secondary`. Off unless the page opts in. */
+  alternateSections?: boolean;
   /** SEO title, used verbatim (no suffix added). Seeded from the legacy site's titles. */
   metaTitle?: string | null;
   /** SEO description; falls back to the hero subheading when unset. */

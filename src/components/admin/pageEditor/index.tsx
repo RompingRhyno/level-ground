@@ -48,6 +48,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedNavPill, setSavedNavPill] = useState<boolean>(!!initialPage.navPill);
   const [jumpToTop, setJumpToTop] = useState<boolean>(!!initialPage.jumpToTop);
   const [savedJumpToTop, setSavedJumpToTop] = useState<boolean>(!!initialPage.jumpToTop);
+  const [alternateSections, setAlternateSections] = useState<boolean>(!!initialPage.alternateSections);
+  const [savedAlternateSections, setSavedAlternateSections] = useState<boolean>(!!initialPage.alternateSections);
   const [metaTitle, setMetaTitle] = useState(initialPage.metaTitle || "");
   const [savedMetaTitle, setSavedMetaTitle] = useState(initialPage.metaTitle || "");
   const [metaDescription, setMetaDescription] = useState(initialPage.metaDescription || "");
@@ -94,6 +96,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const dirty =
     !saving &&
     (label !== savedLabel || navPill !== savedNavPill || jumpToTop !== savedJumpToTop ||
+      alternateSections !== savedAlternateSections ||
       metaTitle !== savedMetaTitle || metaDescription !== savedMetaDescription ||
       JSON.stringify(sections) !== JSON.stringify(savedSections));
 
@@ -245,7 +248,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          slug: initialPage.slug, label, sections, navPill, jumpToTop,
+          slug: initialPage.slug, label, sections, navPill, jumpToTop, alternateSections,
           type: initialPage.type,
           metaTitle: metaTitle.trim() || null, metaDescription: metaDescription.trim() || null,
         }),
@@ -261,6 +264,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
       setSavedLabel(label);
       setSavedNavPill(navPill);
       setSavedJumpToTop(jumpToTop);
+      setSavedAlternateSections(alternateSections);
       setSavedMetaTitle(metaTitle);
       setSavedMetaDescription(metaDescription);
       return true;
@@ -326,6 +330,15 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
           onChange={(e) => setJumpToTop(e.target.checked)}
         />
         Jump to top button
+      </label>
+
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input
+          type="checkbox"
+          checked={alternateSections}
+          onChange={(e) => setAlternateSections(e.target.checked)}
+        />
+        Alternating section backgrounds
       </label>
 
       <div>
@@ -435,6 +448,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
                       allSections={sections}
                       onChange={updateSection}
                       onRemove={removeSection}
+                      alternate={alternateSections}
                     />
                   ))}
                 </div>

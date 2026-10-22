@@ -8,7 +8,7 @@ import { PreviewWidthContext } from "./PreviewWidthContext";
 // preview viewport width. Because iframes have their own viewport, CSS media
 // queries inside them fire based on the iframe's CSS width — not the browser
 // window width — giving an accurate mobile/tablet/desktop layout preview.
-export function SectionPreviewFrame({ section }: { section: PageSection }) {
+export function SectionPreviewFrame({ section, index, alternate }: { section: PageSection; index: number; alternate?: boolean }) {
   const previewWidth = useContext(PreviewWidthContext);
   const measureRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -44,10 +44,10 @@ export function SectionPreviewFrame({ section }: { section: PageSection }) {
   useEffect(() => {
     if (!iframeReady || !iframeRef.current?.contentWindow) return;
     iframeRef.current.contentWindow.postMessage(
-      { type: "preview-data", section },
+      { type: "preview-data", section, index, alternate: !!alternate },
       window.location.origin,
     );
-  }, [iframeReady, section]);
+  }, [iframeReady, section, index, alternate]);
 
   // Handle messages from the iframe (preview-ready + preview-height).
   // Empty dep array is intentional: iframeRef and scaleRef are stable refs.
@@ -114,6 +114,6 @@ export function SectionPreviewFrame({ section }: { section: PageSection }) {
 }
 
 // ── SectionPreview ─────────────────────────────────────────────────────────
-export default function SectionPreview({ section }: { section: PageSection }) {
-  return <SectionPreviewFrame section={section} />;
+export default function SectionPreview({ section, index, alternate }: { section: PageSection; index: number; alternate?: boolean }) {
+  return <SectionPreviewFrame section={section} index={index} alternate={alternate} />;
 }
