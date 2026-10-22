@@ -239,22 +239,16 @@ function FolderPageClientInner({
   const ALT_TAGS = 4;
 
   /**
-   * Clicking an inactive tag appends it to the folder's tags; clicking an active one moves it to
-   * position min(ALT_TAGS, others.length) — i.e. into the alt block while there is room, otherwise
-   * just to the front of what follows. There is deliberately no cap: `ALT_TAGS` decides how many
-   * tags feed the alt text, not how many a project may carry, and blocking the add silently read
-   * as broken pills on every folder that already had four.
+   * Clicking a pill toggles the tag on or off the folder: inactive tags are appended, active ones are
+   * removed. Order — and therefore which tags feed the alt text — is changed by dragging the ⋮ handle,
+   * not by clicking. (Clicking an active pill used to re-insert it near the front, a reorder gesture
+   * that read as a broken toggle: the pill never went inactive.)
    */
   async function toggleTag(slug: string) {
     const current = folder.tags;
-    let next: string[];
-    if (current.includes(slug)) {
-      const others = current.filter((entry) => entry !== slug);
-      const insertAt = Math.min(ALT_TAGS, others.length);
-      next = [...others.slice(0, insertAt), slug, ...others.slice(insertAt)];
-    } else {
-      next = [...current, slug];
-    }
+    const next = current.includes(slug)
+      ? current.filter((entry) => entry !== slug)
+      : [...current, slug];
     setFolder((currentFolder) => ({ ...currentFolder, tags: next }));
     try {
       await api(`/api/folders/${folder.id}`, { method: "PATCH", body: JSON.stringify({ tags: next }) });
