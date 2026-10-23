@@ -426,7 +426,12 @@ export default function SectionEditor({
 
               <div className="space-y-1">
                 <label className="block text-sm">Subheading</label>
-                <input value={(section as any).subheading || ""} onChange={(e) => update("subheading", e.target.value)} className="w-full rounded border px-2 py-1" />
+                {/* Rich field: the hero prints this as markup, so bold/italic from the toolbar land. */}
+                <RichContentEditable
+                  value={(section as any).subheading || ""}
+                  onChange={(val) => update("subheading", val)}
+                  className="w-full"
+                />
               </div>
 
               <div className="space-y-1">
