@@ -173,8 +173,10 @@ export default function CollectionItemClient({
           </div>
         )}
 
+        {/* `whitespace-pre-line`: the description is a textarea in the media editor, so line breaks
+            typed there are part of the value — without it they collapse into one paragraph here. */}
         {description && (
-          <p className="mb-10 max-w-3xl" style={{ color: "var(--color-text-primary)" }}>
+          <p className="mb-10 max-w-3xl whitespace-pre-line" style={{ color: "var(--color-text-primary)" }}>
             {description}
           </p>
         )}

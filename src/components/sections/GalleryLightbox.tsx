@@ -293,7 +293,7 @@ export default function GalleryLightbox({
     ) : null;
 
   const descriptionBlock = project?.description ? (
-    <p className="lg:mt-5 leading-relaxed text-[16px] lg:text-lg" style={{ color: "var(--color-text-dark)" }}>
+    <p className="lg:mt-5 whitespace-pre-line leading-relaxed text-[16px] lg:text-lg" style={{ color: "var(--color-text-dark)" }}>
       {project.description}
     </p>
   ) : null;
