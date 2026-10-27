@@ -28,6 +28,8 @@ export default function VideoClient({
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
+    // A quarter of the frame counts as "on screen": the band is full-bleed, so it is worth watching well
+    // before it fills the viewport. Crossing back under 25% pauses it.
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -36,7 +38,7 @@ export default function VideoClient({
           video.pause();
         }
       },
-      { threshold: 0.9 }
+      { threshold: 0.25 }
     );
     observer.observe(video);
     return () => observer.disconnect();
