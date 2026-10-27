@@ -3,20 +3,23 @@
 Running checklist for moving this project's services onto the client's own accounts. No secret values
 belong in this file — only names, owners and steps.
 
-Status: draft, built while migrating to new accounts (2026-09).
+Status: accounts migrated 2026-09; cutover pending.
+**Last verified 2026-10-22** — the cutover status, DNS/domain facts and open items below were
+re-checked against the live system on that date. The commands to re-run them are in the status
+block under "Domain migration day".
 
 ## Services and what each owns
 
 | Service | Holds | Env vars (where) | Notes |
 |---|---|---|---|
 | **Neon** (Postgres) | All content: pages, folders, assets, users, sessions | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` (`.env.local`) | New project created during the migration (`ep-raspy-frost…`, us-west-2, PG 18.6). Old project stays alive as fallback until the handoff is signed off. |
-| **Cloudflare — R2** | Media bucket (`R2_BUCKET_NAME`), public publish domain | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` (`.env.local`), `R2_BASE_URL` (`.env`) | S3 credentials are dashboard-created (R2 → Manage API tokens). Publish domain is `r2.dev` today; custom domain later. |
+| **Cloudflare — R2** | Media bucket (`R2_BUCKET_NAME`), public publish domain | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` (`.env.local`), `R2_BASE_URL` (`.env`) | S3 credentials are dashboard-created (R2 → Manage API tokens). Publish domain is `r2.dev` today; a **custom domain is required at cutover** (Cloudflare documents `r2.dev` as development-only and rate-limited). |
 | **Cloudflare — Worker** | Contact-form upload endpoint (`workers/upload-worker`) | `WORKER_URL` (`.env`), `UPLOAD_TOKEN_SECRET` (`.env.local` + worker secret) | Deployed with `wrangler deploy`; the secret is set with `wrangler secret put` and never lives in the repo. |
 | **Cloudflare — Turnstile** | Contact-form CAPTCHA | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` (`.env`), `TURNSTILE_SECRET_KEY` (`.env.local`) | Third piece under the same Cloudflare account — easy to forget. |
 | **Resend** | Contact notifications + admin auth mail | `RESEND_API_KEY` (`.env.local`), `CONTACT_EMAIL_FROM` (`.env`) | Needs a **verified domain**; the sandbox sender only delivers to the account owner's address. Create the key as **Sending access, restricted to the domain** — the app only ever sends. Domain creation/verification needs full access (or the dashboard) on migration day. |
 | **Vercel** | Hosting + the contact-cleanup cron | `CRON_SECRET` (`.env.local`), all of the above | Cron hits `/api/contact/cleanup` daily (`vercel.json`). |
 | **GitHub** | Source of truth | — | Repo: **levelgrounddev/level-ground** (private; `origin` carries two push URLs — levelgrounddev and the personal mirror `RompingRhyno/level-ground` — so both stay in sync). Vercel is linked to it (verified: `link.org = levelgrounddev`). **Commit-author rule:** Vercel blocks deployments whose commit author lacks permission on the repo — the first post-move push, authored as `Ryan <ryan94j@gmail.com>`, was BLOCKED for exactly that. The repo's local git identity is therefore set to `levelgrounddev <342393959+levelgrounddev@users.noreply.github.com>`; keep it that way, or add RompingRhyno as a repo collaborator if personal attribution is wanted. |
-| **Domain + DNS** | Production origin, Resend records, R2 custom domain later | `NEXT_PUBLIC_BASE_URL` (`.env`) | **Registrar: Tucows via Decibite** — NS edits happen in the Decibite panel (domain carries transfer/update locks; clear them if the NS edit is refused). **DNS is already Cloudflare** (`renan/tori.ns.cloudflare.com`) — which account holds that zone still to be confirmed. Old site's origin is **WP Engine** (`x-powered-by: WP Engine`) — keep it alive until cutover, retire after. Set `NEXT_PUBLIC_BASE_URL` to the real origin once it exists. |
+| **Domain + DNS** | Production origin, Resend records, R2 custom domain later | `NEXT_PUBLIC_BASE_URL` (`.env`) | **Registrar: Tucows via Decibite** — NS edits happen in the Decibite panel (domain carries transfer/update locks; clear them if the NS edit is refused). **DNS is already Cloudflare** (`renan/tori.ns.cloudflare.com`), but that account is **not accessible** (decided 2026-10-22) — cutover rebuilds the zone from public DNS; the inventory is in the decisions block below. Old site's origin is **WP Engine** (`x-powered-by: WP Engine`) — keep it alive until cutover, retire after. Set `NEXT_PUBLIC_BASE_URL` to the real origin once it exists. |
 | **Mailbox** | Receives contact-form mail; the address Resend sends as | `CONTACT_EMAIL_FROM` | If it is currently a personal mailbox, the client needs their own. |
 
 Runtime dependencies with no account: `unpkg.com` (ffmpeg WASM core, fetched in the browser when
@@ -510,57 +513,101 @@ absent from production. Never add it to Vercel — the account it acts on is pin
 this project after cutover, so canonicals, the sitemap, the schema `@id`s and Search Console all key off
 it. Development continues on the Vercel origin until then — see `NEXT_PUBLIC_BASE_URL` below.
 
-The domain keeps serving the old site on its current DNS until the full migration, so every zone-scoped
-task queues up for one session — in this order, because the old site must not drop out along the way:
+### Status, verified 2026-10-22
 
-Everything zone-scoped lands here in one go: the nameserver flip; **Resend domain verification**
-(SPF/DKIM/DMARC plus the `send.` MX); **Email Routing** MX; the **R2 custom domain** if the r2.dev
-publish domain is retired; and the **Vercel custom domain** with `NEXT_PUBLIC_BASE_URL`. Turnstile
-already lists the production hostnames, so it needs nothing at that point — the widget only changes if a
-preview deployment needs to run the form.
+The plan starts from these facts, not from memory. Re-run them on the morning of the flip:
+
+- **Zone is already on Cloudflare** — `dig +short NS levelgroundlandscape.com` returns `renan.ns` and
+  `tori.ns`. Which account holds it is still open — see the note on the old account below.
+- **Old site still serving** — `curl -sI https://levelgroundlandscape.com` → `200`,
+  `x-powered-by: WP Engine`, behind Cloudflare. Apex and `www` both resolve to the proxy
+  (`104.21.28.171` / `172.67.146.235`).
+- **Mail is still Google Workspace** — five `aspmx.l.google.com` MX records. The apex has no TXT
+  (no SPF), which matches the "nothing to clean up" decision below.
+- **Resend is not set up yet** — `dig +short MX send.levelgroundlandscape.com` is empty, and the app
+  still sends from the `resend.dev` sandbox address.
+- **Vercel has no custom domain** — the project `level-ground` lists only
+  `level-ground-seven.vercel.app`. Production is `noindex, nofollow` and its canonical/`og:url`
+  point at that origin, so `NEXT_PUBLIC_BASE_URL` is still the Vercel origin.
+- **The legacy redirect map is live** — `curl -sI …/projects/elliott-street-softscape` → `308` →
+  `/projects/elliott-st`; `/project-gallery` → `/projects`. (Next emits **308** for a permanent
+  redirect — permanent for crawlers, same intent as the "301 map" wording here.)
+- **Media is still on `r2.dev`** — every `Asset.publicUrl` is `pub-….r2.dev`, so no custom publish
+  domain exists yet. `r2.dev` is explicitly non-production: Cloudflare applies a variable rate limit
+  (429s above roughly hundreds of requests/second) and may throttle bandwidth, so a custom domain is
+  part of cutover, not an optional extra.
+- **Search Console is not set up** — no verification file or meta tag in the repo.
+
+### Decisions taken 2026-10-22
+
+- **The old Cloudflare account is not accessible.** The zone is rebuilt from public DNS in the client's
+  account. Verified inventory of what has to be recreated: apex and `www` A records (proxied), the five
+  Google Workspace MX records, and nothing else — the apex has no TXT, `google._domainkey` has no DKIM,
+  there is no `_dmarc`, no `autodiscover` CNAME and no CAA. SOA is `renan.ns.cloudflare.com`. No export
+  is needed, and the exported zone trick is off the table.
+- **Same-day swap.** The new zone points straight at Vercel; no WP Engine records are recreated, so the
+  WP Engine origin IP is not needed and the staged path is retired. Rollback is flipping the NS back to
+  `renan/tori` (that zone stays live in its account for anyone still resolving it).
+- **R2 gets a custom domain.** Required for production per Cloudflare's limits page (development-only,
+  rate-limited `r2.dev`), and it is also what enables caching, WAF and URL-level analytics. Hostname to be
+  chosen at cutover, e.g. `assets.levelgroundlandscape.com` — it must sit in the same Cloudflare account
+  as the zone, which is true after the flip.
+- **Contact recipient.** The `ContactRecipient` table holds one row, `levelgrounddev@proton.me` (name
+  still "Ryan"); notifications are proven to reach it through the new Resend key. At cutover this becomes
+  the decision to point it at the client's real inbox and confirm that inbox accepts mail from the
+  verified domain (see the note under "Secret status", which explains why the sandbox was constrained to
+  the account owner).
+
+Every zone-scoped task queues up for one session. The order below gets the new zone serving Vercel
+*before* the flip, then adds mail and media once the zone is active: the nameserver flip; **Resend domain
+verification** (SPF/DKIM/DMARC plus the `send.` MX); **Email Routing** MX; the **R2 custom domain** (now
+required, not optional); and the **Vercel custom domain** with `NEXT_PUBLIC_BASE_URL`. Turnstile already
+lists the production hostnames, so it needs nothing at that point — the widget only changes if a preview
+deployment needs to run the form.
 
 **Resolved (2026-10-12): the client is leaving Google Workspace.** The zone's Google MX records are
 therefore *not* recreated in the new zone — Cloudflare **Email Routing** MX replaces them at the flip
-(and there is no SPF/DMARC to clean up). The client should export any mail worth keeping and cancel the
-Workspace subscription after cutover; inbound keeps working once routing is onboarded, delivered to the
-owner's mailbox. **One fact still to settle:** the zone is **already on Cloudflare** — confirm which
-account holds `renan/tori.ns.cloudflare.com`. If it is accessible, export the zone (BIND format) before
-the flip and import it into the new account, because a fresh Cloudflare import scan can pick up the
-proxy's own edge IPs instead of the WP Engine origin. If it is not accessible, rebuild the records —
-the WP Engine panel has the origin IP (access confirmed). Rebuilding is small: the zone holds only the
-apex/www A records (proxied) and the Google MX, all recreatable via API once the token carries
-**Zone → DNS: Edit** (attachable only after the zone exists in the new account; add **Zone Settings:
-Edit** too if the SSL mode should be set programmatically — Full (strict) is the right value for both
-WP Engine and Vercel). Once the zone exists, recreate + verify everything in the new account *before*
-the NS flip at Decibite.
+(there is no SPF or DMARC to clean up, verified 2026-10-22). The client should export any mail worth
+keeping and cancel the Workspace subscription after cutover; inbound keeps working once Routing is
+onboarded and delivered to the owner's mailbox. With the old account inaccessible (decisions above) the
+zone is rebuilt from the inventory rather than exported — records can be created while it is pending, so
+everything except the mail/media pieces is in place before the NS flip. Set the zone's SSL mode to
+**Full (strict)** (correct for both WP Engine and Vercel).
 
-**Two cutover styles — pick on the day:** *Same-day swap* = records point straight at Vercel, so neither
-the old Cloudflare account nor the WP Engine origin IP is needed; rollback is flipping the NS back to
-`renan/tori` (the old zone persists in its account for days/weeks and reactivates — fine for the flip
-day, not a long-term dependency), and the old site stays viewable through its WP Engine environment URL
-until the subscription is cancelled. The only "window" is Vercel's DNS check right after the flip —
-old-pair resolvers keep serving the old site throughout, so there is no real downtime. *Staged* = the
-new zone keeps serving the old site for a while, which needs **only the WP Engine origin IP** in the
-apex/www records — not the old Cloudflare account (it cannot tell which account proxies it). With the
-IP in hand both options stay open until the flip.
+**Cutover style: same-day swap (decided 2026-10-22).** The new zone's apex and `www` records point at
+Vercel from the start, so nothing depends on the old Cloudflare account or the WP Engine origin IP. The
+old zone keeps serving the old site to anyone still resolving `renan`/`tori`; the only "window" is
+Vercel's domain check right after the flip, so there is no real downtime.
 
-0. **Before anything DNS-shaped:** push and deploy this repo so the **legacy 301 map** is live on the new
-   host (`src/lib/legacy-redirects.ts` + `redirects()` in `next.config.ts`; verified against all 102
-   source rows locally). The map only executes where this site is served, so deploying it early is
-   harmless — but it must be live *before* the nameserver flip, or the old URLs 404 for the window
-   between. The canonical host is **apex, not www** (measured on the old site: `www` 301s to the apex and
-   its canonical is the apex) — mirror that in the Vercel domain settings.
+0. **Before anything DNS-shaped — done, recheck before the flip.** The **legacy redirect map** is live
+   on the Vercel origin (`src/lib/legacy-redirects.ts` + `redirects()` in `next.config.ts`; 102 source
+   rows). Verified 2026-10-22: `/projects/elliott-street-softscape` → `308` → `/projects/elliott-st`,
+   `/project-gallery` → `/projects`. Keep it deployed — it only executes where this site is served, and
+   it must be live *before* the nameserver flip or the old URLs 404 for the window between. The
+   canonical host is **apex, not www** (measured on the old site: `www` 301s to the apex and its
+   canonical is the apex) — mirror that in the Vercel domain settings.
 
-1. **Add the zone** in the new Cloudflare account and review what Cloudflare imports. The old site's
-   A/CNAME (and any TXT verification records) must survive — the old site keeps serving as long as
-   those records still point at the old host. Anything Cloudflare proxies for a host it does not host
-   needs care: keep those records **DNS-only** unless the old site is fine being proxied.
-2. **Flip the nameservers** at the registrar to the pair the new account assigns, then confirm the old
-   site still resolves and serves.
-3. **Add the new records:** Resend verification (SPF/DKIM/DMARC + the `send.` MX) and Email Routing's
-   MX. Turnstile already lists the production hostnames, so it needs nothing here. If any page copy ends
-   up quoting an email address, also flip on **Email Address Obfuscation** (Scrape Shield — free toggle,
-   edge-side rewrite, no code; only works on the proxied zone, so it can't run on the vercel.app origin).
+1. **Add the domain in Vercel first** (Project → Settings → Domains → apex, with `www` redirecting to
+   it) and note the A/CNAME values it asks for. Verification stays pending until the zone answers — that
+   is expected.
+2. **Create the zone** in the client's Cloudflare account and add, while it is still pending:
+   - apex → Vercel's A value, `www` → Vercel's CNAME (or its A value), both **proxied**;
+   - nothing else. Per the 2026-10-22 decision the zone is rebuilt, not imported, and same-day swap means
+     no WP Engine records are recreated.
+   Then **flip the nameservers** at Decibite to the pair the new account assigned (clear the registrar's
+   transfer/update locks if the edit is refused). Check: `dig +short NS levelgroundlandscape.com` shows
+   the new pair, and `curl -sI https://levelgroundlandscape.com` answers from Vercel without
+   `x-powered-by: WP Engine`.
+3. **Add the mail and media records — after the flip, once the zone is active:**
+   - **Resend**: SPF, DKIM and DMARC plus the `send.` MX, created from the records Resend shows when the
+     domain is added.
+   - **Email Routing**: onboard the domain and let it install its MX (Google Workspace's five MX are
+     deliberately not recreated).
+   - **R2 custom domain**: R2 → bucket → Settings → Public access → Connect domain; pick the subdomain on
+     this zone (Cloudflare creates the DNS record itself).
+   - Turnstile already lists the production hostnames, so it needs nothing here. If any page copy quotes
+     an email address, also flip on **Email Address Obfuscation** (Scrape Shield — edge-side, no code,
+     proxied zones only).
 4. **Activate the two email paths**, in this order because each depends on the previous one:
    add the domain in Resend (Dashboard → Domains) and wait for verification; enable Email Routing
    (Onboard Domain) — routing must be live *before* the alias test, since the send-as confirmation code
@@ -568,14 +615,23 @@ IP in hand both options stay open until the flip.
    send-as alias with Resend's SMTP — host `smtp.resend.com`, port 465 (SSL) or 587 (STARTTLS), username
    literally `resend`, password a **dedicated sending-access key restricted to the domain** — and confirm
    with the code that arrives.
-5. **Swap the media credentials** once the object copy verifies: `R2_ACCESS_KEY_ID` /
-   `R2_SECRET_ACCESS_KEY` → the new pair, `R2_ACCOUNT_ID` → the new account, and
-   `R2_BUCKET_NAME` / `R2_BASE_URL` → the new bucket and its publish domain. Delete the temporary
-   `R2_NEW_*` names afterwards. An upload through the admin exercises the new bucket end to end.
-   **Then rewrite the publish domain in the database** — `Page.sections` and `Asset.publicUrl` /
-   `meta.poster` hold absolute URLs (5 + 28 references), and until they point at the new domain the
-   site keeps serving from the old bucket. Verify zero old-domain references remain afterwards, and
-   purge the affected cache tags.
+5. **R2 custom domain — required, not optional.** The bucket and credentials already live in the
+   client's account (created 2026-09-27; all 254 assets copied and verified over HTTP, see "Bucket
+   created", "Media: fresh slate" and the storage numbers under "Capacity"), so nothing is left to copy.
+   What is left is the publish domain: `r2.dev` is documented as development-only and rate-limited
+   (variable limit, `429`s past roughly hundreds of requests/second, bandwidth may be throttled).
+   Order matters so the site never points at a domain that is not ready:
+   1. R2 → bucket → Settings → Public access → **Connect domain**, on the new zone (e.g.
+      `assets.levelgroundlandscape.com`). Cloudflare creates the DNS record itself.
+   2. Confirm an object loads from the new host, then set `R2_BASE_URL` to it and redeploy.
+   3. **Rewrite the publish domain in the database** — `Page.sections` and `Asset.publicUrl` /
+      `meta.poster` hold absolute URLs (5 + 28 references). Verify zero old-domain references remain and
+      purge the affected cache tags.
+   4. Check the bucket's **CORS** allows the new origin — browser uploads use presigned PUTs. The S3 key
+      in `.env.local` cannot read the CORS config (`AccessDenied`), so read/update it in the dashboard.
+   5. Only then **disable the `r2.dev` public access**, so the bucket is not reachable through the
+      development URL. Upload through the admin as the end-to-end check.
+
 6. **Cut the app over:** custom domain in Vercel, `NEXT_PUBLIC_BASE_URL` → the real origin
    (`https://levelgroundlandscape.com`), **remove `SITE_NOINDEX` from the Vercel env** (Project →
    Settings → Environment Variables; it was added 2026-10-12), then the smoke checks (home, /projects,
@@ -584,6 +640,12 @@ IP in hand both options stay open until the flip.
    Verify after deploying: `curl -s https://levelgroundlandscape.com/ | grep -c 'name="robots"'` should
    print **0** (the noindex meta is gone), and the canonical in the same page's `<head>` should read the
    new origin.
+
+7. **Search Console — after the flip.** No property exists today (no verification file or meta tag in
+   the repo). Add the **domain property** on the new zone as a DNS TXT record (that survives nameserver
+   changes and needs no app change), then submit
+   `https://levelgroundlandscape.com/sitemap.xml` and confirm the canonical host it reports is the
+   apex. GSC's Image report is also what unblocks the parked `/wp-content/uploads/` item below.
 
 ## What can be scripted from the dev machine
 
@@ -622,13 +684,41 @@ into chat — those go into env files or the vault instead.
 
 ## Cutover verification
 
-- `npx tsx scripts/check-media-lib.ts` — 27 lib assertions.
-- `npx tsc --noEmit` and `npm run build`; public routes `/`, `/projects`, one detail page, unknown slug
-  → 404; `/sitemap.xml` lists visible folders only; `/robots.txt` disallows `/admin`.
+Run in this order, on the new origin, and stop at the first failure.
+
+**Domain and TLS**
+- `dig +short NS levelgroundlandscape.com` — the new pair, not `renan/tori`.
+- `dig +short A levelgroundlandscape.com www.levelgroundlandscape.com` — Vercel's records.
+- `curl -sI https://levelgroundlandscape.com` → `200`, and **no** `x-powered-by: WP Engine`.
+- `curl -sI https://www.levelgroundlandscape.com` → `308` to the apex (canonical host is the apex).
+- The old site still answers on its WP Engine environment URL — that is the rollback material until the
+  subscription lapses.
+
+**App and SEO**
+- `curl -s https://levelgroundlandscape.com/ | grep -c 'name="robots"'` → `0` (noindex removed).
+- Canonical, `og:url` and every sitemap `<loc>` read `https://levelgroundlandscape.com`.
+- `/sitemap.xml` 200 and lists visible folders only; `/robots.txt` disallows `/admin`, `/api`,
+  `/preview` and carries the new Host/Sitemap.
+- Legacy map sample: `/projects/elliott-street-softscape` → `/projects/elliott-st` (`308`), and an
+  unknown slug 404s.
+- `npx tsx scripts/check-media-lib.ts` (27 lib assertions), `npx tsc --noEmit`, `npm run build`.
+
+**Email**
+- Contact form → notification arrives from the verified domain (not the `resend.dev` sandbox sender).
+- Admin forgot-password → mail reaches the account's address (`levelgrounddev@proton.me`, set
+  2026-10-21) and the unlock link points at the new origin.
+- Inbound to an `@levelgroundlandscape.com` address lands in the owner's mailbox (Email Routing).
+
+**Forms and media**
+- Turnstile passes on the production hostname and a submission stores.
+- An upload through `/admin/files` writes to the bucket and renders on a project page, with
+  `R2_BASE_URL` resolving.
+
+**Auth and ops**
 - Admin: sign-in, sign-out (row must be deleted from `session`), password change (other sessions
   revoked).
-- Worker: a token signed with the current secret gets `200 {"ok":true}`; the leaked/old value gets 401.
-- Cloudflare worker logs: `npx wrangler tail`.
+- Worker: a token signed with the current secret gets `200 {"ok":true}`; the old/leaked value gets 401.
+- `npx wrangler tail` clean through the smoke pass.
 
 ## Revisit at cutover: the old `/wp-content/uploads/` image URLs
 
@@ -648,17 +738,33 @@ individually (a short manual list); if nothing shows, leave them 404 and close t
 
 ## Open items
 
-- [ ] Client accounts created (incl. **Neon** — first omission, plus Turnstile under Cloudflare).
-- [ ] Resend domain verified for the client domain.
-- [ ] `NEXT_PUBLIC_BASE_URL` set to the production origin in Vercel (flip to
-      `https://levelgroundlandscape.com` at cutover, together with the removal below).
-- [ ] Decide on legacy image URLs from GSC's Image report (see the section above; parked 2026-10-12).
-- [x] `SITE_NOINDEX=1` set on the Vercel project (2026-10-12, `production` target) — **remove at cutover**
-      (step 6 above). Pre-launch guard so the Vercel origin cannot be indexed as a duplicate; preview
-      deployments are covered automatically by `VERCEL_ENV`.
+State as of 2026-10-22. Everything ticked is verified, not assumed.
+
+- [x] Client accounts created — Cloudflare (R2 bucket + Turnstile) and Vercel, dated 2026-09-27 in the
+      sections above. **Neon's project owner is still to confirm**; the app has used it since the
+      migration and its URLs/data are current.
+- [x] Legacy redirect map deployed — verified `308` for the old project URLs and `/project-gallery`.
+- [x] `SITE_NOINDEX=1` on the Vercel `production` target — **remove at cutover** (step 6). Verified
+      active today: production serves `noindex, nofollow`; preview deployments are covered by
+      `VERCEL_ENV`.
+- [x] Admin account email moved to `levelgrounddev@proton.me` (2026-10-21), so password resets do not
+      depend on the domain's mail.
+- [ ] Resend domain verified (no `send.` MX on the zone yet); the app still sends from the `resend.dev`
+      sandbox address, which only reaches the account owner.
+- [ ] `NEXT_PUBLIC_BASE_URL` → `https://levelgroundlandscape.com` (still the Vercel origin, confirmed
+      from the deployed canonicals).
+- [ ] R2 custom domain attached and the DB URLs rewritten to it (decided 2026-10-22: required —
+      `r2.dev` is development-only and rate-limited). Assets are still `pub-….r2.dev`; `r2KeysFromMeta`
+      copes with either form, so the swap is a data change, not a code change.
+- [ ] Bucket CORS checked for the new origin (dashboard — the app's S3 key gets `AccessDenied` on the
+      CORS read).
+- [ ] Search Console property added and the sitemap submitted (nothing in the repo today; see step 7).
 - [ ] Old Neon project retired; local dump and `.env.pre-cutover-backup` deleted.
-- [ ] Deciding whether R2 gets a custom domain (then `R2_BASE_URL` changes; `r2KeysFromMeta` already
-      copes with either form).
+- [ ] Legacy `/wp-content/uploads/` image URLs decided from GSC's Image report (parked 2026-10-12; see
+      the section above).
+- [ ] `ContactRecipient` pointed at the client's real inbox (today one row, `levelgrounddev@proton.me`,
+      name "Ryan") and confirmed to accept mail from the verified Resend domain — see the note under
+      "Secret status".
 
 ## Capacity
 
