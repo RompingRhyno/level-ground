@@ -8,6 +8,9 @@ Status: accounts migrated 2026-09; cutover pending.
 re-checked against the live system on that date. The commands to re-run them are in the status
 block under "Domain migration day".
 
+**Doing order:** `docs/cutover-runbook.md` — phase-by-phase steps (today / cutover day / two weeks
+after). This file stays the inventory of accounts, secrets and decisions.
+
 ## Services and what each owns
 
 | Service | Holds | Env vars (where) | Notes |
