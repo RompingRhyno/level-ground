@@ -64,12 +64,12 @@ export default function VideoStage({
   const text = hasText ? (
     <>
       <h2
-        className="heading text-2xl sm:text-3xl md:text-4xl font-light leading-tight"
+        className="heading text-3xl md:text-5xl font-light leading-tight"
         dangerouslySetInnerHTML={{ __html: heading ?? "" }}
         style={{ color: "var(--stage-text-color, var(--color-text-inverse))" }}
       />
       {subheading && (
-        <p className="mt-3 md:mt-4 max-w-2xl text-sm md:text-base" style={{ color: "var(--stage-text-color, var(--color-text-inverse))" }}>
+        <p className="mt-3 md:mt-4 max-w-2xl text-lg md:text-2xl" style={{ color: "var(--stage-text-color, var(--color-text-inverse))" }}>
           {subheading}
         </p>
       )}
