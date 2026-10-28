@@ -194,7 +194,11 @@ export default function Hero({
             src={image}
             alt=""
             fill
+            // priority still drives the <link rel=preload>, but in Next 16 it no longer implies a
+            // fetch priority — state both so the LCP request actually outranks the rest.
             priority
+            loading="eager"
+            fetchPriority="high"
             sizes={`(min-aspect-ratio: 16/9) 100vw, calc((${svh}svh - 67px) * 1.78)`}
             quality={95}
             className="object-cover object-center"
