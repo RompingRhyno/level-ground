@@ -42,7 +42,7 @@ function StaticGrid({
     // cannot know whether it sits on the screen edge.
     return (
       <div className="w-full columns-1 sm:columns-2 md:columns-3 gap-1.5">
-        {assets.map((a) => {
+        {assets.map((a, i) => {
           const group = transitions[a.id];
           return (
             <div key={a.id} className="break-inside-avoid mb-1.5 rounded-2xl overflow-hidden">
@@ -64,7 +64,8 @@ function StaticGrid({
                   sizes={TILE_SIZES}
                   quality={85}
                   className="w-full object-cover"
-                  loading="lazy"
+                  loading={i === 0 ? "eager" : "lazy"}
+                  fetchPriority={i === 0 ? "high" : undefined}
                 />
               )}
             </div>
@@ -104,7 +105,8 @@ function StaticGrid({
                 sizes={TILE_SIZES}
                 quality={85}
                 className="object-cover"
-                loading="lazy"
+                loading={i === 0 ? "eager" : "lazy"}
+                fetchPriority={i === 0 ? "high" : undefined}
               />
             )}
           </div>
@@ -190,6 +192,7 @@ export default function CollectionItemClient({
             projects={projects}
             showProjectLink={false}
             layoutMode={layout}
+            eagerFirst
           />
         ) : (
           <StaticGrid assets={assets} transitions={transitions} layout={layout} />

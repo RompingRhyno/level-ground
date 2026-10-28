@@ -18,6 +18,7 @@ export default function GalleryClient({
   showProjectLink = true,
   layoutMode = "bento",
   seeMore = null,
+  eagerFirst = false,
 }: {
   assets: Asset[];
   transitions?: Record<string, ResolvedTransition>;
@@ -26,6 +27,12 @@ export default function GalleryClient({
   layoutMode?: GalleryLayout;
   /** Resolved collapse settings; null = show everything (the default). */
   seeMore?: { text?: string; cutoff?: number } | null;
+  /**
+   * Load the first visible tile eagerly. The collection-item page's gallery sits directly under its
+   * title, so its first tile is the LCP there; on service pages a gallery starts below a full-height
+   * hero and must stay lazy.
+   */
+  eagerFirst?: boolean;
 }) {
   const [open, setOpen] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -73,7 +80,8 @@ export default function GalleryClient({
                 sizes={mobileHero && i === 0 ? "100vw" : "(min-width:640px) 50vw, 100vw"}
                 quality={85}
                 className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
-                loading="lazy"
+                loading={eagerFirst && i === 0 ? "eager" : "lazy"}
+                fetchPriority={eagerFirst && i === 0 ? "high" : undefined}
               />
             )}
           </button>
@@ -84,7 +92,7 @@ export default function GalleryClient({
           the mobile grid, so corners are uniform; hover is a subtle zoom clipped by the tile's own
           overflow, not an opacity overlay. */}
       <div className="hidden md:grid md:grid-cols-6 gap-1.5 px-6">
-        {cells.map((cell) => {
+        {cells.map((cell, cellIndex) => {
           const asset = assets[cell.assetIndex];
           const group = transitions[asset.id];
           return (
@@ -115,7 +123,8 @@ export default function GalleryClient({
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
                   quality={cell.cellType === "small" ? 85 : 95}
                   className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
-                  loading="lazy"
+                  loading={eagerFirst && cellIndex === 0 ? "eager" : "lazy"}
+                  fetchPriority={eagerFirst && cellIndex === 0 ? "high" : undefined}
                 />
               )}
             </button>

@@ -97,8 +97,10 @@ export default function Navigation({ navPages }: { navPages: NavPage[] }) {
           <Image
             src="/logo-dark.png"
             alt="Level Ground Landscaping"
-            width={252}
-            height={36}
+            // Intrinsic size (504x71), not the display size: declaring 252x36 rounds the ratio to
+            // 7.00 and at h-9 the rendered width lands on 256, so Next flags one dimension as modified.
+            width={504}
+            height={71}
             className="h-9 w-auto max-w-full object-contain"
           />
         </Link>
