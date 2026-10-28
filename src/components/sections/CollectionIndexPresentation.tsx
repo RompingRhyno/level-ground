@@ -71,8 +71,11 @@ function ItemGrid({
   const coverNameBySlug = new Map(coverTags.map((t) => [t.slug, t.name]));
   const activeService = activeFilter?.kind === "service" ? activeFilter.slug : null;
 
+  // 1 / 2 / 4 columns, never 3: the index runs on fours (the home index caps at four), and a
+  // three-column tier split that set 3 + 1 at 1024-1279px. Only column counts that divide the
+  // common set are used; a long list still just ends on a partial row.
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 px-6">
       {items.map((item) => {
         const image = entityImages?.[item.slug] ?? firstAssets[item.slug];
         // Folder tags can also carry non-cover markers (before/after); only known covers render.
