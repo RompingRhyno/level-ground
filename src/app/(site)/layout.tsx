@@ -61,7 +61,15 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <SiteHeader navPages={navPages} />
       <main className="flex-1 flex flex-col">{children}</main>
       <footer className="bg-(--color-bg-primary) px-6 py-4">
-        © {new Date().getFullYear()} Level Ground Landscaping
+        <div className="space-y-1">
+          <p>Service areas: Vancouver, West Vancouver, Burnaby, and Richmond, BC</p>
+          <p>
+            <a href="tel:+17782235005" className="hover:underline">
+              778-223-5005
+            </a>
+          </p>
+          <p>© {new Date().getFullYear()} Level Ground Landscaping</p>
+        </div>
       </footer>
     </div>
   );
