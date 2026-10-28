@@ -59,7 +59,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
       />
       <SiteHeader navPages={navPages} />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 flex flex-col">{children}</main>
       <footer className="bg-(--color-bg-primary) px-6 py-4">
         © {new Date().getFullYear()} Level Ground Landscaping
       </footer>

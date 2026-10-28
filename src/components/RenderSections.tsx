@@ -53,6 +53,11 @@ export default async function RenderSections({ sections, pageSlug, entityContext
         const surfaceVars = alternate
           ? ({ "--section-surface": index % 2 === 0 ? "var(--color-bg-band-a)" : "var(--color-bg-band-b)" } as React.CSSProperties)
           : undefined;
+        // The bands are the page's surface, so the LAST one has to reach the footer: on a page whose
+        // content is shorter than the viewport the coloured band would otherwise stop at its content
+        // and leave the page's white showing below it (the contact page, a freshly filtered index).
+        // main is a flex column; growing the last band is a no-op on pages that already overflow.
+        const sectionClass = `${parityClass}${alternate && index === sections.length - 1 ? " flex-1" : ""}`.trim();
 
         // Where the tone boundary sits is decided by the padding split. Every inter-section gap is 48px
         // (the lower section's pt-12); with bands on, the two neighbours share it 24/24 so the colour
@@ -122,7 +127,7 @@ export default async function RenderSections({ sections, pageSlug, entityContext
           case "contact":
             if (!section.id) throw new Error("Invalid contact section: missing id");
             return (
-              <section key={index} className={parityClass} style={surfaceVars}>
+              <section key={index} className={sectionClass} style={surfaceVars}>
                 <Contact {...section} pageSlug={pageSlug} />
               </section>
             );
@@ -133,7 +138,7 @@ export default async function RenderSections({ sections, pageSlug, entityContext
 
           case "collection-index":
             return (
-              <section key={index} className={parityClass} style={surfaceVars}>
+              <section key={index} className={sectionClass} style={surfaceVars}>
                 <div className={innerClass}>
                   <CollectionIndex {...section} resolvedRouteBase={collectionRouteBase} />
                 </div>
@@ -142,7 +147,7 @@ export default async function RenderSections({ sections, pageSlug, entityContext
 
           case "service-links":
             return (
-              <section key={index} className={parityClass} style={surfaceVars}>
+              <section key={index} className={sectionClass} style={surfaceVars}>
                 <div className={innerClass}>
                   <ServiceLinks
                     sections={sections}
@@ -154,7 +159,7 @@ export default async function RenderSections({ sections, pageSlug, entityContext
 
           case "collection-item":
             return (
-              <section key={index} className={parityClass} style={surfaceVars}>
+              <section key={index} className={sectionClass} style={surfaceVars}>
                 <div className={innerClass}>
                   <CollectionItem {...section} entityContext={entityContext} />
                 </div>
@@ -168,7 +173,7 @@ export default async function RenderSections({ sections, pageSlug, entityContext
         // The hero fills the viewport height (100svh minus the sticky header), so its wrapper must not add
         // vertical padding — that padding is what kept it from reaching the top of the screen.
         return (
-          <section key={index} className={parityClass} style={surfaceVars}>
+          <section key={index} className={sectionClass} style={surfaceVars}>
             <div className={innerClass}>
               {content}
             </div>
