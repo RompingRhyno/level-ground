@@ -353,7 +353,7 @@ export default function GalleryLightbox({
                 members={group.members}
                 transition={group.transition}
                 sizes="(min-width: 1024px) 52vw, 100vw"
-                quality={95}
+                quality={90}
                 fit="contain"
               />
             ) : (
@@ -363,7 +363,7 @@ export default function GalleryLightbox({
                 fill
                 className="object-contain"
                 sizes="(min-width: 1024px) 52vw, 100vw"
-                quality={95}
+                quality={90}
                 priority
               />
             )}
@@ -543,7 +543,7 @@ export default function GalleryLightbox({
           }}
         >
           {group ? (
-            <TransitionTile members={group.members} transition={group.transition} sizes="100vw" quality={95} fit="contain" />
+            <TransitionTile members={group.members} transition={group.transition} sizes="100vw" quality={90} fit="contain" />
           ) : narrow && photoDims && photoDims.w > photoDims.h ? (
             /* Phone + landscape photo: present it sideways. The box is the visual viewport with its
                axes swapped, rotated 90° counter-clockwise, so the photo uses the screen's long edge the
@@ -559,12 +559,12 @@ export default function GalleryLightbox({
                 fill
                 className="object-contain"
                 sizes="100vh"
-                quality={95}
+                quality={90}
                 priority
               />
             </div>
           ) : (
-            <Image src={asset.publicUrl} alt={asset.alt ?? ""} fill className="object-contain" sizes="100vw" quality={95} priority />
+            <Image src={asset.publicUrl} alt={asset.alt ?? ""} fill className="object-contain" sizes="100vw" quality={90} priority />
           )}
         </div>
       )}

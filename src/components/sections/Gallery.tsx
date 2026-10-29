@@ -237,7 +237,7 @@ export default async function Gallery(section: GallerySection) {
                       members={group.members}
                       transition={group.transition}
                       sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                      quality={85}
+                      quality={90}
                     />
                   </div>
                 ) : (
@@ -247,7 +247,7 @@ export default async function Gallery(section: GallerySection) {
                     width={800}
                     height={600}
                     sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
-                    quality={85}
+                    quality={90}
                     className="w-full h-auto object-cover"
                     loading="lazy"
                   />
@@ -280,7 +280,7 @@ export default async function Gallery(section: GallerySection) {
                   members={group.members}
                   transition={group.transition}
                   sizes="(min-width:640px) 50vw, 100vw"
-                  quality={85}
+                  quality={90}
                   showPills={false}
                 />
               ) : (
@@ -289,7 +289,7 @@ export default async function Gallery(section: GallerySection) {
                   alt={asset.alt ?? ""}
                   fill
                   sizes="(min-width:640px) 50vw, 100vw"
-                  quality={85}
+                  quality={90}
                   className="object-cover"
                   loading="lazy"
                 />
@@ -302,9 +302,10 @@ export default async function Gallery(section: GallerySection) {
       {/* Desktop: bento/grid layout engine. The engine places cells on a SIX-column grid (1–6, `span 2`
           per tile, `span 6` for a hero); rendering it in three columns leaves columns 4–6 as implicit auto
           tracks, which collapse to a 0px column and a stray wide one — one tile per triple row comes out
-          ~140px wide. GalleryClient (the lightbox path) already declares six. Quality tiers: hero and
-          bento-large run full or two-thirds width (q95), the small tiles a third (q85). Inset 24px each
-          side like the mobile grid, so corners are uniform. */}
+          ~140px wide. GalleryClient (the lightbox path) already declares six. One quality tier for every
+          cell (q90): a photo that also opens in the lightbox must not be cached twice, and tile size is
+          carried by `sizes`, not by quality. Inset 24px each side like the mobile grid, so corners are
+          uniform. */}
       <div className="hidden md:grid md:grid-cols-6 gap-1.5 px-6">
         {cells.map((cell) => {
           const asset = valid[cell.assetIndex];
@@ -325,7 +326,7 @@ export default async function Gallery(section: GallerySection) {
                   members={group.members}
                   transition={group.transition}
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
-                  quality={cell.cellType === "small" ? 85 : 95}
+                  quality={90}
                 />
               ) : (
                 <Image
@@ -333,7 +334,7 @@ export default async function Gallery(section: GallerySection) {
                   alt={asset.alt ?? ""}
                   fill
                   sizes={getCellSizes(cell.cellType, cell.colSpan)}
-                  quality={cell.cellType === "small" ? 85 : 95}
+                  quality={90}
                   className="object-cover"
                   loading="lazy"
                 />

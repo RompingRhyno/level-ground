@@ -69,7 +69,7 @@ export default function GalleryClient({
                 members={transitions[asset.id].members}
                 transition={transitions[asset.id].transition}
                 sizes={mobileHero && i === 0 ? "100vw" : "(min-width:640px) 50vw, 100vw"}
-                quality={85}
+                quality={90}
                 showPills={false}
               />
             ) : (
@@ -78,7 +78,7 @@ export default function GalleryClient({
                 alt={asset.alt ?? ""}
                 fill
                 sizes={mobileHero && i === 0 ? "100vw" : "(min-width:640px) 50vw, 100vw"}
-                quality={85}
+                quality={90}
                 className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
                 loading={eagerFirst && i === 0 ? "eager" : "lazy"}
                 fetchPriority={eagerFirst && i === 0 ? "high" : undefined}

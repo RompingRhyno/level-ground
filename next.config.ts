@@ -82,15 +82,19 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns,
-    // Quality tiers: q75 stays the default (thumbnails/tiles), q85 for third-width cards, q90 for
-    // half-width media, q95 for full-span and hero images. Next rejects an undeclared quality outright
-    // (`"q" parameter (quality) of N is not allowed`), so every value a component passes must be listed
-    // here — see docs/component-pass-plan.md.
-    qualities: [75, 85, 90, 95],
-    // Defaults plus 2560: a 1x QHD screen needs 2560 and would otherwise take the 3840 candidate (2.25x the
-    // pixels, ~1.5x the width), and a 2x 1280 screen needs exactly 2560. The browser still picks the
-    // smallest candidate that covers the slot, so no display ever gets a lower-resolution image than before.
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2560, 3840],
+    // Quality tiers: q75 for admin thumbnails, q90 for every public content surface (grid, bento,
+    // masonry, lightbox), q95 only for the full-bleed one-offs (hero, banner, two-column). A photo that
+    // appears on two surfaces must use one tier, or the optimizer caches it twice. Next rejects an
+    // undeclared quality outright (`"q" parameter (quality) of N is not allowed`), so every value a
+    // component passes must be listed here — see docs/component-pass-plan.md.
+    qualities: [75, 90, 95],
+    // Defaults plus 2560, minus 750: 2560 covers a 1x QHD screen (otherwise it takes the 3840 candidate) and
+    // a 2x 1280 screen exactly; 750 is only 10% off 828 and is never the best candidate. The browser picks
+    // the smallest candidate that covers the slot, so no display gets a lower-resolution image than before.
+    deviceSizes: [640, 828, 1080, 1200, 1920, 2048, 2560, 3840],
+    // Fixed-size slots (thumbnails/tiles) only: the merged candidate list otherwise carries 16–96px
+    // entries into full-width images' srcsets. 128 keeps the admin's 56–128px tiles sharp at 2x.
+    imageSizes: [128, 256, 384],
   },
 };
 

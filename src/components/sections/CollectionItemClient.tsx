@@ -52,7 +52,7 @@ function StaticGrid({
                     members={group.members}
                     transition={group.transition}
                     sizes={TILE_SIZES}
-                    quality={85}
+                    quality={90}
                   />
                 </div>
               ) : (
@@ -62,7 +62,7 @@ function StaticGrid({
                   width={800}
                   height={600}
                   sizes={TILE_SIZES}
-                  quality={85}
+                  quality={90}
                   className="w-full object-cover"
                   loading={i === 0 ? "eager" : "lazy"}
                   fetchPriority={i === 0 ? "high" : undefined}
@@ -95,7 +95,7 @@ function StaticGrid({
                 members={group.members}
                 transition={group.transition}
                 sizes={TILE_SIZES}
-                quality={85}
+                quality={90}
               />
             ) : (
               <Image
@@ -103,7 +103,7 @@ function StaticGrid({
                 alt={a.alt ?? ""}
                 fill
                 sizes={TILE_SIZES}
-                quality={85}
+                quality={90}
                 className="object-cover"
                 loading={i === 0 ? "eager" : "lazy"}
                 fetchPriority={i === 0 ? "high" : undefined}

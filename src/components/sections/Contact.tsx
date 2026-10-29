@@ -435,7 +435,7 @@ export default function Contact({
                 alt=""
                 fill
                 sizes="(min-width:1536px) 1152px, (min-width:1280px) 1008px, (min-width:1024px) 864px, (min-width:768px) 576px, (min-width:640px) 691px, 576px"
-                quality={85}
+                quality={90}
                 className="rounded-full object-cover"
               />
             </div>

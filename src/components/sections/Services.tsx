@@ -46,7 +46,7 @@ export default function Services({
                                     alt={service.title}
                                     fill
                                     sizes="(min-width:640px) 50vw, 100vw"
-                                    quality={85}
+                                    quality={90}
                                     className="object-cover transition-transform duration-[1000ms] group-hover:will-change-transform group-hover:[transform:scale(1.03)]"
                                     loading="lazy"
                                 />
