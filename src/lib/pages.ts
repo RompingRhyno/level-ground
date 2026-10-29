@@ -163,26 +163,38 @@ export async function upsertPage(page: PageConfig) {
 
   // sections stored as JSON
   const sections = page.sections;
-  // A caller that omits `type` must NOT reset it: the editor's payload has no `type`, and defaulting
-  // to "page" is exactly how the projects-detail template silently became a nav-visible page.
-  const existingType = page.type
-    ? null
-    : (await prisma.page.findUnique({ where: { slug: page.slug }, select: { type: true } }))?.type ?? null;
-  const type = page.type ?? existingType ?? "page";
+  // A caller that omits a field must NOT reset it. The editor's payload predates several fields,
+  // so a save from a stale tab would silently clear them — that is how the projects-detail
+  // template became a nav-visible page, and how the nav pill on Contact got unset.
+  const existing = await prisma.page.findUnique({
+    where: { slug: page.slug },
+    select: {
+      type: true, navPill: true, jumpToTop: true, alternateSections: true,
+      metaTitle: true, metaDescription: true,
+    },
+  });
+  const type = page.type ?? existing?.type ?? "page";
+  const navPill = page.navPill ?? existing?.navPill ?? false;
+  const jumpToTop = page.jumpToTop ?? existing?.jumpToTop ?? false;
+  const alternateSections = page.alternateSections ?? existing?.alternateSections ?? false;
+  // `undefined` means "not sent" (keep); an explicit null means "cleared".
+  const metaTitle = page.metaTitle === undefined ? existing?.metaTitle ?? null : page.metaTitle;
+  const metaDescription =
+    page.metaDescription === undefined ? existing?.metaDescription ?? null : page.metaDescription;
 
   const result = await prisma.page.upsert({
     where: { slug: page.slug },
     create: {
-      slug: page.slug, label: page.label, sections, type, navPill: page.navPill ?? false,
-      jumpToTop: page.jumpToTop ?? false,
-      alternateSections: page.alternateSections ?? false,
-      metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
+      slug: page.slug, label: page.label, sections, type, navPill,
+      jumpToTop,
+      alternateSections,
+      metaTitle, metaDescription,
     },
     update: {
-      label: page.label, sections, type, navPill: page.navPill ?? false,
-      jumpToTop: page.jumpToTop ?? false,
-      alternateSections: page.alternateSections ?? false,
-      metaTitle: page.metaTitle ?? null, metaDescription: page.metaDescription ?? null,
+      label: page.label, sections, type, navPill,
+      jumpToTop,
+      alternateSections,
+      metaTitle, metaDescription,
     },
   });
 
