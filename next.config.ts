@@ -81,6 +81,11 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Cloudflare Image Transformations on the R2 custom domain replace Vercel's optimizer: no image
+    // cache writes, no 402 ceiling, AVIF/WebP via format=auto. remotePatterns below is consequently
+    // unused (a custom loader does not validate hosts) but kept for the next/image config's own sake.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
     remotePatterns,
     // Quality tiers: q75 for admin thumbnails, q90 for every public content surface (grid, bento,
     // masonry, lightbox), q95 only for the full-bleed one-offs (hero, banner, two-column). A photo that
