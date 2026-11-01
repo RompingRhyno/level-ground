@@ -48,6 +48,12 @@ export const BUSINESS = {
   email: "info@levelgroundlandscape.com",
   instagram: "https://www.instagram.com/level_ground_landscape/",
   areas: ["Vancouver", "Lower Mainland"],
+  // Opening hours as published on the Google Business Profile (read 2026-11-01). Sunday: closed.
+  hours: [
+    { days: ["Monday", "Tuesday", "Wednesday", "Thursday"], opens: "08:00", closes: "17:30" },
+    { days: ["Friday"], opens: "08:00", closes: "17:00" },
+    { days: ["Saturday"], opens: "10:00", closes: "17:30" },
+  ],
 } as const;
 
 /** A page's title: the hand-set override verbatim, else `<label> | Level Ground Landscape`. */

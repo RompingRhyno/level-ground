@@ -37,6 +37,12 @@ const STRUCTURED_DATA = {
         addressCountry: BUSINESS.country,
       },
       areaServed: BUSINESS.areas.map((a) => ({ "@type": "Place", name: a })),
+      openingHoursSpecification: BUSINESS.hours.map((h) => ({
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: h.days,
+        opens: h.opens,
+        closes: h.closes,
+      })),
       sameAs: [BUSINESS.instagram],
     },
     {
