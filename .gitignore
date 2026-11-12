@@ -52,3 +52,15 @@ workers/upload-worker/.wrangler/
 workers/upload-worker/.devvars
 # wrangler local secrets for `wrangler dev` — never commit (holds UPLOAD_TOKEN_SECRET)
 workers/upload-worker/.dev.vars
+
+# Business documents — commercial and client-facing, never committed
+docs/client-summary.md
+docs/invoice-scope-*.md
+docs/pricing-*.md
+docs/decisions-scope.md
+
+# Generated PDFs
+docs/*.pdf
+
+# DNS snapshots
+docs/dns-snapshot-*
