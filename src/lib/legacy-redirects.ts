@@ -90,3 +90,11 @@ export const RENAMED_SLUG_REDIRECTS: [string, string][] = [
 
 /** The prefix all 21 archive URLs share. */
 export const LEGACY_ARCHIVE_PREFIX = "/residential_landscaping_install";
+
+/**
+ * The old WordPress site also exposed some projects under `/landscaping-projects/<slug>` — Search
+ * Console reports the micro-clover page 404ing at four variants of it. Handled as a prefix in
+ * next.config: the known slug gets its real destination, everything else under the prefix lands on
+ * the project index rather than a 404.
+ */
+export const LEGACY_PROJECTS_PREFIX = "/landscaping-projects";

@@ -4,6 +4,7 @@ import {
   LEGACY_ARCHIVE_TERMS,
   LEGACY_PAGE_REDIRECTS,
   LEGACY_PROJECT_REDIRECTS,
+  LEGACY_PROJECTS_PREFIX,
   RENAMED_SLUG_REDIRECTS,
 } from "./src/lib/legacy-redirects";
 import { serviceAnchorHref } from "./src/lib/services";
@@ -38,6 +39,13 @@ function legacyRedirects(): LegacyRedirect[] {
     // Retired terms (null) land at the top of the installation page; the rest go to their section.
     push(`${LEGACY_ARCHIVE_PREFIX}/${term}`, serviceAnchorHref(serviceSlug) ?? "/landscape-design-installation");
   }
+
+  // The old site also exposed projects under /landscaping-projects/<slug>. The reported page has a
+  // real modern equivalent; any other slug under that prefix goes to the project index instead of
+  // 404ing. Exact rules are pushed first so Next matches them before the wildcard.
+  push(`${LEGACY_PROJECTS_PREFIX}/micro-clover-lawn-alternative`, "/projects/west-14th");
+  rows.push({ source: LEGACY_PROJECTS_PREFIX, destination: "/projects", permanent: true });
+  rows.push({ source: `${LEGACY_PROJECTS_PREFIX}/:path*`, destination: "/projects", permanent: true });
 
   return rows;
 }
