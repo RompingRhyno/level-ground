@@ -13,14 +13,24 @@ import prisma from "../src/lib/prisma";
 const FOOTER_SECTION = {
   type: "footer",
   phone: "778-223-5005",
-  serviceAreas: "Vancouver, West Vancouver, Burnaby, and Richmond, BC",
+  details: "<strong>Serviced Areas:</strong> Vancouver, West Vancouver, Burnaby, and Richmond, BC",
   businessName: "Level Ground Landscaping",
 };
 
 async function main() {
   const existing = await prisma.page.findUnique({ where: { slug: "footer" } });
   if (existing) {
-    console.log(`footer page already exists (type=${existing.type})`);
+    // Migrate the earlier plain `serviceAreas` field to the rich `details` field, once.
+    const sections = (existing.sections as any[]) ?? [];
+    const section = sections.find((s) => s?.type === "footer");
+    if (section && !section.details && typeof section.serviceAreas === "string") {
+      section.details = `<strong>Serviced Areas:</strong> ${section.serviceAreas}`;
+      delete section.serviceAreas;
+      await prisma.page.update({ where: { slug: "footer" }, data: { sections } });
+      console.log("migrated serviceAreas → details");
+    } else {
+      console.log(`footer page already exists (type=${existing.type})`);
+    }
     return;
   }
 

@@ -222,7 +222,8 @@ h1, h2, h3, h4, h5 {
 
 /* Admin preview iframe — hides site nav/footer when page is rendered as a bare preview */
 body.preview-bare > header,
-body.preview-bare > footer {
+body.preview-bare > footer,
+body.preview-bare [data-site-footer] {
   display: none !important;
 }
 body.preview-bare > main {

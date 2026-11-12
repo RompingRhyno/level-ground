@@ -72,7 +72,11 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       />
       <SiteHeader navPages={navPages.filter((p) => p.slug !== "home")} />
       <main className="flex-1 flex flex-col">{children}</main>
-      <Footer {...footer} />
+      {/* Marked so the editor's preview iframe can hide the real site footer and show only the
+          footer section being edited; a bare `> footer` selector cannot reach it inside this wrapper. */}
+      <div data-site-footer="">
+        <Footer {...footer} />
+      </div>
     </div>
   );
 }

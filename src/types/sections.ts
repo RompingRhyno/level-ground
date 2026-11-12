@@ -224,8 +224,13 @@ export type FooterSection = {
   type: "footer";
   /** Display form, e.g. "778-223-5005". The tel: link is derived from its digits. */
   phone: string;
-  /** The line after "Serviced Areas:", without the label itself. */
-  serviceAreas: string;
+  /**
+   * Free-form footer detail, authored through the rich editor — the old "Serviced Areas" line
+   * generalised, so the operator can write anything (areas, hours, a note) with bold/italic/links.
+   */
+  details?: string;
+  /** Legacy plain serviced-areas line; rendered with its label when `details` is absent. */
+  serviceAreas?: string;
   /** Copyright holder, e.g. "Level Ground Landscaping". The year is rendered. */
   businessName: string;
 };

@@ -641,14 +641,14 @@ export default function SectionEditor({
                 />
               </div>
               <div className="space-y-1">
-                <label className="block text-sm">Serviced areas</label>
-                <input
-                  value={(section as any).serviceAreas || ""}
-                  onChange={(e) => update("serviceAreas", e.target.value)}
-                  placeholder="Vancouver, West Vancouver, Burnaby, and Richmond, BC"
-                  className="w-full rounded border px-2 py-1"
+                <label className="block text-sm">Details</label>
+                <RichContentEditable
+                  multiline
+                  value={(section as any).details || ""}
+                  onChange={(val) => update("details", val)}
+                  className="w-full"
                 />
-                <p className="text-xs opacity-60">Printed after the “Serviced Areas:” label.</p>
+                <p className="text-xs opacity-60">Free text — areas, hours, a note. Bold, italic and links allowed.</p>
               </div>
               <div className="space-y-1">
                 <label className="block text-sm">Business name</label>
