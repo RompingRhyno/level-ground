@@ -428,8 +428,14 @@ export default function PreviewClient() {
   );
 
   useEffect(() => {
-    // Hide site nav/footer when rendered inside the admin preview iframe
+    // Hide site nav/footer when rendered inside the admin preview iframe. The stylesheet carries the
+    // same rule, but a stale production CSS bundle dropped it once; injecting it here makes the
+    // preview independent of what the build emitted.
     document.body.classList.add("preview-bare");
+    const style = document.createElement("style");
+    style.textContent =
+      'body.preview-bare [data-site-footer],body.preview-bare > header{display:none!important}';
+    document.head.appendChild(style);
 
     const handler = (event: MessageEvent) => {
       if (event.data?.type === "preview-data") {

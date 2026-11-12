@@ -22,7 +22,11 @@ function telHref(phone: string): string {
 export default function Footer({ phone, details, serviceAreas, businessName }: FooterSection) {
   const year = new Date().getFullYear();
   return (
-    <footer className="bg-(--color-bg-primary) px-6 py-4">
+    <footer
+      className="bg-(--color-bg-primary) px-6 pb-4"
+      // One extra line of breathing room above the first line; the bottom keeps its original padding.
+      style={{ paddingTop: "calc(1rem + 1lh)" }}
+    >
       {/* One blank line between the blocks — 1lh is exactly the line box a blank line occupies in
           the rich details field, so the visual rhythm matches what the editor shows. */}
       <div className="flex flex-col gap-[1lh]">
