@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -9,6 +9,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Set by the no-JavaScript fallback (/api/auth/sign-in-form) when it bounces back here.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("error");
+    if (code === "locked") {
+      setError("Account locked. Check your email for the unlock link — it expires in 1 hour.");
+    } else if (code === "invalid") {
+      setError("Invalid credentials or account locked.");
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,7 +64,14 @@ export default function LoginPage() {
         Admin sign in
       </h1>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* method/action are the no-JS fallback: if the client bundle never hydrates, the browser
+          posts here instead of doing a native GET that looks like a page refresh. */}
+      <form
+        onSubmit={handleSubmit}
+        method="post"
+        action="/api/auth/sign-in-form"
+        className="flex flex-col gap-4"
+      >
         <div>
           <label
             htmlFor="email"
@@ -65,6 +82,7 @@ export default function LoginPage() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             autoComplete="email"
             required
@@ -89,6 +107,7 @@ export default function LoginPage() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
             autoComplete="current-password"
             required

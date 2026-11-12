@@ -17,6 +17,9 @@ const EMAIL_FROM = process.env.AUTH_EMAIL_FROM ?? process.env.CONTACT_EMAIL_FROM
  * sitemap and robots had; see src/lib/seo.ts for the shared normalization).
  */
 const SITE_URL = (() => {
+  // Local development: reset/unlock/invite links must come back to the dev server. The env value is
+  // the production domain, so using it here sent every local email link to the live site.
+  if (process.env.NODE_ENV === "development") return "http://localhost:3000";
   const raw = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'
   const trimmed = raw.replace(/\/+$/, '')
   return /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`
