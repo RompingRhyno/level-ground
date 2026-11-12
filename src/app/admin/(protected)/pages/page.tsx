@@ -2,7 +2,7 @@ import { getPages } from "@/lib/pages";
 import AdminPagesClient from "@/components/admin/AdminPagesClient";
 
 export type TemplateRow = { slug: string; label: string };
-export type PageRow = { slug: string; label: string; templates: TemplateRow[] };
+export type PageRow = { slug: string; label: string; templates: TemplateRow[]; pinned?: boolean };
 
 export default async function AdminPagesList() {
   const allPages = await getPages();
@@ -29,8 +29,12 @@ export default async function AdminPagesList() {
   const typedTemplates = allPages.filter((p) => p.type === "template");
   typedTemplates.forEach((t) => referencedTemplateSlugs.add(t.slug));
 
-  // Regular rows = non-template pages that are NOT themselves a detail template
-  const regularPages = allNonTemplates.filter((p) => !referencedTemplateSlugs.has(p.slug));
+  // Regular rows = non-template pages that are NOT themselves a detail template, then the
+  // site-wide footer (a Page row too, so it edits in the same editor, but pinned last).
+  const regularPages = [
+    ...allNonTemplates.filter((p) => !referencedTemplateSlugs.has(p.slug)),
+    ...allPages.filter((p) => p.type === "footer"),
+  ];
 
   // All template pages (typed OR referenced)
   const templates = allPages.filter((p) => referencedTemplateSlugs.has(p.slug));
@@ -38,6 +42,7 @@ export default async function AdminPagesList() {
   const pageRows: PageRow[] = regularPages.map((page) => ({
     slug: page.slug,
     label: page.label,
+    pinned: page.type === "footer",
     templates: templates
       .filter((t) => templateOwnerMap.get(t.slug) === page.slug)
       .map((t) => ({ slug: t.slug, label: t.label })),

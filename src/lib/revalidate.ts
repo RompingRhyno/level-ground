@@ -1,5 +1,6 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "./prisma";
+import { FOOTER_PAGE_SLUG } from "./pages";
 import type { PageSection } from "@/types/sections";
 
 /**
@@ -13,7 +14,7 @@ import type { PageSection } from "@/types/sections";
  * `applyRevalidationPlan(...)`, so the set of invalidated tags/paths is testable in isolation.
  */
 
-export type RevalidationPlan = { tags: string[]; paths: string[] };
+export type RevalidationPlan = { tags: string[]; paths: string[]; layout?: boolean };
 
 export type Mutation =
   | { kind: "asset:created" }
@@ -43,6 +44,7 @@ function merge(...plans: RevalidationPlan[]): RevalidationPlan {
   return {
     tags: [...new Set(plans.flatMap((p) => p.tags))],
     paths: [...new Set(plans.flatMap((p) => p.paths))],
+    ...(plans.some((p) => p.layout) ? { layout: true } : {}),
   };
 }
 
@@ -156,17 +158,19 @@ export async function revalidationPlan(mutation: Mutation): Promise<Revalidation
     }
 
     case "page:saved":
-    case "page:deleted":
-      // `/sitemap.xml` belongs here as well as in the folder branches: creating, renaming or deleting
-      // a page changes the URL list, and without this it would only refresh when the 300s cache
-      // window on the page reads expired.
+    case "page:deleted": {
+      // The footer's Page row renders in the layout of every route, so a footer save has to flush
+      // the whole layout — the tag alone would only refresh the data, leaving the static HTML stale.
+      const isFooter = mutation.slug === FOOTER_PAGE_SLUG;
       return merge(
         {
-          tags: [`page:${mutation.slug}`, "global:nav", "global:pages"],
+          tags: [`page:${mutation.slug}`, "global:nav", "global:pages", ...(isFooter ? ["global:footer"] : [])],
           paths: [pathForSlug(mutation.slug), "/", "/sitemap.xml"],
+          ...(isFooter ? { layout: true } : {}),
         },
         collections(),
       );
+    }
 
     case "tag:changed":
       return merge({ tags: ["tags"], paths: [] }, collections());
@@ -182,6 +186,7 @@ export function applyRevalidationPlan(
   label?: string,
 ): RevalidationPlan {
   for (const tag of plan.tags) revalidateTag(tag, {});
+  if (plan.layout) revalidatePath("/", "layout");
   for (const path of plan.paths) revalidatePath(path);
   if (label) console.info(`[revalidate] ${label}`, JSON.stringify(plan));
   return plan;

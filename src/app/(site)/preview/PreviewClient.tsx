@@ -9,6 +9,7 @@ import GalleryClient from "@/components/sections/GalleryClient";
 import SectionHeader from "@/components/sections/SectionHeader";
 import { transitionsFromRows } from "@/lib/transition";
 import Contact from "@/components/sections/Contact";
+import Footer from "@/components/sections/Footer";
 import CollectionItemClient from "@/components/sections/CollectionItemClient";
 import CollectionIndexPresentation, { type CollectionFilter } from "@/components/sections/CollectionIndexPresentation";
 import { ServiceLinksView } from "@/components/sections/ServiceLinksView";
@@ -26,6 +27,7 @@ import type {
   VideoSection,
   CollectionIndexSection,
   CollectionItemSection,
+  FooterSection,
 } from "@/types/sections";
 
 type AssetRow = { id: string; publicUrl: string; alt: string | null; meta?: unknown; hidden?: boolean };
@@ -396,6 +398,9 @@ function renderContent(
         />
       </div>
     );
+  }
+  if (type === "footer") {
+    return <Footer {...(section as FooterSection)} />;
   }
   if (type === "collection-index") {
     return <CollectionIndexPreview section={section as CollectionIndexSection} />;

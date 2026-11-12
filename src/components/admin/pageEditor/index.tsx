@@ -54,6 +54,8 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
   const [savedMetaTitle, setSavedMetaTitle] = useState(initialPage.metaTitle || "");
   const [metaDescription, setMetaDescription] = useState(initialPage.metaDescription || "");
   const [savedMetaDescription, setSavedMetaDescription] = useState(initialPage.metaDescription || "");
+  /** The footer is a Page row so it edits here, but its page chrome (nav, meta, add-section) is noise. */
+  const isFooter = initialPage.type === "footer";
   /**
    * Stable per-section identity, used for React keys and by dnd-kit. Seeded in an effect rather than a
    * useState initialiser on purpose: crypto.randomUUID() cannot return the same value on the server
@@ -314,79 +316,85 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={navPill}
-          onChange={(e) => setNavPill(e.target.checked)}
-        />
-        Pill button in nav
-      </label>
+      {!isFooter && (
+        <>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={navPill}
+              onChange={(e) => setNavPill(e.target.checked)}
+            />
+            Pill button in nav
+          </label>
 
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={jumpToTop}
-          onChange={(e) => setJumpToTop(e.target.checked)}
-        />
-        Jump to top button
-      </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={jumpToTop}
+              onChange={(e) => setJumpToTop(e.target.checked)}
+            />
+            Jump to top button
+          </label>
 
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <input
-          type="checkbox"
-          checked={alternateSections}
-          onChange={(e) => setAlternateSections(e.target.checked)}
-        />
-        Alternating section backgrounds
-      </label>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={alternateSections}
+              onChange={(e) => setAlternateSections(e.target.checked)}
+            />
+            Alternating section backgrounds
+          </label>
 
-      <div>
-        <label className="block text-sm font-medium text-(--color-text-dark)">Meta title</label>
-        <input
-          value={metaTitle}
-          onChange={(e) => setMetaTitle(e.target.value)}
-          placeholder="Defaults to the label, plus “| Level Ground Landscape”"
-          className="w-full rounded border px-2 py-1 text-sm"
-          style={{ backgroundColor: "white" }}
-        />
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-(--color-text-dark)">Meta title</label>
+            <input
+              value={metaTitle}
+              onChange={(e) => setMetaTitle(e.target.value)}
+              placeholder="Defaults to the label, plus “| Level Ground Landscape”"
+              className="w-full rounded border px-2 py-1 text-sm"
+              style={{ backgroundColor: "white" }}
+            />
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium text-(--color-text-dark)">Meta description</label>
-        <textarea
-          value={metaDescription}
-          onChange={(e) => setMetaDescription(e.target.value)}
-          rows={2}
-          placeholder="Defaults to the hero subheading"
-          className="w-full rounded border px-2 py-1 text-sm"
-          style={{ backgroundColor: "white" }}
-        />
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-(--color-text-dark)">Meta description</label>
+            <textarea
+              value={metaDescription}
+              onChange={(e) => setMetaDescription(e.target.value)}
+              rows={2}
+              placeholder="Defaults to the hero subheading"
+              className="w-full rounded border px-2 py-1 text-sm"
+              style={{ backgroundColor: "white" }}
+            />
+          </div>
+        </>
+      )}
 
       <div>
         <div className="flex items-center justify-between">
           <label className="block text-sm font-medium text-(--color-text-dark)">Sections</label>
           <div className="flex items-center gap-2">
-            <select
-              defaultValue=""
-              onChange={(e) => { addSection(e.target.value); (e.target as HTMLSelectElement).value = ""; }}
-              className="rounded border px-2 py-1 text-sm"
-              style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
-            >
-              <option value="" disabled>Add section&hellip;</option>
-              <option value="hero">Hero</option>
-              <option value="twoColumn">Two Column</option>
-              <option value="banner">Banner</option>
-              <option value="testimonial">Testimonial</option>
-              <option value="services">Services</option>
-              <option value="gallery">Gallery</option>
-              <option value="video">Video</option>
-              <option value="contact">Contact Form</option>
-              <option value="service-links">Service links</option>
-              <option value="collection-index">Collection Index</option>
-              <option value="collection-item">Collection Item</option>
-            </select>
+            {!isFooter && (
+              <select
+                defaultValue=""
+                onChange={(e) => { addSection(e.target.value); (e.target as HTMLSelectElement).value = ""; }}
+                className="rounded border px-2 py-1 text-sm"
+                style={{ backgroundColor: "white", color: "var(--color-brand-dark)", borderColor: "var(--color-brand-dark)" }}
+              >
+                <option value="" disabled>Add section&hellip;</option>
+                <option value="hero">Hero</option>
+                <option value="twoColumn">Two Column</option>
+                <option value="banner">Banner</option>
+                <option value="testimonial">Testimonial</option>
+                <option value="services">Services</option>
+                <option value="gallery">Gallery</option>
+                <option value="video">Video</option>
+                <option value="contact">Contact Form</option>
+                <option value="service-links">Service links</option>
+                <option value="collection-index">Collection Index</option>
+                <option value="collection-item">Collection Item</option>
+              </select>
+            )}
             <button onClick={() => setShowRaw((s) => !s)} className="text-sm admin-btn px-2 py-1 rounded">
               {showRaw ? "Hide JSON" : "Show JSON"}
             </button>
@@ -449,6 +457,7 @@ export default function AdminPageEditor({ initialPage }: { initialPage: PageConf
                       onChange={updateSection}
                       onRemove={removeSection}
                       alternate={alternateSections}
+                      locked={isFooter}
                     />
                   ))}
                 </div>

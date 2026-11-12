@@ -52,6 +52,25 @@ export function getPageBySlug(slug: string): Promise<PageConfig | null> {
   )();
 }
 
+/** The footer's Page row: edited like a page, never a route, nav entry or sitemap URL. */
+export const FOOTER_PAGE_SLUG = "footer";
+
+/**
+ * The footer's content, read by the site layout on every page. Tagged `global:footer` as well as
+ * `page:footer` so a footer save can flush the layout without flushing each page individually.
+ */
+export function getFooterConfig(): Promise<PageConfig | null> {
+  return unstable_cache(
+    async () => {
+      const dbPage = await prisma.page.findUnique({ where: { slug: FOOTER_PAGE_SLUG } });
+      if (!dbPage) return null;
+      return mapDbPageToConfig(dbPage);
+    },
+    ["footer-page"],
+    { tags: ["global:footer", `page:${FOOTER_PAGE_SLUG}`], revalidate: CACHE_REVALIDATE_SECONDS }
+  )();
+}
+
 /** Sets the `order` of each page by the position of its slug in the provided array. */
 export async function reorderPages(slugs: string[]): Promise<void> {
   await Promise.all(

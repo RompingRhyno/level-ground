@@ -1,5 +1,5 @@
 // types/sections.ts
-export type PageType = "page" | "template";
+export type PageType = "page" | "template" | "footer";
 
 export type PageConfig = {
   slug: string;
@@ -214,7 +214,24 @@ export type CollectionItemSection = {
   lightbox?: boolean;
 };
 
+/**
+ * The site footer. It lives on its own Page row (`type: "footer"`, slug `footer`) so the operator
+ * edits it in the normal page editor, but it is never a route, a nav entry or a sitemap URL — the
+ * site layout renders it on every page. Exactly one footer section per row; the editor hides the
+ * add-section control for this page type.
+ */
+export type FooterSection = {
+  type: "footer";
+  /** Display form, e.g. "778-223-5005". The tel: link is derived from its digits. */
+  phone: string;
+  /** The line after "Serviced Areas:", without the label itself. */
+  serviceAreas: string;
+  /** Copyright holder, e.g. "Level Ground Landscaping". The year is rendered. */
+  businessName: string;
+};
+
 export type PageSection =
+  | FooterSection
   | HeroSection
   | ServicesSection
   | BannerSection

@@ -208,6 +208,7 @@ const SECTION_LABELS: Record<string, string> = {
   contact: "Contact Form",
   "collection-index": "Collection Index",
   "collection-item": "Collection Item",
+  footer: "Footer",
 };
 
 export default function SectionEditor({
@@ -218,6 +219,7 @@ export default function SectionEditor({
   onChange,
   onRemove,
   alternate,
+  locked,
 }: {
   /** Stable identity from the parent; the card is the sortable item. */
   id: string;
@@ -228,6 +230,8 @@ export default function SectionEditor({
   allSections?: PageSection[];
   onChange: (s: PageSection, i: number) => void;
   onRemove: (i: number) => void;
+  /** The footer page owns exactly one section: no remove button, no reordering. */
+  locked?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { confirm, dialogProps } = useConfirm();
@@ -409,7 +413,9 @@ export default function SectionEditor({
           })()}
         </button>
         <div className="flex items-center gap-1">
-          <button type="button" onClick={async () => { if (await confirm(`Remove ${SECTION_LABELS[type] ?? type} section?`, "This section will be permanently removed from the page.", "danger", "Remove")) onRemove(index); }} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>
+          {!locked && (
+            <button type="button" onClick={async () => { if (await confirm(`Remove ${SECTION_LABELS[type] ?? type} section?`, "This section will be permanently removed from the page.", "danger", "Remove")) onRemove(index); }} className="px-2 py-1 text-sm rounded btn-negative">Remove</button>
+          )}
         </div>
       </div>
 
@@ -619,6 +625,40 @@ export default function SectionEditor({
               <div className="space-y-1">
                 <label className="block text-sm">Name</label>
                 <input value={(section as any).name || ""} onChange={(e) => update("name", e.target.value)} className="w-full rounded border px-2 py-1" />
+              </div>
+            </div>
+          )}
+
+          {type === "footer" && (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm">Phone</label>
+                <input
+                  value={(section as any).phone || ""}
+                  onChange={(e) => update("phone", e.target.value)}
+                  placeholder="778-223-5005"
+                  className="w-full rounded border px-2 py-1"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Serviced areas</label>
+                <input
+                  value={(section as any).serviceAreas || ""}
+                  onChange={(e) => update("serviceAreas", e.target.value)}
+                  placeholder="Vancouver, West Vancouver, Burnaby, and Richmond, BC"
+                  className="w-full rounded border px-2 py-1"
+                />
+                <p className="text-xs opacity-60">Printed after the “Serviced Areas:” label.</p>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-sm">Business name</label>
+                <input
+                  value={(section as any).businessName || ""}
+                  onChange={(e) => update("businessName", e.target.value)}
+                  placeholder="Level Ground Landscaping"
+                  className="w-full rounded border px-2 py-1"
+                />
+                <p className="text-xs opacity-60">Used in the copyright line; the year is added automatically.</p>
               </div>
             </div>
           )}

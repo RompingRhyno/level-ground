@@ -1,6 +1,8 @@
 import SiteHeader from "@/components/SiteHeader";
-import { getNavPages } from "@/lib/pages";
+import Footer, { FOOTER_DEFAULTS } from "@/components/sections/Footer";
+import { getFooterConfig, getNavPages } from "@/lib/pages";
 import { BUSINESS, SITE_URL, SUFFIX } from "@/lib/seo";
+import type { FooterSection } from "@/types/sections";
 
 /**
  * Structured data for every public page: the organization, its local-business identity (the NAP the
@@ -56,7 +58,11 @@ const STRUCTURED_DATA = {
 };
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const navPages = (await getNavPages()).filter((p) => p.slug !== "home");
+  const [navPages, footerPage] = await Promise.all([getNavPages(), getFooterConfig()]);
+  // A missing (or half-filled) footer row falls back to the last hard-coded copy, so deleting the
+  // page in the admin cannot leave the site without a phone number or copyright line.
+  const footer =
+    footerPage?.sections.find((s): s is FooterSection => s.type === "footer") ?? FOOTER_DEFAULTS;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -64,21 +70,9 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
       />
-      <SiteHeader navPages={navPages} />
+      <SiteHeader navPages={navPages.filter((p) => p.slug !== "home")} />
       <main className="flex-1 flex flex-col">{children}</main>
-      <footer className="bg-(--color-bg-primary) px-6 py-4">
-        <div className="space-y-1">
-          <p className="font-bold">
-            <a href="tel:+17782235005" className="hover:underline">
-              778-223-5005
-            </a>
-          </p>
-          <p>
-            <strong>Serviced Areas:</strong> Vancouver, West Vancouver, Burnaby, and Richmond, BC
-          </p>
-          <p>© {new Date().getFullYear()} Level Ground Landscaping</p>
-        </div>
-      </footer>
+      <Footer {...footer} />
     </div>
   );
 }

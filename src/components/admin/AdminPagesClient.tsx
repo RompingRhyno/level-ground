@@ -88,7 +88,8 @@ export default function AdminPagesClient({ initialPages }: { initialPages: PageR
     const res = await fetch("/api/pages", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slugs: newPages.map((p) => p.slug) }),
+      // Pinned rows (the footer) keep their own high order and never join the nav sequence.
+      body: JSON.stringify({ slugs: newPages.filter((p) => !p.pinned).map((p) => p.slug) }),
     });
     if (res.ok) {
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
@@ -177,23 +178,37 @@ export default function AdminPagesClient({ initialPages }: { initialPages: PageR
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--btn-default-hover-bg)")}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
                 >
-                  <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>{page.label}</span>
+                  <span className="font-normal" style={{ color: "var(--color-brand-dark)" }}>
+                    {page.label}
+                    {page.pinned && (
+                      <span
+                        className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-medium uppercase tracking-wide"
+                        style={{ backgroundColor: "var(--color-brand-dark)", color: "var(--color-text-inverse)", opacity: 0.55 }}
+                      >
+                        site-wide
+                      </span>
+                    )}
+                  </span>
                   <span className="text-sm" style={{ color: "var(--color-brand-dark)" }}>{page.slug}</span>
                   <div className="flex items-center gap-1 mr-2">
-                    <button
-                      onClick={(e) => handleMove(e, i, "up")}
-                      disabled={i === 0}
-                      className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
-                      title="Move up"
-                    >↑</button>
-                    <button
-                      onClick={(e) => handleMove(e, i, "down")}
-                      disabled={i === pages.length - 1}
-                      className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
-                      title="Move down"
-                    >↓</button>
+                    {!page.pinned && (
+                      <>
+                        <button
+                          onClick={(e) => handleMove(e, i, "up")}
+                          disabled={i === 0}
+                          className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                          title="Move up"
+                        >↑</button>
+                        <button
+                          onClick={(e) => handleMove(e, i, "down")}
+                          disabled={i === pages.length - 1 || pages[i + 1]?.pinned}
+                          className="px-2 py-1 text-sm rounded admin-btn disabled:opacity-30"
+                          title="Move down"
+                        >↓</button>
+                      </>
+                    )}
                   </div>
-                  {page.slug !== "home" && (
+                  {page.slug !== "home" && !page.pinned && (
                     <button
                       onClick={(e) => handleDelete(e, page.slug, page.label)}
                       className="px-2 py-1 rounded text-sm btn-negative justify-self-end"

@@ -25,7 +25,7 @@ async function firstFolderImage(): Promise<string | null> {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const page = await getPageBySlug(slug);
-  if (!page) return {};
+  if (!page || page.type === "footer") return {};
   const ownImage = pageOgImage(page.sections);
   const isIndex = page.sections.some((s) => s.type === "collection-index");
   return buildMetadata({
@@ -50,7 +50,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
   const page = await getPageBySlug(slug);
 
-  if (!page) return notFound();
+  // The footer is a Page row for the editor, not a route: it renders in the layout on every page.
+  if (!page || page.type === "footer") return notFound();
 
   // Service sections carry their service slug as the section anchor (10 on installation, 2 on
   // maintenance), so the schema follows the anchors rather than a hand-kept list.
